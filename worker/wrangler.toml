@@ -1,0 +1,11 @@
+name = "foodish-api"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+# Create these with:  npx wrangler kv namespace create SUBS
+#                     npx wrangler kv namespace create SUBMISSIONS
+# then paste the ids it prints below.
+kv_namespaces = [
+  { binding = "SUBS", id = "PASTE_SUBS_ID_HERE" },
+  { binding = "SUBMISSIONS", id = "PASTE_SUBMISSIONS_ID_HERE" },
+]

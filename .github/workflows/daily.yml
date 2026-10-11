@@ -1,0 +1,76 @@
+name: Foodish daily update
+
+on:
+  schedule:
+    - cron: "17 10 * * *"   # ~4:17 am Edmonton: refresh deals
+    - cron: "45 21 * * *"   # ~3:45 pm Edmonton (2:45 pm in winter): send daily alerts
+    - cron: "5 9 * * 0"     # Sunday ~3 am: re-discover restaurants from OpenStreetMap
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "discover, scrape, notify, or all"
+        default: "scrape"
+
+permissions:
+  contents: write
+
+concurrency: foodish
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      HAS_FTP: ${{ secrets.FTP_HOST != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install -r pipeline/requirements.txt
+      - name: Browser for JavaScript-only sites (optional, set variable RENDER_JS=1)
+        if: vars.RENDER_JS == '1'
+        run: pip install playwright && python -m playwright install --with-deps chromium
+
+      - name: Discover restaurants (weekly)
+        if: github.event.schedule == '5 9 * * 0' || inputs.task == 'discover' || inputs.task == 'all'
+        run: python pipeline/discover.py
+
+      - name: Scrape deals (daily)
+        if: github.event.schedule == '17 10 * * *' || github.event.schedule == '5 9 * * 0' || inputs.task == 'scrape' || inputs.task == 'all'
+        env:
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'anthropic' }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          RENDER_JS: ${{ vars.RENDER_JS }}
+          MAX_LLM_CALLS: ${{ vars.MAX_LLM_CALLS || '400' }}
+          MONTHLY_LLM_CALLS: ${{ vars.MONTHLY_LLM_CALLS || '6000' }}
+        run: python pipeline/scrape.py
+
+      - name: Save updated data
+        run: |
+          git config user.name "foodish-bot"
+          git config user.email "bot@foodish.ca"
+          git add data site/data
+          git diff --cached --quiet || git commit -m "Daily deals update $(date -u +%F)"
+          git push
+
+      - name: Upload deals file to your web host by FTP (optional)
+        if: env.HAS_FTP == 'true'
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+          FTP_DIR: ${{ vars.FTP_DIR || '/public_html/data' }}
+        run: |
+          sudo apt-get install -y lftp >/dev/null
+          lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" -e "mkdir -p -f $FTP_DIR; put -O $FTP_DIR data/deals.json; bye"
+
+      - name: Send daily alerts
+        if: github.event.schedule == '45 21 * * *' || inputs.task == 'notify' || inputs.task == 'all'
+        env:
+          API_URL: ${{ vars.API_URL }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT || 'mailto:hello@foodish.ca' }}
+        run: python pipeline/notify.py

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Foodish — Restaurant deals near you in Edmonton</title>
+  <meta name="description" content="Find today's restaurant deals near you in Edmonton — wing nights, happy hours, half-price burgers and more.">
+  <meta name="theme-color" content="#d9412b">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">🍽</span>
+      <span class="wordmark">foodish</span>
+      <span class="city">Edmonton</span>
+    </div>
+    <button id="alertsBtn" class="icon-btn" aria-label="Deal alerts" title="Deal alerts">🔔</button>
+  </header>
+
+  <section class="hero">
+    <h1 id="headline">Deals near you today</h1>
+    <button id="locBtn" class="loc-chip">📍 <span id="locText">Use my location</span></button>
+  </section>
+
+  <nav class="days" id="days" aria-label="Day of week"></nav>
+
+  <section class="controls">
+    <label class="search">
+      <span aria-hidden="true">🔎</span>
+      <input id="search" type="search" placeholder="Wings, tacos, happy hour, a restaurant…" autocomplete="off">
+    </label>
+    <div class="row">
+      <label class="toggle"><input type="checkbox" id="onNow"> <span>On now</span></label>
+      <select id="radius" aria-label="Distance">
+        <option value="2">Within 2 km</option>
+        <option value="5" selected>Within 5 km</option>
+        <option value="10">Within 10 km</option>
+        <option value="999">All of Edmonton</option>
+      </select>
+      <div class="view-switch" role="tablist">
+        <button id="listViewBtn" class="active" role="tab">List</button>
+        <button id="mapViewBtn" role="tab">Map</button>
+      </div>
+    </div>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <main>
+    <div id="status" class="status" role="status"></div>
+    <ul id="list" class="list"></ul>
+    <div id="map" class="map" hidden></div>
+  </main>
+
+  <footer class="foot">
+    <button id="submitBtn" class="link-btn">Know a deal we're missing? Tell us →</button>
+    <p class="fine">Deals are gathered automatically from restaurants' own websites and updated daily. Always confirm with the restaurant before you go. <span id="updated"></span></p>
+  </footer>
+
+  <!-- Alerts dialog -->
+  <dialog id="alertsDlg">
+    <form method="dialog" class="dlg">
+      <h2>Deal alerts</h2>
+      <p>Get a heads-up when a deal is on near you.</p>
+      <label class="check"><input type="checkbox" id="nearbyWatch"> While Foodish is open, notify me when I'm close to a deal that's on now</label>
+      <div id="pushBlock">
+        <label class="check"><input type="checkbox" id="pushDaily"> Send me a daily alert (around 4 pm) for deals near my saved spot</label>
+        <label class="field">Categories (optional)
+          <input id="pushCats" placeholder="e.g. wings, burgers, happy hour">
+        </label>
+        <p class="hint" id="iosHint" hidden>On iPhone: tap Share → <b>Add to Home Screen</b>, open Foodish from your home screen, then turn on alerts here.</p>
+      </div>
+      <p class="hint" id="alertsMsg"></p>
+      <menu>
+        <button value="cancel" class="ghost">Close</button>
+        <button id="saveAlerts" value="default" class="primary">Save</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Submit dialog -->
+  <dialog id="submitDlg">
+    <form method="dialog" class="dlg" id="submitForm">
+      <h2>Share a deal</h2>
+      <label class="field">Restaurant <input name="restaurant" required></label>
+      <label class="field">The deal <input name="deal" required placeholder="e.g. 50¢ wings, Wednesdays after 4 pm"></label>
+      <label class="field">Link to where it's posted (optional) <input name="url" type="url"></label>
+      <p class="hint" id="submitMsg"></p>
+      <menu>
+        <button value="cancel" class="ghost" formnovalidate>Cancel</button>
+        <button id="sendSubmit" value="default" class="primary">Send</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
