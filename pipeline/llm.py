@@ -43,6 +43,23 @@ WEBSITE TEXT:
 """
 
 
+class LLMError(Exception):
+    """An AI request was refused; the message is the provider's own explanation."""
+
+
+def _check(r):
+    if r.status_code >= 400:
+        try:
+            err = r.json().get("error", {})
+            msg = err.get("message") if isinstance(err, dict) else str(err)
+            kind = err.get("type", "") if isinstance(err, dict) else ""
+        except ValueError:
+            msg, kind = r.text[:300], ""
+        e = LLMError(f"HTTP {r.status_code} {kind}: {msg}".strip())
+        e.status = r.status_code
+        raise e
+
+
 def _call_anthropic(prompt):
     r = requests.post(
         "https://api.anthropic.com/v1/messages",
@@ -51,7 +68,7 @@ def _call_anthropic(prompt):
               "messages": [{"role": "user", "content": prompt}]},
         timeout=90,
     )
-    r.raise_for_status()
+    _check(r)
     return "".join(b.get("text", "") for b in r.json()["content"])
 
 
@@ -65,7 +82,7 @@ def _call_openai_compatible(prompt):
               "messages": [{"role": "user", "content": prompt}]},
         timeout=90,
     )
-    r.raise_for_status()
+    _check(r)
     return r.json()["choices"][0]["message"]["content"]
 
 
@@ -77,8 +94,8 @@ def extract_deals(name, url, text):
             out = call(prompt)
             m = re.search(r"\{.*\}", out, re.S)
             return json.loads(m.group(0)).get("deals", []) if m else []
-        except requests.HTTPError as e:
-            if e.response is not None and e.response.status_code in (429, 500, 502, 503, 529):
+        except LLMError as e:
+            if getattr(e, "status", 0) in (429, 500, 502, 503, 529):
                 time.sleep(10 * (attempt + 1))
                 continue
             raise

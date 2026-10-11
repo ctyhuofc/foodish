@@ -253,6 +253,7 @@ def main():
 
     # 2) only changed, deal-looking sites go to the AI
     calls = changed = failed = 0
+    ai_errors, ai_stopped = [], None
     for k in keys:
         text, entry = texts[k], cache.get(k, {})
         if text is None:
@@ -277,8 +278,14 @@ def main():
             raw = extract_deals(names[0], sites[k]["url"], text)
             calls += 1
         except Exception as e:  # noqa: BLE001
-            print(f"  ! AI error on {k}: {str(e)[:200]}")
-            report[k]["result"] = f"AI error: {str(e)[:120]}"
+            msg = str(e)[:300]
+            print(f"  ! AI error on {k}: {msg}")
+            report[k]["result"] = f"AI error: {msg}"
+            ai_errors.append(msg)
+            if len(ai_errors) >= 3 and len(set(ai_errors[-3:])) == 1:
+                print(f"Stopping AI step: the same error 3 times in a row -> {msg}")
+                ai_stopped = msg
+                break
             continue
         entry.update(hash=h, checked_at=TODAY, deals=[x for x in (clean_deal(d, sites[k]["url"]) for d in raw) if x])
         report[k]["result"] = f"{len(entry['deals'])} deals"
@@ -295,7 +302,7 @@ def main():
     print("Readable sites:", ", ".join(f"{n}× {s}" for s, n in results.most_common(8)))
     (DATA / "cache").mkdir(parents=True, exist_ok=True)
     (DATA / "cache" / "report.json").write_text(json.dumps(
-        {"date": TODAY, "ai_calls": calls, "status_counts": dict(status), "sites": report}, indent=1, ensure_ascii=False))
+        {"date": TODAY, "ai_calls": calls, "ai_stopped": ai_stopped, "status_counts": dict(status), "sites": report}, indent=1, ensure_ascii=False))
     print(f"AI calls this run: {calls} · sites with new content: {changed} · unreachable: {failed}")
 
     # 3) build the published file
