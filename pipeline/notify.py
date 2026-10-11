@@ -14,8 +14,8 @@ from pywebpush import WebPushException, webpush
 
 ROOT = Path(__file__).resolve().parent.parent
 TZ = ZoneInfo("America/Edmonton")
-API = os.environ["API_URL"].rstrip("/")
-AUTH = {"Authorization": f"Bearer {os.environ['ADMIN_TOKEN']}"}
+API = (os.environ.get("API_URL") or "").rstrip("/")
+AUTH = {"Authorization": f"Bearer {os.environ.get('ADMIN_TOKEN', '')}"}
 
 
 def km(a_lat, a_lng, b_lat, b_lng):
@@ -25,6 +25,9 @@ def km(a_lat, a_lng, b_lat, b_lng):
 
 
 def main():
+    if not API or not os.environ.get("VAPID_PRIVATE_KEY"):
+        print("Push alerts aren't set up yet (README step 6) — skipping.")
+        return
     data = json.loads((ROOT / "data" / "deals.json").read_text())
     by_id = {r["id"]: r for r in data["restaurants"]}
     now = dt.datetime.now(TZ)

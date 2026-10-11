@@ -36,8 +36,10 @@ MANUAL = DATA / "manual_deals.json"
 OUT = DATA / "deals.json"
 SITE_COPY = ROOT / "site" / "data" / "deals.json"
 
-UA = "FoodishBot/1.0 (+https://www.foodish.ca/bot; deals directory for Edmonton)"
-HEADERS = {"User-Agent": UA, "Accept-Language": "en-CA,en;q=0.8"}
+BOT = "FoodishBot"  # the name robots.txt rules are matched against
+UA = "Mozilla/5.0 (compatible; FoodishBot/1.0; +https://www.foodish.ca/bot)"
+HEADERS = {"User-Agent": UA, "Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8", "Accept-Language": "en-CA,en;q=0.8"}
+REASONS = {}  # url -> why it couldn't be read (for the diagnostics report)
 DEAL_LINK = re.compile(r"special|deal|promo|happy[-_ ]?hour|offer|feature|daily|weekly|wing|taco[-_ ]?tue|events?|what'?s[-_ ]on|lto|limited", re.I)
 DEAL_WORDS = re.compile(r"(\$\s?\d|\d\s?¢|half[- ]?price|1/2 price|happy hour|% off|bogo|buy one|two for|2 for|special|wing (night|wednesday)|kids eat free|daily deal)", re.I)
 MAX_PAGES_PER_SITE = 5
@@ -65,22 +67,34 @@ def allowed(url):
         except Exception:  # noqa: BLE001
             rp.parse([])
         _robots[base] = rp
-    return _robots[base].can_fetch(UA, url)
+    return _robots[base].can_fetch(BOT, url)
 
 
 def get(url):
     if not allowed(url):
+        REASONS[url] = "blocked by robots.txt"
         return None
     try:
-        r = requests.get(url, headers=HEADERS, timeout=15, allow_redirects=True)
+        r = requests.get(url, headers=HEADERS, timeout=20, allow_redirects=True)
         ctype = r.headers.get("content-type", "")
-        if r.status_code == 200 and "html" in ctype:
-            if "charset" not in ctype.lower():
-                m = re.search(rb'<meta[^>]+charset=["\']?([\w-]+)', r.content[:3000], re.I)
-                r.encoding = m.group(1).decode() if m else (r.apparent_encoding or "utf-8")
-            return r.text
-    except Exception:  # noqa: BLE001
-        pass
+        if r.status_code != 200:
+            REASONS[url] = f"HTTP {r.status_code}"
+            return None
+        if "html" not in ctype:
+            REASONS[url] = f"not a web page ({ctype.split(';')[0] or 'unknown type'})"
+            return None
+        if "charset" not in ctype.lower():
+            m = re.search(rb'<meta[^>]+charset=["\']?([\w-]+)', r.content[:3000], re.I)
+            r.encoding = m.group(1).decode() if m else (r.apparent_encoding or "utf-8")
+        return r.text
+    except requests.exceptions.SSLError:
+        REASONS[url] = "SSL error"
+    except requests.exceptions.Timeout:
+        REASONS[url] = "timeout"
+    except requests.exceptions.ConnectionError:
+        REASONS[url] = "can't connect (site down or domain gone)"
+    except Exception as e:  # noqa: BLE001
+        REASONS[url] = f"error: {type(e).__name__}"
     return None
 
 
@@ -124,12 +138,23 @@ def candidate_links(html, base):
     return out[: MAX_PAGES_PER_SITE - 1]
 
 
-def read_site(site):
+def read_site(site, info):
     home = get(site)
+    if not home:  # OpenStreetMap links often point at an old location page: fall back to the home page
+        p = urlparse(site)
+        root = f"{p.scheme}://{p.netloc}/"
+        if root != site:
+            info["fallback"] = REASONS.get(site)
+            site = root
+            home = get(site)
     if home and len(visible_text(home)) < 300:
+        info["js_page"] = True
         home = render_js(site) or home
     if not home:
+        info["status"] = REASONS.get(site, "unknown error")
         return None
+    info["status"] = "ok"
+    info["home_chars"] = len(visible_text(home))
     pages = [(site, visible_text(home))]
     for link in candidate_links(home, site):
         html = get(link)
@@ -146,6 +171,8 @@ def read_site(site):
                 keep.update(range(max(0, i - 2), min(len(lines), i + 3)))
         if keep:
             blocks.append(f"### PAGE: {url}\n" + "\n".join(lines[i] for i in sorted(keep)))
+    info["pages"] = len(pages)
+    info["deal_chars"] = sum(len(b) for b in blocks)
     return "\n\n".join(blocks)[:MAX_CHARS]
 
 
@@ -215,9 +242,13 @@ def main():
     print(f"{len(keys)} sites to check · AI calls used this month: {used_this_month}/{monthly_cap}")
 
     # 1) fetch all sites in parallel (free)
-    texts = {}
+    texts, report = {}, {}
+    def work(k):
+        info = {"url": sites[k]["url"], "locations": len(sites[k]["branches"])}
+        report[k] = info
+        return read_site(sites[k]["url"], info)
     with cf.ThreadPoolExecutor(args.workers) as ex:
-        for k, text in zip(keys, ex.map(lambda k: read_site(sites[k]["url"]), keys)):
+        for k, text in zip(keys, ex.map(work, keys)):
             texts[k] = text
 
     # 2) only changed, deal-looking sites go to the AI
@@ -235,6 +266,7 @@ def main():
             cache[k] = entry
             continue
         if not text or not DEAL_WORDS.search(text):
+            report[k]["result"] = "no deal words found"
             entry.update(hash=h, deals=[], checked_at=TODAY)
             cache[k] = entry
             continue
@@ -245,13 +277,25 @@ def main():
             raw = extract_deals(names[0], sites[k]["url"], text)
             calls += 1
         except Exception as e:  # noqa: BLE001
-            print(f"  ! AI error on {k}: {e}")
+            print(f"  ! AI error on {k}: {str(e)[:200]}")
+            report[k]["result"] = f"AI error: {str(e)[:120]}"
             continue
         entry.update(hash=h, checked_at=TODAY, deals=[x for x in (clean_deal(d, sites[k]["url"]) for d in raw) if x])
+        report[k]["result"] = f"{len(entry['deals'])} deals"
         cache[k] = entry
         changed += 1
 
     usage[month] = used_this_month + calls
+
+    # diagnostics report: why each site did or didn't produce deals
+    import collections
+    status = collections.Counter(v.get("status", "?") for v in report.values())
+    print("Site status:", ", ".join(f"{n}× {s}" for s, n in status.most_common()))
+    results = collections.Counter(v.get("result", "unchanged/skipped") for v in report.values() if v.get("status") == "ok")
+    print("Readable sites:", ", ".join(f"{n}× {s}" for s, n in results.most_common(8)))
+    (DATA / "cache").mkdir(parents=True, exist_ok=True)
+    (DATA / "cache" / "report.json").write_text(json.dumps(
+        {"date": TODAY, "ai_calls": calls, "status_counts": dict(status), "sites": report}, indent=1, ensure_ascii=False))
     print(f"AI calls this run: {calls} · sites with new content: {changed} · unreachable: {failed}")
 
     # 3) build the published file
