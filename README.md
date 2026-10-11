@@ -61,7 +61,7 @@ Pick one:
 Either way, add the key under **Secrets** as `LLM_API_KEY`.
 
 ### 3. Run it the first time
-GitHub → **Actions** → *Foodish daily update* → **Run workflow** → task `all`. The log ends with lines like `2,400 places found…` and `Published 310 deals at 780 locations`. It then runs by itself every morning.
+GitHub → **Actions** → *Foodish daily update* → **Run workflow** → task `all` (now the default). The log ends with lines like `2,400 places found…` and `Published 310 deals at 780 locations`. It then runs by itself every morning.
 
 Tip: for a cheap trial, run `python pipeline/scrape.py --limit 30` on your computer first.
 

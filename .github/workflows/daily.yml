@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
     inputs:
       task:
-        description: "discover, scrape, notify, or all"
-        default: "scrape"
+        description: "all (recommended), discover, scrape, or notify"
+        default: "all"
 
 permissions:
   contents: write
@@ -32,8 +32,12 @@ jobs:
         run: pip install playwright && python -m playwright install --with-deps chromium
 
       - name: Discover restaurants (weekly)
-        if: github.event.schedule == '5 9 * * 0' || inputs.task == 'discover' || inputs.task == 'all'
-        run: python pipeline/discover.py
+        if: github.event.schedule == '5 9 * * 0' || inputs.task == 'discover' || inputs.task == 'all' || hashFiles('data/restaurants.json') == '' || github.event_name == 'schedule'
+        run: |
+          # weekly on Sundays, on request, or whenever the restaurant list is still empty
+          if [ "${{ github.event.schedule }}" != "5 9 * * 0" ] && [ "${{ inputs.task }}" != "discover" ] && [ "${{ inputs.task }}" != "all" ] \
+             && [ "$(tr -d '[:space:]' < data/restaurants.json)" != "[]" ]; then echo "Restaurant list exists; skipping."; exit 0; fi
+          python pipeline/discover.py
 
       - name: Scrape deals (daily)
         if: github.event.schedule == '17 10 * * *' || github.event.schedule == '5 9 * * 0' || inputs.task == 'scrape' || inputs.task == 'all'
