@@ -12,6 +12,8 @@ import time
 
 import requests
 
+PROMPT_VERSION = 2  # bump when the instructions change, so every site is re-read once
+
 PROMPT = """You extract restaurant DEALS for a deals app in Edmonton, Alberta. Today is {today}.
 
 Restaurant: {name}
@@ -21,8 +23,19 @@ Below is text pulled from the restaurant's website (several pages, each starting
 List every current deal a customer can use: daily/weekly specials (e.g. "Wing Wednesday 59¢ wings"),
 happy hours, BOGO, kids-eat-free, discounts, limited-time offers with a price or saving.
 
-Do NOT include: normal menu items/prices, gift-card promos, catering, events with no food/drink saving,
-contests, job postings, or deals that have clearly expired. If there are no deals, return {{"deals": []}}.
+Do NOT include: normal menu items/prices or regular combos/bundles with no stated saving, gift-card promos,
+catering, events with no food/drink saving, contests, job postings, loyalty/rewards sign-up bonuses, points
+programs, birthday freebies, app-download or first-order offers, membership/student/CAA/first-responder
+discounts, delivery-fee offers, non-food activities, or deals that have clearly expired.
+If there are no deals, return {{"deals": []}}.
+
+ACCURACY RULES (very important — people will drive to the restaurant based on this):
+- Only state a price or saving that is written in the text. NEVER infer one. If a day has a featured item
+  but no price/saving is written (e.g. "Tuesday: Wings"), set "price": null and title it as a feature
+  (e.g. "Tuesday Wing Feature"), never "Half-Price" or "Cheap".
+- Only use days and times that are written in the text. If a general note says e.g. "features after 2PM",
+  apply it. Don't invent times.
+- If a limited-time offer mentions a holiday, long weekend or season, set valid_until to its last day.
 
 Return ONLY JSON in exactly this shape:
 {{"deals": [{{

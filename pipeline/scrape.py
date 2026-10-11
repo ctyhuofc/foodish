@@ -26,7 +26,7 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 
-from llm import extract_deals
+from llm import PROMPT_VERSION, extract_deals
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -263,12 +263,12 @@ def main():
             continue
         h = hashlib.sha256(text.encode()).hexdigest()
         entry["ok_at"] = TODAY
-        if entry.get("hash") == h:
+        if entry.get("hash") == h and entry.get("pv") == PROMPT_VERSION:
             cache[k] = entry
             continue
         if not text or not DEAL_WORDS.search(text):
             report[k]["result"] = "no deal words found"
-            entry.update(hash=h, deals=[], checked_at=TODAY)
+            entry.update(hash=h, pv=PROMPT_VERSION, deals=[], checked_at=TODAY)
             cache[k] = entry
             continue
         if calls >= max_calls or used_this_month + calls >= monthly_cap:
@@ -287,7 +287,7 @@ def main():
                 ai_stopped = msg
                 break
             continue
-        entry.update(hash=h, checked_at=TODAY, deals=[x for x in (clean_deal(d, sites[k]["url"]) for d in raw) if x])
+        entry.update(hash=h, pv=PROMPT_VERSION, checked_at=TODAY, deals=[x for x in (clean_deal(d, sites[k]["url"]) for d in raw) if x])
         report[k]["result"] = f"{len(entry['deals'])} deals"
         cache[k] = entry
         changed += 1
