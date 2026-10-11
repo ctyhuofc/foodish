@@ -64,7 +64,9 @@ def _call_anthropic(prompt):
     r = requests.post(
         "https://api.anthropic.com/v1/messages",
         headers={"x-api-key": os.environ["LLM_API_KEY"], "anthropic-version": "2023-06-01", "content-type": "application/json"},
-        json={"model": os.environ.get("LLM_MODEL") or "claude-haiku-5-5", "max_tokens": 2000, "temperature": 0,
+        # Haiku 5.5 rejects temperature/top_p/top_k, so none are sent. Its thinking counts toward
+        # max_tokens, so leave generous room for the JSON answer.
+        json={"model": os.environ.get("LLM_MODEL") or "claude-haiku-5-5", "max_tokens": 6000,
               "messages": [{"role": "user", "content": prompt}]},
         timeout=90,
     )
