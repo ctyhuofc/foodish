@@ -12,7 +12,7 @@ import time
 
 import requests
 
-PROMPT_VERSION = 2  # bump when the instructions change, so every site is re-read once
+PROMPT_VERSION = 3  # bump when the instructions change, so every site is re-read once
 
 PROMPT = """You extract restaurant DEALS for a deals app in Edmonton, Alberta. Today is {today}.
 
@@ -40,7 +40,7 @@ ACCURACY RULES (very important — people will drive to the restaurant based on 
 Return ONLY JSON in exactly this shape:
 {{"deals": [{{
   "title": "short catchy name, max 60 chars, e.g. '59¢ Wings'",
-  "description": "one sentence with conditions (min purchase, dine-in only, with drink, etc.)",
+  "description": "one customer-facing sentence with the conditions (min purchase, dine-in only, with drink, etc.). Write it like a menu blurb. Never mention 'the text', 'the website', 'the page', or what isn't stated",
   "price": "e.g. '59¢/wing', '$10', '50% off', 'BOGO' or null",
   "days": ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]  (only the days it runs; all 7 if every day),
   "start": "HH:MM 24h or null", "end": "HH:MM 24h or null (null = until close)",
