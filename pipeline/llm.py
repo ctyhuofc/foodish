@@ -12,7 +12,7 @@ import time
 
 import requests
 
-PROMPT_VERSION = 3  # bump when the instructions change, so every site is re-read once
+PROMPT_VERSION = 4  # bump when the instructions change, so every site is re-read once
 
 PROMPT = """You extract restaurant DEALS for a deals app in Edmonton, Alberta. Today is {today}.
 
@@ -27,6 +27,9 @@ Do NOT include: normal menu items/prices or regular combos/bundles with no state
 catering, events with no food/drink saving, contests, job postings, loyalty/rewards sign-up bonuses, points
 programs, birthday freebies, app-download or first-order offers, membership/student/CAA/first-responder
 discounts, delivery-fee offers, non-food activities, or deals that have clearly expired.
+Regular menu or coupon-menu pricing (e.g. a chain's list of pizza combos at everyday prices) is NOT a deal unless
+the text presents it as a special, a daily/weekly feature, or a limited-time offer.
+Return at most 6 deals per restaurant: the ones a diner would most want to know about.
 If there are no deals, return {{"deals": []}}.
 
 ACCURACY RULES (very important — people will drive to the restaurant based on this):
@@ -39,9 +42,10 @@ ACCURACY RULES (very important — people will drive to the restaurant based on 
 
 Return ONLY JSON in exactly this shape:
 {{"deals": [{{
-  "title": "short catchy name, max 60 chars, e.g. '59¢ Wings'",
+  "title": "short name of the deal, max 40 chars, WITHOUT the price and without day names or times (those have their own fields), e.g. 'Wing night', 'Half-price wine bottles', 'Happy hour pints'. Keep a day name only when it is the deal's own name, like 'Taco Tuesday'",
   "description": "one customer-facing sentence with the conditions (min purchase, dine-in only, with drink, etc.). Write it like a menu blurb. Never mention 'the text', 'the website', 'the page', or what isn't stated",
-  "price": "e.g. '59¢/wing', '$10', '50% off', 'BOGO' or null",
+  "price": "the headline price or saving, max 8 chars: '59¢', '$10', '$4.75', '50% off', '$2 off', 'BOGO', 'Free', or null if none is written",
+  "price_unit": "what the price buys, max 14 chars, e.g. 'per wing', 'pints', 'per taco', 'wine bottles', 'kids meal', or null",
   "days": ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]  (only the days it runs; all 7 if every day),
   "start": "HH:MM 24h or null", "end": "HH:MM 24h or null (null = until close)",
   "categories": 1-3 lowercase tags from: wings, burgers, pizza, tacos, sushi, pasta, steak, breakfast, brunch, chicken, seafood, appetizers, dessert, drinks, happy hour, kids, family, coffee, lunch, late night, vegetarian,

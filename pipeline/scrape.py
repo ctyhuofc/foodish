@@ -194,7 +194,8 @@ def clean_deal(d, site_url):
     return {
         "title": title,
         "description": (d.get("description") or "").strip()[:240] or None,
-        "price": (d.get("price") or "").strip()[:30] or None,
+        "price": (d.get("price") or "").strip()[:12] or None,
+        "price_unit": (d.get("price_unit") or "").strip()[:20] or None,
         "days": days,
         "start": t(d.get("start")),
         "end": t(d.get("end")),
@@ -287,7 +288,7 @@ def main():
                 ai_stopped = msg
                 break
             continue
-        entry.update(hash=h, pv=PROMPT_VERSION, checked_at=TODAY, deals=[x for x in (clean_deal(d, sites[k]["url"]) for d in raw) if x])
+        entry.update(hash=h, pv=PROMPT_VERSION, checked_at=TODAY, deals=[x for x in (clean_deal(d, sites[k]["url"]) for d in raw) if x][:6])
         report[k]["result"] = f"{len(entry['deals'])} deals"
         cache[k] = entry
         changed += 1
