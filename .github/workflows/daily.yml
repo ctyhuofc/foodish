@@ -3,6 +3,8 @@ name: Foodish daily update
 on:
   schedule:
     - cron: "17 10 * * *"   # ~4:17 am Edmonton: refresh deals
+    - cron: "47 11 * * *"   # backup at ~5:47 am, only runs if the 4 am refresh didn't happen
+    - cron: "23 13 * * *"   # second backup at ~7:23 am, same rule
     - cron: "45 21 * * *"   # ~3:45 pm Edmonton (2:45 pm in winter): send daily alerts
     - cron: "5 9 * * 0"     # Sunday ~3 am: re-discover restaurants from OpenStreetMap
   workflow_dispatch:
@@ -40,7 +42,7 @@ jobs:
           python pipeline/discover.py
 
       - name: Scrape deals (daily)
-        if: github.event.schedule == '17 10 * * *' || github.event.schedule == '5 9 * * 0' || inputs.task == 'scrape' || inputs.task == 'all'
+        if: github.event.schedule == '17 10 * * *' || github.event.schedule == '47 11 * * *' || github.event.schedule == '23 13 * * *' || github.event.schedule == '5 9 * * 0' || inputs.task == 'scrape' || inputs.task == 'all'
         env:
           LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'anthropic' }}
           LLM_MODEL: ${{ vars.LLM_MODEL }}
@@ -49,7 +51,13 @@ jobs:
           RENDER_JS: ${{ vars.RENDER_JS }}
           MAX_LLM_CALLS: ${{ vars.MAX_LLM_CALLS || '400' }}
           MONTHLY_LLM_CALLS: ${{ vars.MONTHLY_LLM_CALLS || '6000' }}
-        run: python pipeline/scrape.py
+        run: |
+          # Backup runs skip if today's refresh already happened (GitHub sometimes delays or drops scheduled runs)
+          if [ "${{ github.event.schedule }}" = "47 11 * * *" ] || [ "${{ github.event.schedule }}" = "23 13 * * *" ]; then
+            AGE=$(python -c "import json,datetime as d;g=json.load(open('data/deals.json'))['generated_at'];print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(g)).total_seconds()//3600))")
+            if [ "$AGE" -lt 12 ]; then echo "Deals refreshed $AGE hours ago; skipping backup run."; exit 0; fi
+          fi
+          python pipeline/scrape.py
 
       - name: Save updated data
         run: |
