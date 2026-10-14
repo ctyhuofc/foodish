@@ -59,11 +59,21 @@ jobs:
           fi
           python pipeline/scrape.py
 
+      - name: Build search-friendly deal pages (site/deals, sitemap.xml)
+        if: always() && hashFiles('data/deals.json') != ''
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://www.foodish.ca' }}
+        run: python pipeline/pages.py
+
+      - name: Daily health check (shows on this run's Summary page)
+        if: always() && hashFiles('data/cache/report.json') != ''
+        run: python pipeline/health.py
+
       - name: Save updated data
         run: |
           git config user.name "foodish-bot"
           git config user.email "bot@foodish.ca"
-          git add data site/data
+          git add data site/data site/deals site/sitemap.xml site/robots.txt
           git diff --cached --quiet || git commit -m "Daily deals update $(date -u +%F)"
           git push
 
@@ -76,7 +86,8 @@ jobs:
           FTP_DIR: ${{ vars.FTP_DIR || '/public_html/data' }}
         run: |
           sudo apt-get install -y lftp >/dev/null
-          lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" -e "mkdir -p -f $FTP_DIR; put -O $FTP_DIR data/deals.json; bye"
+          SITE_DIR=$(dirname "$FTP_DIR")
+          lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" -e "mkdir -p -f $FTP_DIR; put -O $FTP_DIR data/deals.json; mirror -R --delete site/deals $SITE_DIR/deals; put -O $SITE_DIR site/sitemap.xml; put -O $SITE_DIR site/robots.txt; bye"
 
       - name: Send daily alerts
         if: github.event.schedule == '45 21 * * *' || inputs.task == 'notify' || inputs.task == 'all'

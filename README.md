@@ -12,6 +12,8 @@ foodish/
 │   ├── discover.py        weekly: finds every restaurant/bar/café in Edmonton (OpenStreetMap)
 │   ├── scrape.py          daily: reads their websites, extracts deals, publishes deals.json
 │   ├── llm.py             the AI step (Claude or Grok API — your choice)
+│   ├── pages.py           daily: search-friendly deal pages + sitemap.xml
+│   ├── health.py          daily: health check shown on each GitHub run's Summary
 │   └── notify.py          daily ~3:45 pm: sends "deals near you today" alerts
 ├── worker/                ← tiny free Cloudflare service that stores alert sign-ups + submissions
 ├── data/
@@ -104,6 +106,12 @@ Add the good ones to `data/manual_deals.json` (copy an existing entry). Use `"br
 ```bash
 cd site && python3 -m http.server 8000      # open http://localhost:8000
 ```
+
+## Search pages and the daily health check
+- Every run also writes plain HTML pages Google can read: **foodish.ca/deals/** (one page per day and per deal type, e.g. `/deals/wings.html`, `/deals/wednesday.html`) plus `sitemap.xml` and `robots.txt`. The app itself draws deals with JavaScript, so search engines would otherwise see only "Loading today's deals…". Each page links into the app pre-filtered (`/?cat=wings`, `/?day=3`).
+- After your first deploy, add the site in [Google Search Console](https://search.google.com/search-console) and submit `https://www.foodish.ca/sitemap.xml`.
+- Each run's **Summary** page on GitHub (Actions → the run) shows a short health check: deals published, % of websites read, the big chains we can't read, AI usage this month, and hand-added deals the robot now finds itself.
+- Hosting somewhere other than foodish.ca? Set the GitHub variable `SITE_URL`.
 
 ## Notes
 - Times are Edmonton time year-round. GitHub's schedule is in UTC, so in winter the alert lands an hour earlier (~2:45 pm); adjust the cron line in `daily.yml` in November if you like.
