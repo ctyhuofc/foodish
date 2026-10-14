@@ -107,6 +107,21 @@ Add the good ones to `data/manual_deals.json` (copy an existing entry). Use `"br
 cd site && python3 -m http.server 8000      # open http://localhost:8000
 ```
 
+## Exact 4 am updates (recommended, free, ~10 minutes)
+GitHub's built-in scheduler often runs hours late, so "daily" deals could arrive at lunchtime. `worker/cron` is a tiny free Cloudflare Worker that tells GitHub to run the update at exactly 4:00 am Edmonton time (it handles daylight saving). GitHub's own schedules stay on as backups and skip themselves if the update already ran.
+
+1. **GitHub token (limited to this one repo):** github.com → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate. Repository access: *Only select repositories* → `foodish`. Permissions → Repository → **Actions: Read and write** (nothing else). Copy the token.
+2. **Cloudflare (free account):** in a terminal:
+   ```bash
+   cd worker/cron
+   npx wrangler login
+   npx wrangler deploy
+   npx wrangler secret put GITHUB_TOKEN     # paste the token when asked
+   ```
+3. Open the worker URL that `deploy` printed. It should say *"Foodish trigger is set up."* Tomorrow, Actions should show a run started by **workflow_dispatch** at 4:00 am.
+
+The token can only start this repo's workflows; it can't read or change your code. If you ever revoke it, the GitHub backups keep things running.
+
 ## Search pages and the daily health check
 - Every run also writes plain HTML pages Google can read: **foodish.ca/deals/** (one page per day and per deal type, e.g. `/deals/wings.html`, `/deals/wednesday.html`) plus `sitemap.xml` and `robots.txt`. The app itself draws deals with JavaScript, so search engines would otherwise see only "Loading today's deals…". Each page links into the app pre-filtered (`/?cat=wings`, `/?day=3`).
 - **Getting them onto foodish.ca:** your live site reads deals straight from GitHub, but its pages are files on your web host. To publish the `/deals/` pages automatically every day, add your host's FTP details as GitHub secrets (`FTP_HOST`, `FTP_USER`, `FTP_PASS`) and, if your site isn't in `/public_html`, a variable `FTP_DIR` = `<your site folder>/data`. Otherwise, upload `site/deals/`, `site/sitemap.xml` and `site/robots.txt` by hand (they'll show the deals from the day you upload).

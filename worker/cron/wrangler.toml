@@ -1,0 +1,12 @@
+name = "foodish-cron"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+# Cloudflare cron times are UTC. Both run every day; the worker only acts on the
+# one that lands at 4:00 am Edmonton time, so it stays exact through daylight saving.
+[triggers]
+crons = ["0 10 * * *", "0 11 * * *"]
+
+[vars]
+GITHUB_REPO = "ctyhuofc/foodish"
+WORKFLOW = "daily.yml"
