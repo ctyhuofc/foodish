@@ -123,6 +123,7 @@
     const counts = new Map();
     state.data.deals.forEach((d) => (d.categories || []).forEach((c) => counts.set(c, (counts.get(c) || 0) + 1)));
     const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([c]) => c);
+    if (state.cat && !top.includes(state.cat)) top.unshift(state.cat); // e.g. arrived from /deals/sushi.html
     const el = $("chips"); el.innerHTML = "";
     [null, ...top].forEach((c) => {
       const b = document.createElement("button");
@@ -370,7 +371,17 @@
   }
 
   // ---------- wire up ----------
+  // Links from the /deals/ pages open the app pre-filtered: /?cat=wings or /?day=3 (0 = Sunday)
+  function readLinkFilters() {
+    const p = new URLSearchParams(location.search);
+    const cat = (p.get("cat") || "").trim().toLowerCase();
+    if (cat) state.cat = cat;
+    const day = parseInt(p.get("day"), 10);
+    if (day >= 0 && day <= 6) state.day = day === nowLocal().day ? null : day;
+  }
+
   function init() {
+    readLinkFilters();
     $("radius").value = String(state.radius);
     $("locBtn").onclick = () => locate();
     $("search").oninput = (e) => { state.q = e.target.value; render(); };
