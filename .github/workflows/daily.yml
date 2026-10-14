@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       task:
-        description: "all (recommended), discover, scrape, or notify"
+        description: "all (recommended), discover, scrape, notify, or pages (rebuild the /deals/ pages + health check only)"
         default: "all"
 
 permissions:

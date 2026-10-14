@@ -109,7 +109,9 @@ cd site && python3 -m http.server 8000      # open http://localhost:8000
 
 ## Search pages and the daily health check
 - Every run also writes plain HTML pages Google can read: **foodish.ca/deals/** (one page per day and per deal type, e.g. `/deals/wings.html`, `/deals/wednesday.html`) plus `sitemap.xml` and `robots.txt`. The app itself draws deals with JavaScript, so search engines would otherwise see only "Loading today's deals…". Each page links into the app pre-filtered (`/?cat=wings`, `/?day=3`).
-- After your first deploy, add the site in [Google Search Console](https://search.google.com/search-console) and submit `https://www.foodish.ca/sitemap.xml`.
+- **Getting them onto foodish.ca:** your live site reads deals straight from GitHub, but its pages are files on your web host. To publish the `/deals/` pages automatically every day, add your host's FTP details as GitHub secrets (`FTP_HOST`, `FTP_USER`, `FTP_PASS`) and, if your site isn't in `/public_html`, a variable `FTP_DIR` = `<your site folder>/data`. Otherwise, upload `site/deals/`, `site/sitemap.xml` and `site/robots.txt` by hand (they'll show the deals from the day you upload).
+- After they're live, add the site in [Google Search Console](https://search.google.com/search-console) and submit `https://www.foodish.ca/sitemap.xml`.
+- Need to rebuild just the pages? Actions → *Foodish daily update* → Run workflow → task `pages`.
 - Each run's **Summary** page on GitHub (Actions → the run) shows a short health check: deals published, % of websites read, the big chains we can't read, AI usage this month, and hand-added deals the robot now finds itself.
 - Hosting somewhere other than foodish.ca? Set the GitHub variable `SITE_URL`.
 
