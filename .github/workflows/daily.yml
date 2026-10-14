@@ -52,8 +52,9 @@ jobs:
           MAX_LLM_CALLS: ${{ vars.MAX_LLM_CALLS || '400' }}
           MONTHLY_LLM_CALLS: ${{ vars.MONTHLY_LLM_CALLS || '6000' }}
         run: |
-          # Backup runs skip if today's refresh already happened (GitHub sometimes delays or drops scheduled runs)
-          if [ "${{ github.event.schedule }}" = "47 11 * * *" ] || [ "${{ github.event.schedule }}" = "23 13 * * *" ]; then
+          # GitHub's own schedules are now backups: skip if today's refresh already happened
+          # (the Cloudflare trigger in worker/cron starts it at exactly 4 am; GitHub's scheduler can run hours late)
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" != "5 9 * * 0" ]; then
             AGE=$(python -c "import json,datetime as d;g=json.load(open('data/deals.json'))['generated_at'];print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(g)).total_seconds()//3600))")
             if [ "$AGE" -lt 12 ]; then echo "Deals refreshed $AGE hours ago; skipping backup run."; exit 0; fi
           fi
