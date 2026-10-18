@@ -1,11 +1,11 @@
 {
  "date": "2026-10-18",
- "ai_calls": 11,
+ "ai_calls": 4,
  "ai_stopped": null,
  "status_counts": {
-  "ok": 294,
+  "ok": 293,
   "HTTP 403": 28,
-  "timeout": 8,
+  "timeout": 9,
   "can't connect (site down or domain gone)": 28,
   "SSL error": 5,
   "HTTP 503": 1,
@@ -92,8 +92,7 @@
    "status": "ok",
    "home_chars": 6564,
    "pages": 4,
-   "deal_chars": 2101,
-   "result": "1 deals"
+   "deal_chars": 2101
   },
   "boosterjuice.com": {
    "url": "https://boosterjuice.com",
@@ -152,11 +151,12 @@
   "papajohns.com": {
    "url": "https://www.papajohns.com/canada",
    "locations": 12,
-   "fallback": "HTTP 500",
+   "fallback": "HTTP 404",
    "status": "ok",
    "home_chars": 3486,
    "pages": 4,
-   "deal_chars": 7732
+   "deal_chars": 7671,
+   "result": "0 deals"
   },
   "locations.tacotimecanada.com": {
    "url": "https://locations.tacotimecanada.com/store/albany",
@@ -246,7 +246,7 @@
    "url": "https://www.chezcora.com/sherwood-park",
    "locations": 6,
    "status": "ok",
-   "home_chars": 6488,
+   "home_chars": 6500,
    "pages": 1,
    "deal_chars": 0
   },
@@ -303,8 +303,7 @@
    "status": "ok",
    "home_chars": 1744,
    "pages": 1,
-   "deal_chars": 681,
-   "result": "no deal words found"
+   "deal_chars": 681
   },
   "mcdonalds.com": {
    "url": "https://www.mcdonalds.com/ca/en-ca.html",
@@ -528,7 +527,7 @@
    "url": "https://www.jugojuice.com",
    "locations": 2,
    "status": "ok",
-   "home_chars": 2983,
+   "home_chars": 2978,
    "pages": 1,
    "deal_chars": 0
   },
@@ -956,8 +955,7 @@
    "status": "ok",
    "home_chars": 7503,
    "pages": 1,
-   "deal_chars": 1842,
-   "result": "0 deals"
+   "deal_chars": 1842
   },
   "coffeebureau.square.site": {
    "url": "https://coffeebureau.square.site",
@@ -1138,8 +1136,7 @@
    "status": "ok",
    "home_chars": 3096,
    "pages": 3,
-   "deal_chars": 5138,
-   "result": "0 deals"
+   "deal_chars": 5138
   },
   "earthsrefillerycoop.ca": {
    "url": "https://earthsrefillerycoop.ca",
@@ -1147,7 +1144,8 @@
    "status": "ok",
    "home_chars": 1581,
    "pages": 5,
-   "deal_chars": 6648
+   "deal_chars": 6270,
+   "result": "0 deals"
   },
   "eastsidemarios.com": {
    "url": "https://www.eastsidemarios.com",
@@ -1240,8 +1238,7 @@
    "status": "ok",
    "home_chars": 3698,
    "pages": 1,
-   "deal_chars": 2012,
-   "result": "0 deals"
+   "deal_chars": 2012
   },
   "fawkescoffee.com": {
    "url": "https://www.fawkescoffee.com",
@@ -1333,8 +1330,7 @@
    "status": "ok",
    "home_chars": 6322,
    "pages": 2,
-   "deal_chars": 10550,
-   "result": "0 deals"
+   "deal_chars": 10550
   },
   "gratitudecoffee.ca": {
    "url": "https://www.gratitudecoffee.ca",
@@ -1726,8 +1722,7 @@
    "status": "ok",
    "home_chars": 4805,
    "pages": 3,
-   "deal_chars": 2770,
-   "result": "0 deals"
+   "deal_chars": 2770
   },
   "midwaybar.ca": {
    "url": "https://midwaybar.ca",
@@ -1800,8 +1795,7 @@
    "status": "ok",
    "home_chars": 6487,
    "pages": 4,
-   "deal_chars": 1776,
-   "result": "0 deals"
+   "deal_chars": 1776
   },
   "narakatsu.com": {
    "url": "https://www.narakatsu.com",
@@ -2101,8 +2095,7 @@
    "status": "ok",
    "home_chars": 3552,
    "pages": 3,
-   "deal_chars": 3108,
-   "result": "6 deals"
+   "deal_chars": 3108
   },
   "romapizzadonair.ca": {
    "url": "https://romapizzadonair.ca",
@@ -2168,8 +2161,7 @@
    "status": "ok",
    "home_chars": 5190,
    "pages": 5,
-   "deal_chars": 3534,
-   "result": "3 deals"
+   "deal_chars": 3534
   },
   "seoulfried.com": {
    "url": "https://seoulfried.com",
@@ -2401,10 +2393,8 @@
   "teriyakicorner.com": {
    "url": "https://www.teriyakicorner.com",
    "locations": 1,
-   "status": "ok",
-   "home_chars": 7324,
-   "pages": 1,
-   "deal_chars": 1400
+   "fallback": "timeout",
+   "status": "timeout"
   },
   "thaiavenueyeg.ca": {
    "url": "https://thaiavenueyeg.ca",
@@ -2442,8 +2432,7 @@
    "status": "ok",
    "home_chars": 9063,
    "pages": 2,
-   "deal_chars": 414,
-   "result": "0 deals"
+   "deal_chars": 414
   },
   "thebankheadrestaurant.ca": {
    "url": "https://www.thebankheadrestaurant.ca/about",
@@ -2483,7 +2472,8 @@
    "status": "ok",
    "home_chars": 3766,
    "pages": 4,
-   "deal_chars": 24123
+   "deal_chars": 24123,
+   "result": "6 deals"
   },
   "thebutcheryyeg.ca": {
    "url": "https://www.thebutcheryyeg.ca",
@@ -2615,13 +2605,11 @@
   "tiffinfreshkitchen.com": {
    "url": "https://www.tiffinfreshkitchen.com",
    "locations": 1,
-   "fallback": "timeout",
-   "js_page": true,
    "status": "ok",
-   "home_chars": 120,
+   "home_chars": 1669,
    "pages": 1,
-   "deal_chars": 0,
-   "result": "no deal words found"
+   "deal_chars": 180,
+   "result": "0 deals"
   },
   "locations.timhortons.ca": {
    "url": "https://locations.timhortons.ca/en/ab/edmonton/11084-51st-ave-nw",
@@ -2683,8 +2671,7 @@
    "status": "ok",
    "home_chars": 1189,
    "pages": 1,
-   "deal_chars": 146,
-   "result": "no deal words found"
+   "deal_chars": 146
   },
   "underthehighwheel.com": {
    "url": "https://underthehighwheel.com",
@@ -2775,8 +2762,7 @@
    "status": "ok",
    "home_chars": 2617,
    "pages": 1,
-   "deal_chars": 1366,
-   "result": "1 deals"
+   "deal_chars": 1366
   },
   "whiterabbiticecream.com": {
    "url": "https://whiterabbiticecream.com",
