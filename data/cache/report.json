@@ -1,22 +1,24 @@
 {
- "date": "2026-10-24",
+ "date": "2026-10-25",
  "ai_calls": 0,
  "ai_stopped": "HTTP 401 authentication_error: invalid x-api-key",
  "status_counts": {
-  "ok": 293,
-  "HTTP 403": 29,
-  "timeout": 9,
+  "ok": 289,
+  "HTTP 403": 21,
+  "timeout": 12,
   "can't connect (site down or domain gone)": 28,
+  "HTTP 202": 8,
   "SSL error": 6,
   "HTTP 503": 1,
   "HTTP 404": 5,
   "HTTP 502": 1,
-  "blocked by robots.txt": 3
+  "blocked by robots.txt": 3,
+  "HTTP 525": 1
  },
  "sites": {
   "timhortons.com": {
    "url": "https://www.timhortons.com",
-   "locations": 98,
+   "locations": 99,
    "js_page": true,
    "status": "ok",
    "home_chars": 13,
@@ -25,7 +27,7 @@
   },
   "subway.com": {
    "url": "https://www.subway.com",
-   "locations": 79,
+   "locations": 80,
    "status": "ok",
    "home_chars": 3523,
    "pages": 1,
@@ -66,6 +68,15 @@
    "fallback": "timeout",
    "status": "timeout"
   },
+  "edojapan.com": {
+   "url": "http://www.edojapan.com/public/locations/ab.html",
+   "locations": 21,
+   "js_page": true,
+   "status": "ok",
+   "home_chars": 9,
+   "pages": 1,
+   "deal_chars": 0
+  },
   "quiznos.ca": {
    "url": "https://www.quiznos.ca",
    "locations": 21,
@@ -74,22 +85,13 @@
    "pages": 1,
    "deal_chars": 1676
   },
-  "edojapan.com": {
-   "url": "http://www.edojapan.com/public/locations/ab.html",
-   "locations": 20,
-   "js_page": true,
-   "status": "ok",
-   "home_chars": 9,
-   "pages": 1,
-   "deal_chars": 0
-  },
   "pizza73.com": {
    "url": "https://www.pizza73.com/restaurant-locator/Alberta/EDMONTON/5240-199-st-nw/53",
    "locations": 20,
    "status": "ok",
-   "home_chars": 6562,
+   "home_chars": 6564,
    "pages": 4,
-   "deal_chars": 2099,
+   "deal_chars": 2101,
    "result": "AI error: HTTP 401 authentication_error: invalid x-api-key"
   },
   "boosterjuice.com": {
@@ -116,8 +118,7 @@
    "status": "ok",
    "home_chars": 82,
    "pages": 1,
-   "deal_chars": 0,
-   "result": "no deal words found"
+   "deal_chars": 0
   },
   "pizzahut.ca": {
    "url": "https://www.pizzahut.ca",
@@ -234,20 +235,20 @@
    "pages": 1,
    "deal_chars": 1257
   },
+  "chezcora.com": {
+   "url": "https://www.chezcora.com/sherwood-park",
+   "locations": 7,
+   "status": "ok",
+   "home_chars": 6488,
+   "pages": 1,
+   "deal_chars": 0
+  },
   "arbys.ca": {
    "url": "https://arbys.ca",
    "locations": 6,
    "js_page": true,
    "status": "ok",
    "home_chars": 19,
-   "pages": 1,
-   "deal_chars": 0
-  },
-  "chezcora.com": {
-   "url": "https://www.chezcora.com/sherwood-park",
-   "locations": 6,
-   "status": "ok",
-   "home_chars": 6488,
    "pages": 1,
    "deal_chars": 0
   },
@@ -320,6 +321,14 @@
    "pages": 5,
    "deal_chars": 15386
   },
+  "thaiexpress.ca": {
+   "url": "https://thaiexpress.ca/location/sherwood-park-mall-ab",
+   "locations": 5,
+   "status": "ok",
+   "home_chars": 2451,
+   "pages": 5,
+   "deal_chars": 378
+  },
   "thekeg.com": {
    "url": "https://thekeg.com/en/locations/windermere",
    "locations": 5,
@@ -371,16 +380,8 @@
   "pfchangs.ca": {
    "url": "https://pfchangs.ca",
    "locations": 4,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
-  },
-  "thaiexpress.ca": {
-   "url": "https://thaiexpress.ca/location/sherwood-park-mall-ab",
-   "locations": 4,
-   "status": "ok",
-   "home_chars": 2451,
-   "pages": 5,
-   "deal_chars": 378
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "blazepizza.com": {
    "url": "https://www.blazepizza.com",
@@ -457,7 +458,7 @@
    "url": "https://blowersgrafton.com",
    "locations": 2,
    "status": "ok",
-   "home_chars": 53468,
+   "home_chars": 53469,
    "pages": 5,
    "deal_chars": 58156
   },
@@ -528,7 +529,7 @@
    "url": "https://www.jugojuice.com",
    "locations": 2,
    "status": "ok",
-   "home_chars": 3001,
+   "home_chars": 3270,
    "pages": 1,
    "deal_chars": 0
   },
@@ -757,8 +758,8 @@
   "bluesonwhyte.com": {
    "url": "https://www.bluesonwhyte.com",
    "locations": 1,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "bucopizzeria.com": {
    "url": "https://bucopizzeria.com/st-albert",
@@ -947,8 +948,8 @@
   "chianticafe.ca": {
    "url": "http://www.chianticafe.ca/chianti-old-strathcona---home.html",
    "locations": 1,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "chickenhouse.online": {
    "url": "https://chickenhouse.online/whyte-ave",
@@ -1127,7 +1128,7 @@
    "url": "https://duchessbakeshop.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 877,
+   "home_chars": 879,
    "pages": 3,
    "deal_chars": 4044
   },
@@ -1222,8 +1223,8 @@
   "fargos.ca": {
    "url": "https://www.fargos.ca",
    "locations": 1,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "fastkitchenhood.com": {
    "url": "https://www.fastkitchenhood.com/customers.php",
@@ -1237,9 +1238,9 @@
    "url": "https://fattoush4u.ca",
    "locations": 1,
    "status": "ok",
-   "home_chars": 3710,
+   "home_chars": 3698,
    "pages": 1,
-   "deal_chars": 2018
+   "deal_chars": 2012
   },
   "fawkescoffee.com": {
    "url": "https://www.fawkescoffee.com",
@@ -1315,8 +1316,8 @@
   "gogikoreanbbq.ca": {
    "url": "https://gogikoreanbbq.ca",
    "locations": 1,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "goodbuddy.ca": {
    "url": "http://www.goodbuddy.ca",
@@ -1535,7 +1536,7 @@
    "status": "ok",
    "home_chars": 3709,
    "pages": 5,
-   "deal_chars": 7469
+   "deal_chars": 8539
   },
   "kobachi.ca": {
    "url": "https://kobachi.ca",
@@ -1798,7 +1799,7 @@
    "status": "ok",
    "home_chars": 6487,
    "pages": 4,
-   "deal_chars": 1763
+   "deal_chars": 1770
   },
   "narakatsu.com": {
    "url": "https://www.narakatsu.com",
@@ -1922,9 +1923,9 @@
    "url": "https://www.padmanadi.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 1775,
+   "home_chars": 1399,
    "pages": 1,
-   "deal_chars": 366
+   "deal_chars": 0
   },
   "pagolacrestaurant.com": {
    "url": "https://www.pagolacrestaurant.com",
@@ -2043,8 +2044,8 @@
   "pub1905.ca": {
    "url": "https://pub1905.ca",
    "locations": 1,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "pyrogrill.ca": {
    "url": "https://www.pyrogrill.ca/142-street",
@@ -2394,8 +2395,10 @@
   "teriyakicorner.com": {
    "url": "https://www.teriyakicorner.com",
    "locations": 1,
-   "fallback": "timeout",
-   "status": "timeout"
+   "status": "ok",
+   "home_chars": 7324,
+   "pages": 1,
+   "deal_chars": 1400
   },
   "thaiavenueyeg.ca": {
    "url": "https://thaiavenueyeg.ca",
@@ -2454,10 +2457,8 @@
   "blackbullkitchen.com": {
    "url": "https://blackbullkitchen.com",
    "locations": 1,
-   "status": "ok",
-   "home_chars": 3877,
-   "pages": 1,
-   "deal_chars": 682
+   "fallback": "timeout",
+   "status": "timeout"
   },
   "blackdog.ca": {
    "url": "https://www.blackdog.ca",
@@ -2465,7 +2466,7 @@
    "status": "ok",
    "home_chars": 5164,
    "pages": 3,
-   "deal_chars": 8506
+   "deal_chars": 8402
   },
   "thebuckingham.ca": {
    "url": "https://thebuckingham.ca",
@@ -2478,10 +2479,8 @@
   "thebutcheryyeg.ca": {
    "url": "https://www.thebutcheryyeg.ca",
    "locations": 1,
-   "status": "ok",
-   "home_chars": 2673,
-   "pages": 2,
-   "deal_chars": 1184
+   "fallback": "timeout",
+   "status": "timeout"
   },
   "thecommon.ca": {
    "url": "https://www.thecommon.ca",
@@ -2522,10 +2521,8 @@
   "thelocalomnivore.com": {
    "url": "https://www.thelocalomnivore.com",
    "locations": 1,
-   "status": "ok",
-   "home_chars": 8366,
-   "pages": 1,
-   "deal_chars": 0
+   "fallback": "HTTP 525",
+   "status": "HTTP 525"
   },
   "themarc.ca": {
    "url": "https://themarc.ca",
@@ -2579,8 +2576,8 @@
   "thewineroom.ca": {
    "url": "https://thewineroom.ca/contact-us",
    "locations": 1,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "thewoodrackcafe.com": {
    "url": "http://www.thewoodrackcafe.com",
@@ -2605,10 +2602,11 @@
   "tiffinfreshkitchen.com": {
    "url": "https://www.tiffinfreshkitchen.com",
    "locations": 1,
+   "js_page": true,
    "status": "ok",
-   "home_chars": 1669,
+   "home_chars": 120,
    "pages": 1,
-   "deal_chars": 180
+   "deal_chars": 0
   },
   "locations.timhortons.ca": {
    "url": "https://locations.timhortons.ca/en/ab/edmonton/11084-51st-ave-nw",
@@ -2659,10 +2657,8 @@
   "twicecream.ca": {
    "url": "https://twicecream.ca",
    "locations": 1,
-   "status": "ok",
-   "home_chars": 1568,
-   "pages": 2,
-   "deal_chars": 1164
+   "fallback": "timeout",
+   "status": "timeout"
   },
   "tzin.ca": {
    "url": "https://tzin.ca",
@@ -2759,15 +2755,15 @@
    "url": "https://wavescoffee.ca/location/hampton-landing",
    "locations": 1,
    "status": "ok",
-   "home_chars": 2619,
+   "home_chars": 2623,
    "pages": 1,
    "deal_chars": 1366
   },
   "whiterabbiticecream.com": {
    "url": "https://whiterabbiticecream.com",
    "locations": 1,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "wildwingrestaurants.com": {
    "url": "https://wildwingrestaurants.com",
@@ -2849,10 +2845,8 @@
   "yogurtys.com": {
    "url": "http://www.yogurtys.com",
    "locations": 1,
-   "status": "ok",
-   "home_chars": 1080,
-   "pages": 2,
-   "deal_chars": 0
+   "fallback": "timeout",
+   "status": "timeout"
   },
   "yokozunarestaurant.ca": {
    "url": "https://www.yokozunarestaurant.ca",
