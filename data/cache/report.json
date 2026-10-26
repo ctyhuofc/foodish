@@ -1,12 +1,13 @@
 {
- "date": "2026-10-25",
+ "date": "2026-10-26",
  "ai_calls": 0,
  "ai_stopped": "HTTP 401 authentication_error: invalid x-api-key",
  "status_counts": {
   "ok": 293,
-  "HTTP 403": 29,
+  "HTTP 403": 21,
   "timeout": 8,
   "can't connect (site down or domain gone)": 28,
+  "HTTP 202": 8,
   "SSL error": 6,
   "HTTP 503": 1,
   "HTTP 404": 5,
@@ -58,8 +59,9 @@
    "locations": 29,
    "status": "ok",
    "home_chars": 5791,
-   "pages": 5,
-   "deal_chars": 12642
+   "pages": 4,
+   "deal_chars": 11299,
+   "result": "AI error: HTTP 401 authentication_error: invalid x-api-key"
   },
   "kfc.ca": {
    "url": "https://www.kfc.ca",
@@ -198,8 +200,7 @@
    "status": "ok",
    "home_chars": 6186,
    "pages": 3,
-   "deal_chars": 2685,
-   "result": "AI error: HTTP 401 authentication_error: invalid x-api-key"
+   "deal_chars": 2685
   },
   "littlecaesars.ca": {
    "url": "https://littlecaesars.ca/en-ca",
@@ -214,9 +215,9 @@
    "url": "https://www.mrsub.ca",
    "locations": 9,
    "status": "ok",
-   "home_chars": 2969,
+   "home_chars": 2973,
    "pages": 4,
-   "deal_chars": 638
+   "deal_chars": 1152
   },
   "locations.tacobell.ca": {
    "url": "https://locations.tacobell.ca/en/ab/edmonton/8036-118th-avenue",
@@ -238,7 +239,7 @@
    "url": "https://www.chezcora.com/sherwood-park",
    "locations": 7,
    "status": "ok",
-   "home_chars": 6488,
+   "home_chars": 6501,
    "pages": 1,
    "deal_chars": 0
   },
@@ -302,7 +303,7 @@
    "url": "https://www.dairyqueen.com/ca-en/Locator/Detail/11388",
    "locations": 5,
    "status": "ok",
-   "home_chars": 1744,
+   "home_chars": 1709,
    "pages": 1,
    "deal_chars": 681
   },
@@ -379,8 +380,8 @@
   "pfchangs.ca": {
    "url": "https://pfchangs.ca",
    "locations": 4,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "blazepizza.com": {
    "url": "https://www.blazepizza.com",
@@ -457,7 +458,7 @@
    "url": "https://blowersgrafton.com",
    "locations": 2,
    "status": "ok",
-   "home_chars": 53469,
+   "home_chars": 53470,
    "pages": 5,
    "deal_chars": 58156
   },
@@ -528,7 +529,7 @@
    "url": "https://www.jugojuice.com",
    "locations": 2,
    "status": "ok",
-   "home_chars": 3270,
+   "home_chars": 3433,
    "pages": 1,
    "deal_chars": 0
   },
@@ -536,9 +537,9 @@
    "url": "https://leopoldstavern.com",
    "locations": 2,
    "status": "ok",
-   "home_chars": 1893,
+   "home_chars": 1881,
    "pages": 1,
-   "deal_chars": 415
+   "deal_chars": 421
   },
   "monaspizzaanddonair.brygid.online": {
    "url": "https://monaspizzaanddonair.brygid.online/zgrid/themes/13205/portal/index.jsp",
@@ -596,7 +597,7 @@
    "url": "https://locations.stlouiswings.com/ab-edmonton-8204",
    "locations": 2,
    "status": "ok",
-   "home_chars": 4072,
+   "home_chars": 4123,
    "pages": 5,
    "deal_chars": 7171
   },
@@ -757,8 +758,8 @@
   "bluesonwhyte.com": {
    "url": "https://www.bluesonwhyte.com",
    "locations": 1,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "bucopizzeria.com": {
    "url": "https://bucopizzeria.com/st-albert",
@@ -947,8 +948,8 @@
   "chianticafe.ca": {
    "url": "http://www.chianticafe.ca/chianti-old-strathcona---home.html",
    "locations": 1,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "chickenhouse.online": {
    "url": "https://chickenhouse.online/whyte-ave",
@@ -1137,7 +1138,7 @@
    "status": "ok",
    "home_chars": 3096,
    "pages": 3,
-   "deal_chars": 5138
+   "deal_chars": 5099
   },
   "earthsrefillerycoop.ca": {
    "url": "https://earthsrefillerycoop.ca",
@@ -1168,8 +1169,8 @@
    "locations": 1,
    "status": "ok",
    "home_chars": 1744,
-   "pages": 2,
-   "deal_chars": 1652
+   "pages": 1,
+   "deal_chars": 0
   },
   "elcortezcantina.com": {
    "url": "https://elcortezcantina.com/food",
@@ -1222,8 +1223,8 @@
   "fargos.ca": {
    "url": "https://www.fargos.ca",
    "locations": 1,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "fastkitchenhood.com": {
    "url": "https://www.fastkitchenhood.com/customers.php",
@@ -1237,9 +1238,9 @@
    "url": "https://fattoush4u.ca",
    "locations": 1,
    "status": "ok",
-   "home_chars": 3698,
+   "home_chars": 3710,
    "pages": 1,
-   "deal_chars": 2012
+   "deal_chars": 2018
   },
   "fawkescoffee.com": {
    "url": "https://www.fawkescoffee.com",
@@ -1315,8 +1316,8 @@
   "gogikoreanbbq.ca": {
    "url": "https://gogikoreanbbq.ca",
    "locations": 1,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "goodbuddy.ca": {
    "url": "http://www.goodbuddy.ca",
@@ -1633,7 +1634,7 @@
    "status": "ok",
    "home_chars": 4043,
    "pages": 5,
-   "deal_chars": 25597
+   "deal_chars": 25589
   },
   "littlebrick.ca": {
    "url": "http://littlebrick.ca",
@@ -1723,9 +1724,9 @@
    "url": "https://metrobilliards.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 4805,
+   "home_chars": 4804,
    "pages": 3,
-   "deal_chars": 2790
+   "deal_chars": 2789
   },
   "midwaybar.ca": {
    "url": "https://midwaybar.ca",
@@ -1798,7 +1799,7 @@
    "status": "ok",
    "home_chars": 6487,
    "pages": 4,
-   "deal_chars": 1766
+   "deal_chars": 1770
   },
   "narakatsu.com": {
    "url": "https://www.narakatsu.com",
@@ -1814,7 +1815,7 @@
    "status": "ok",
    "home_chars": 1130,
    "pages": 2,
-   "deal_chars": 1940
+   "deal_chars": 1999
   },
   "newasianvillage.com": {
    "url": "https://www.newasianvillage.com/html/west/west.html",
@@ -1853,7 +1854,7 @@
    "url": "https://nomiyarestaurant.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 1118,
+   "home_chars": 2178,
    "pages": 1,
    "deal_chars": 0
   },
@@ -1992,9 +1993,9 @@
    "url": "https://www.poloslounge.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 11494,
-   "pages": 2,
-   "deal_chars": 15710
+   "home_chars": 3443,
+   "pages": 3,
+   "deal_chars": 4480
   },
   "pomgrand.com": {
    "url": "http://www.pomgrand.com",
@@ -2043,8 +2044,8 @@
   "pub1905.ca": {
    "url": "https://pub1905.ca",
    "locations": 1,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "pyrogrill.ca": {
    "url": "https://www.pyrogrill.ca/142-street",
@@ -2160,7 +2161,7 @@
    "url": "https://seitans.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 5190,
+   "home_chars": 5332,
    "pages": 5,
    "deal_chars": 3534
   },
@@ -2218,7 +2219,7 @@
    "status": "ok",
    "home_chars": 1773,
    "pages": 3,
-   "deal_chars": 3938
+   "deal_chars": 2978
   },
   "sopranopizza.ca": {
    "url": "https://sopranopizza.ca",
@@ -2283,9 +2284,9 @@
    "url": "https://order.subway.com/en-CA",
    "locations": 1,
    "status": "ok",
-   "home_chars": 1761,
+   "home_chars": 1650,
    "pages": 1,
-   "deal_chars": 0
+   "deal_chars": 1287
   },
   "thesugarbowl.org": {
    "url": "https://www.thesugarbowl.org",
@@ -2305,7 +2306,7 @@
    "url": "https://www.sushimadang.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 12179,
+   "home_chars": 12182,
    "pages": 2,
    "deal_chars": 11979
   },
@@ -2425,7 +2426,7 @@
    "url": "https://the3amigos.ca",
    "locations": 1,
    "status": "ok",
-   "home_chars": 7052,
+   "home_chars": 7051,
    "pages": 1,
    "deal_chars": 1843
   },
@@ -2475,7 +2476,7 @@
    "status": "ok",
    "home_chars": 3766,
    "pages": 4,
-   "deal_chars": 25715
+   "deal_chars": 24682
   },
   "thebutcheryyeg.ca": {
    "url": "https://www.thebutcheryyeg.ca",
@@ -2579,8 +2580,8 @@
   "thewineroom.ca": {
    "url": "https://thewineroom.ca/contact-us",
    "locations": 1,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "thewoodrackcafe.com": {
    "url": "http://www.thewoodrackcafe.com",
@@ -2760,15 +2761,15 @@
    "url": "https://wavescoffee.ca/location/hampton-landing",
    "locations": 1,
    "status": "ok",
-   "home_chars": 2623,
+   "home_chars": 2617,
    "pages": 1,
    "deal_chars": 1366
   },
   "whiterabbiticecream.com": {
    "url": "https://whiterabbiticecream.com",
    "locations": 1,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403"
+   "fallback": "HTTP 202",
+   "status": "HTTP 202"
   },
   "wildwingrestaurants.com": {
    "url": "https://wildwingrestaurants.com",
