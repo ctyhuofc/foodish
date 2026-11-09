@@ -26,6 +26,8 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 
+import deal_state as ds  # shared deal-timing rules (spec/deal-states.json)
+import site_state as ss  # the per-site lifecycle: unchanged / extracted / deferred_budget / ...
 from llm import PROMPT_VERSION, extract_deals
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -252,46 +254,54 @@ def main():
         for k, text in zip(keys, ex.map(work, keys)):
             texts[k] = text
 
-    # 2) only changed, deal-looking sites go to the AI
+    # 2) only changed, deal-looking sites go to the AI. What happens to each site is decided by
+    #    site_state.next_step(); every site ends the run with one named outcome in report.json.
     calls = changed = failed = 0
-    ai_errors, ai_stopped = [], None
+    breaker = ss.AIBreaker()
+    stale_before = (dt.date.today() - dt.timedelta(days=STALE_DAYS)).isoformat()
     for k in keys:
         text, entry = texts[k], cache.get(k, {})
+        h = hashlib.sha256(text.encode()).hexdigest() if text is not None else None
+        step = ss.next_step(
+            readable=text is not None, fingerprint=h, has_deal_words=bool(text and DEAL_WORDS.search(text)),
+            entry=entry, prompt_version=PROMPT_VERSION, stale_before=stale_before,
+            budget_left=calls < max_calls and used_this_month + calls < monthly_cap, ai_stopped=breaker.stopped,
+        )
+        outcome = step.outcome
         if text is None:
             failed += 1
-            if entry and entry.get("ok_at", TODAY) < (dt.date.today() - dt.timedelta(days=STALE_DAYS)).isoformat():
+            if step.action == ss.CLEAR:
                 entry["deals"] = []  # site gone too long: drop its deals
-            continue
-        h = hashlib.sha256(text.encode()).hexdigest()
-        entry["ok_at"] = TODAY
-        if entry.get("hash") == h and entry.get("pv") == PROMPT_VERSION:
-            cache[k] = entry
-            continue
-        if not text or not DEAL_WORDS.search(text):
-            report[k]["result"] = "no deal words found"
-            entry.update(hash=h, pv=PROMPT_VERSION, deals=[], checked_at=TODAY)
-            cache[k] = entry
-            continue
-        if calls >= max_calls or used_this_month + calls >= monthly_cap:
-            continue  # budget reached: try again tomorrow (hash not saved)
-        names = sorted({b["name"] for b in sites[k]["branches"]})
-        try:
-            raw = extract_deals(names[0], sites[k]["url"], text)
-            calls += 1
-        except Exception as e:  # noqa: BLE001
-            msg = str(e)[:300]
-            print(f"  ! AI error on {k}: {msg}")
-            report[k]["result"] = f"AI error: {msg}"
-            ai_errors.append(msg)
-            if len(ai_errors) >= 3 and len(set(ai_errors[-3:])) == 1:
-                print(f"Stopping AI step: the same error 3 times in a row -> {msg}")
-                ai_stopped = msg
-                break
-            continue
-        entry.update(hash=h, pv=PROMPT_VERSION, checked_at=TODAY, deals=[x for x in (clean_deal(d, sites[k]["url"]) for d in raw) if x][:6])
-        report[k]["result"] = f"{len(entry['deals'])} deals"
-        cache[k] = entry
-        changed += 1
+        else:
+            entry["ok_at"] = TODAY
+            if step.action == ss.REUSE:
+                cache[k] = entry
+            elif step.action == ss.CLEAR:  # readable, but nothing deal-like on it
+                report[k]["result"] = "no deal words found"
+                entry.update(hash=h, pv=PROMPT_VERSION, deals=[], checked_at=TODAY)
+                cache[k] = entry
+            elif step.action == ss.CALL_AI:
+                names = sorted({b["name"] for b in sites[k]["branches"]})
+                try:
+                    raw = extract_deals(names[0], sites[k]["url"], text)
+                    calls += 1
+                except Exception as e:  # noqa: BLE001
+                    msg = str(e)[:300]
+                    print(f"  ! AI error on {k}: {msg}")
+                    report[k]["result"] = f"AI error: {msg}"
+                    outcome = ss.AI_ERROR
+                    breaker.failure(msg)
+                    if breaker.stopped:
+                        print(f"Stopping AI calls: the same error {ss.SAME_ERROR_LIMIT} times in a row -> {msg}")
+                else:
+                    entry.update(hash=h, pv=PROMPT_VERSION, checked_at=TODAY, deals=[x for x in (clean_deal(d, sites[k]["url"]) for d in raw) if x][:6])
+                    report[k]["result"] = f"{len(entry['deals'])} deals"
+                    cache[k] = entry
+                    changed += 1
+                    outcome = ss.EXTRACTED
+            # KEEP (deferred): the new fingerprint isn't saved, so tomorrow's run tries the AI again
+        report[k]["outcome"] = outcome
+    ai_stopped = breaker.stopped_with
 
     usage[month] = used_this_month + calls
 
@@ -301,9 +311,12 @@ def main():
     print("Site status:", ", ".join(f"{n}× {s}" for s, n in status.most_common()))
     results = collections.Counter(v.get("result", "unchanged/skipped") for v in report.values() if v.get("status") == "ok")
     print("Readable sites:", ", ".join(f"{n}× {s}" for s, n in results.most_common(8)))
+    outcomes = collections.Counter(v.get("outcome") for v in report.values())
+    print("Outcomes:", ", ".join(f"{n}× {o}" for o, n in outcomes.most_common()))
     (DATA / "cache").mkdir(parents=True, exist_ok=True)
     (DATA / "cache" / "report.json").write_text(json.dumps(
-        {"date": TODAY, "ai_calls": calls, "ai_stopped": ai_stopped, "status_counts": dict(status), "sites": report}, indent=1, ensure_ascii=False))
+        {"date": TODAY, "ai_calls": calls, "ai_stopped": ai_stopped, "status_counts": dict(status),
+         "outcome_counts": {o: outcomes.get(o, 0) for o in ss.OUTCOMES}, "sites": report}, indent=1, ensure_ascii=False))
     print(f"AI calls this run: {calls} · sites with new content: {changed} · unreachable: {failed}")
 
     # 3) build the published file
@@ -311,6 +324,8 @@ def main():
     deals, used = [], set()
     for k, info in sites.items():
         for i, d in enumerate(cache.get(k, {}).get("deals", [])):
+            if not ds.is_live(d, TODAY):
+                continue  # its valid_until has passed since the AI read it
             ids = match_branches(d.get("applies_to"), info["branches"])
             d = {kk: vv for kk, vv in d.items() if kk != "applies_to"}
             d.update(id=f"{k}-{i}", restaurant_ids=ids, verified_at=cache[k].get("ok_at"))
@@ -341,6 +356,8 @@ def main():
 
     pub_restaurants = [{k2: by_id[i].get(k2) for k2 in ("id", "name", "lat", "lng", "address", "website")} for i in sorted(used)]
     out = {"generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "city": "Edmonton",
+           # how to tell whether a deal is on (days, times, valid dates): same rules for every app reading this file
+           "rules": "https://github.com/ctyhuofc/foodish/blob/main/spec/deal-states.json",
            "restaurants": pub_restaurants, "deals": deals}
     OUT.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")))
     SITE_COPY.parent.mkdir(parents=True, exist_ok=True)

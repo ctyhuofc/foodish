@@ -19,7 +19,8 @@ import json
 import os
 import re
 from pathlib import Path
-from zoneinfo import ZoneInfo
+
+import deal_state as ds  # the shared deal-timing rules (spec/deal-states.json)
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data" / "deals.json"
@@ -63,7 +64,7 @@ def fmt_time(hhmm: str | None) -> str:
 
 
 def when(d: dict) -> str:
-    days = d.get("days") or list(range(7))
+    days = list(ds.days_of(d))
     day_txt = "Every day" if len(days) == 7 else ", ".join(DAY_SHORT[x] for x in sorted(days) if 0 <= x < 7)
     s, e = fmt_time(d.get("start")), fmt_time(d.get("end"))
     if s and e:
@@ -76,11 +77,7 @@ def when(d: dict) -> str:
 
 
 def live(d: dict, today: str) -> bool:
-    if d.get("valid_until") and d["valid_until"] < today:
-        return False
-    if d.get("valid_from") and d["valid_from"] > today:
-        return False
-    return True
+    return ds.is_live(d, today)
 
 
 def deal_card(d: dict, by_id: dict) -> str:
@@ -153,16 +150,16 @@ def nav(day_counts: dict, cat_counts: dict, cats: list[str]) -> str:
 
 def main() -> None:
     data = json.loads(DATA.read_text())
-    today = dt.datetime.now(ZoneInfo("America/Edmonton")).date().isoformat()
+    today = ds.edmonton_now().date
     by_id = {r["id"]: r for r in data.get("restaurants", [])}
     deals = [d for d in data.get("deals", []) if live(d, today) and any(i in by_id for i in d.get("restaurant_ids", []))]
     deals.sort(key=lambda d: (-len(d.get("restaurant_ids", [])), (d.get("title") or "").lower()))
     try:
-        updated = dt.datetime.fromisoformat(data["generated_at"]).astimezone(ZoneInfo("America/Edmonton")).strftime("%b %-d, %Y")
+        updated = ds.edmonton_time(dt.datetime.fromisoformat(data["generated_at"])).strftime("%b %-d, %Y")
     except Exception:  # noqa: BLE001
         updated = today
 
-    day_counts = {i: sum(1 for d in deals if i in (d.get("days") or range(7))) for i in range(7)}
+    day_counts = {i: sum(1 for d in deals if ds.runs_on(d, i)) for i in range(7)}
     cat_counts: dict[str, int] = {}
     for d in deals:
         for c in d.get("categories") or []:
@@ -184,7 +181,7 @@ def main() -> None:
         written.append(f"deals/{name}")
 
     for i, day in enumerate(DAY_LONG):
-        items = [d for d in deals if i in (d.get("days") or range(7))]
+        items = [d for d in deals if ds.runs_on(d, i)]
         write(f"{slug(day)}.html", f"{day} restaurant deals in {CITY}",
               f"{len(items)} restaurant deals on {day}s in {CITY}: happy hours, wing nights, drink specials and more, checked daily.",
               f"{len(items)} deals on {day}s, from restaurants' own websites.", f"/?day={i}", items)

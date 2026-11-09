@@ -1,12 +1,15 @@
 name: Foodish daily update
 
+# What each schedule does is decided in ONE place: pipeline/plan.py (SCHEDULES). If you change a time
+# here, change it there too; tests/test_plan.py checks they match. Times are UTC; Edmonton is UTC-6
+# year-round since Nov 2026.
 on:
   schedule:
-    - cron: "17 10 * * *"   # ~4:17 am Edmonton: refresh deals
-    - cron: "47 11 * * *"   # backup at ~5:47 am, only runs if the 4 am refresh didn't happen
-    - cron: "23 13 * * *"   # second backup at ~7:23 am, same rule
-    - cron: "45 21 * * *"   # ~3:45 pm Edmonton (2:45 pm in winter): send daily alerts
-    - cron: "5 9 * * 0"     # Sunday ~3 am: re-discover restaurants from OpenStreetMap
+    - cron: "17 10 * * *"   # 4:17 am Edmonton: refresh deals
+    - cron: "47 11 * * *"   # 5:47 am backup: refreshes only if the 4 am run didn't happen
+    - cron: "23 13 * * *"   # 7:23 am second backup, same rule
+    - cron: "45 21 * * *"   # 3:45 pm: send daily alerts
+    - cron: "5 9 * * 0"     # Sunday 3:05 am: re-discover restaurants from OpenStreetMap
   workflow_dispatch:
     inputs:
       task:
@@ -33,16 +36,20 @@ jobs:
         if: vars.RENDER_JS == '1'
         run: pip install playwright && python -m playwright install --with-deps chromium
 
+      - name: Decide what this run does (pipeline/plan.py)
+        id: plan
+        env:
+          PLAN_EVENT: ${{ github.event_name }}
+          PLAN_SCHEDULE: ${{ github.event.schedule }}
+          PLAN_TASK: ${{ inputs.task }}
+        run: python pipeline/plan.py
+
       - name: Discover restaurants (weekly)
-        if: github.event.schedule == '5 9 * * 0' || inputs.task == 'discover' || inputs.task == 'all' || hashFiles('data/restaurants.json') == '' || github.event_name == 'schedule'
-        run: |
-          # weekly on Sundays, on request, or whenever the restaurant list is still empty
-          if [ "${{ github.event.schedule }}" != "5 9 * * 0" ] && [ "${{ inputs.task }}" != "discover" ] && [ "${{ inputs.task }}" != "all" ] \
-             && [ "$(tr -d '[:space:]' < data/restaurants.json)" != "[]" ]; then echo "Restaurant list exists; skipping."; exit 0; fi
-          python pipeline/discover.py
+        if: steps.plan.outputs.discover == 'true'
+        run: python pipeline/discover.py
 
       - name: Scrape deals (daily)
-        if: github.event.schedule == '17 10 * * *' || github.event.schedule == '47 11 * * *' || github.event.schedule == '23 13 * * *' || github.event.schedule == '5 9 * * 0' || inputs.task == 'scrape' || inputs.task == 'all'
+        if: steps.plan.outputs.scrape == 'true'
         env:
           LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'anthropic' }}
           LLM_MODEL: ${{ vars.LLM_MODEL }}
@@ -51,13 +58,7 @@ jobs:
           RENDER_JS: ${{ vars.RENDER_JS }}
           MAX_LLM_CALLS: ${{ vars.MAX_LLM_CALLS || '400' }}
           MONTHLY_LLM_CALLS: ${{ vars.MONTHLY_LLM_CALLS || '6000' }}
-        run: |
-          # Backup runs skip if today's refresh already happened (GitHub sometimes delays or drops scheduled runs)
-          if [ "${{ github.event.schedule }}" = "47 11 * * *" ] || [ "${{ github.event.schedule }}" = "23 13 * * *" ]; then
-            AGE=$(python -c "import json,datetime as d;g=json.load(open('data/deals.json'))['generated_at'];print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(g)).total_seconds()//3600))")
-            if [ "$AGE" -lt 12 ]; then echo "Deals refreshed $AGE hours ago; skipping backup run."; exit 0; fi
-          fi
-          python pipeline/scrape.py
+        run: python pipeline/scrape.py
 
       - name: Build search-friendly deal pages (site/deals, sitemap.xml)
         if: always() && hashFiles('data/deals.json') != ''
@@ -90,10 +91,17 @@ jobs:
           lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" -e "mkdir -p -f $FTP_DIR; put -O $FTP_DIR data/deals.json; mirror -R --delete site/deals $SITE_DIR/deals; put -O $SITE_DIR site/sitemap.xml; put -O $SITE_DIR site/robots.txt; bye"
 
       - name: Send daily alerts
-        if: github.event.schedule == '45 21 * * *' || inputs.task == 'notify' || inputs.task == 'all'
+        if: steps.plan.outputs.notify == 'true'
         env:
           API_URL: ${{ vars.API_URL }}
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT || 'mailto:hello@foodish.ca' }}
         run: python pipeline/notify.py
+
+      # Last on purpose: everything above has already saved and published. If the robot is broken
+      # (e.g. the AI key stopped working), this turns the run red so GitHub emails you, instead of
+      # a green tick on a run that quietly read nothing.
+      - name: Fail the run if the robot is broken
+        if: always() && steps.plan.outputs.scrape == 'true'
+        run: python pipeline/health.py --gate

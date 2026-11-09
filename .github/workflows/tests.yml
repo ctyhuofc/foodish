@@ -1,0 +1,31 @@
+name: Tests
+
+# Checks the shared rules (deal timing, website lifecycle, run plan, health gate) on every change.
+# Doesn't touch data or secrets.
+on:
+  push:
+    paths-ignore: ["data/**", "site/data/**", "site/deals/**", "site/sitemap.xml"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: Python tests
+        run: python -m unittest discover -s tests -v
+      - name: Browser-rule tests
+        run: node --test tests/*.test.mjs
+      - name: Workflow plans for every schedule
+        run: |
+          for c in "17 10 * * *" "47 11 * * *" "23 13 * * *" "45 21 * * *" "5 9 * * 0"; do
+            python pipeline/plan.py --event schedule --schedule "$c"
+          done

@@ -107,6 +107,11 @@ Add the good ones to `data/manual_deals.json` (copy an existing entry). Use `"br
 cd site && python3 -m http.server 8000      # open http://localhost:8000
 ```
 
+## How it works inside
+Everything that moves through stages (whether a deal is on now, what happens to each website on a run, what each scheduled run does, the app's loading/location/alerts states) is written down once in [`docs/STATE_MACHINES.md`](docs/STATE_MACHINES.md), with tests. The deal-timing rules are in [`spec/deal-states.json`](spec/deal-states.json), which any app reading the deals (including the live Grok-built site) can follow. Working with an AI coding agent? Point it at [`AGENTS.md`](AGENTS.md).
+
+Run the tests: `python -m unittest discover -s tests && node --test tests/*.test.mjs` (they also run on GitHub for every change).
+
 ## Search pages and the daily health check
 - Every run also writes plain HTML pages Google can read: **foodish.ca/deals/** (one page per day and per deal type, e.g. `/deals/wings.html`, `/deals/wednesday.html`) plus `sitemap.xml` and `robots.txt`. The app itself draws deals with JavaScript, so search engines would otherwise see only "Loading today's deals…". Each page links into the app pre-filtered (`/?cat=wings`, `/?day=3`).
 - **Getting them onto foodish.ca:** your live site reads deals straight from GitHub, but its pages are files on your web host. To publish the `/deals/` pages automatically every day, add your host's FTP details as GitHub secrets (`FTP_HOST`, `FTP_USER`, `FTP_PASS`) and, if your site isn't in `/public_html`, a variable `FTP_DIR` = `<your site folder>/data`. Otherwise, upload `site/deals/`, `site/sitemap.xml` and `site/robots.txt` by hand (they'll show the deals from the day you upload).
@@ -116,6 +121,7 @@ cd site && python3 -m http.server 8000      # open http://localhost:8000
 - Hosting somewhere other than foodish.ca? Set the GitHub variable `SITE_URL`.
 
 ## Notes
-- Times are Edmonton time year-round. GitHub's schedule is in UTC, so in winter the alert lands an hour earlier (~2:45 pm); adjust the cron line in `daily.yml` in November if you like.
+- Times are Edmonton time. Alberta has stayed on UTC-6 year-round since November 2026, so the UTC times in `daily.yml` now land at the same local time all year. The app and the robot use that fixed offset, because many phones' time-zone data still expect a November clock change.
+- If the AI step stops working (a bad or replaced key, no credit), the daily run now turns **red** and GitHub emails you, with the fix in the error message. Deals already on the site are kept.
 - Deals the robot can't re-confirm for 14 days (site down/changed) are dropped automatically. Hand-added deals with a `valid_until` date expire on their own.
 - The starter data is 4 real Edmonton wing nights reported in August 2026; the Canadian Brewhouse and Brewsters ones appear once step 3 has located their branches.
