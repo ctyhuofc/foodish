@@ -36,6 +36,7 @@ SCHEDULES = {
 }
 TASKS = ("all", "discover", "scrape", "notify", "pages")  # manual "Run workflow" choices
 BACKUP_FRESH_HOURS = 12  # a backup run skips the refresh if deals are newer than this
+DAILY_FRESH_HOURS = 3    # the 4:17 run skips if the exact 4 am trigger (worker/cron) already refreshed
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,9 @@ def decide(event: str, schedule: str = "", task: str = "", *, restaurants_empty:
         if role == BACKUP and deals_age_hours is not None and deals_age_hours < BACKUP_FRESH_HOURS:
             return Plan(restaurants_empty, False, False,
                         f"backup: deals refreshed {int(deals_age_hours)} h ago, nothing to do")
+        if role == DAILY and deals_age_hours is not None and deals_age_hours < DAILY_FRESH_HOURS:
+            return Plan(restaurants_empty, False, False,
+                        f"morning: the 4 am trigger already refreshed deals {deals_age_hours * 60:.0f} min ago")
         return Plan(restaurants_empty, True, False, "backup: the morning refresh hadn't run" if role == BACKUP else "morning: refresh deals")
 
     task = (task or "all").strip().lower()

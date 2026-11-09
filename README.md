@@ -107,6 +107,20 @@ Add the good ones to `data/manual_deals.json` (copy an existing entry). Use `"br
 cd site && python3 -m http.server 8000      # open http://localhost:8000
 ```
 
+## Exact 4 am updates (recommended, free, ~15 minutes)
+GitHub's built-in scheduler can run hours late, so "daily" deals could arrive at lunchtime. `worker/cron` is a tiny free Cloudflare Worker that asks GitHub to run the update at exactly 4:00 am Edmonton time (10:00 UTC; Alberta stays on UTC-6 all year). GitHub's own schedules stay on as backups and skip themselves when the update already ran.
+
+1. **GitHub token (limited to this one repo):** github.com → your photo → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token. Name: `foodish-4am`. Expiration: 1 year. Repository access: *Only select repositories* → `foodish`. Permissions → Repository permissions → **Actions: Read and write** (nothing else). Generate, then copy the token.
+2. **Cloudflare (free account at cloudflare.com):** download this repo (GitHub → Code → Download ZIP), unzip it, open Terminal in the `worker/cron` folder and run:
+   ```bash
+   npx wrangler login                     # opens Cloudflare in your browser: click Allow
+   npx wrangler deploy                    # prints the worker's web address
+   npx wrangler secret put GITHUB_TOKEN   # paste the token from step 1, press Enter
+   ```
+3. Open the web address `deploy` printed. It should say *"Foodish trigger is set up."* The next morning, GitHub → Actions should show a run started by **workflow_dispatch** at about 4:00 am, and the 4:17 run should say it skipped because deals were just refreshed.
+
+The token can only start this repo's workflows; it can't read or change your code. If it expires or you revoke it, GitHub's own schedules keep things running (just less punctually).
+
 ## How it works inside
 Everything that moves through stages (whether a deal is on now, what happens to each website on a run, what each scheduled run does, the app's loading/location/alerts states) is written down once in [`docs/STATE_MACHINES.md`](docs/STATE_MACHINES.md), with tests. The deal-timing rules are in [`spec/deal-states.json`](spec/deal-states.json), which any app reading the deals (including the live Grok-built site) can follow. Working with an AI coding agent? Point it at [`AGENTS.md`](AGENTS.md).
 

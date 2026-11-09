@@ -29,13 +29,16 @@ def legacy(event, schedule, task, restaurants_empty, age):
 class MatchesTheOldWorkflow(unittest.TestCase):
     def test_every_combination(self):
         events = [("schedule", s, "") for s in plan.SCHEDULES] + [("workflow_dispatch", "", t) for t in plan.TASKS]
-        for (event, schedule, task), empty, age in itertools.product(events, (False, True), (None, 2.5, 11.9, 12.0, 30)):
+        for (event, schedule, task), empty, age in itertools.product(events, (False, True), (None, 0.2, 2.5, 11.9, 12.0, 30)):
             with self.subTest(event=event, schedule=schedule, task=task, empty=empty, age=age):
                 p = plan.decide(event, schedule, task, restaurants_empty=empty, deals_age_hours=age)
                 want = legacy(event, schedule, task, empty, age)
                 if event == "workflow_dispatch" and task == "scrape" and empty:
-                    # one deliberate change: a manual "scrape" with no restaurants now finds them first
+                    # deliberate change: a manual "scrape" with no restaurants now finds them first
                     want = (True,) + want[1:]
+                if schedule == "17 10 * * *" and age is not None and age < plan.DAILY_FRESH_HOURS:
+                    # deliberate change: skip if the exact 4 am trigger (worker/cron) already refreshed
+                    want = (want[0], False, want[2])
                 self.assertEqual((p.discover, p.scrape, p.notify), want)
 
 
@@ -56,6 +59,14 @@ class Guards(unittest.TestCase):
         for line in WORKFLOW.splitlines():
             if line.strip().startswith("if:"):
                 self.assertNotIn("github.event.schedule", line)
+
+    def test_daily_run_skips_right_after_the_4am_trigger(self):
+        self.assertFalse(plan.decide("schedule", "17 10 * * *", deals_age_hours=0.2).scrape)
+        self.assertTrue(plan.decide("schedule", "17 10 * * *", deals_age_hours=24).scrape)
+
+    def test_4am_trigger_is_a_manual_scrape(self):
+        p = plan.decide("workflow_dispatch", task="scrape", deals_age_hours=24)
+        self.assertEqual((p.discover, p.scrape, p.notify), (False, True, False))
 
     def test_backup_runs_when_deals_file_is_missing(self):
         self.assertTrue(plan.decide("schedule", "47 11 * * *", deals_age_hours=None).scrape)

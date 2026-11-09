@@ -80,7 +80,8 @@ deals)* into three yes/no jobs: `discover`, `scrape`, `notify`. Workflow steps o
 
 | Trigger | discover | scrape | notify |
 |---|---|---|---|
-| `17 10 * * *` daily (4:17 am) | if list empty | yes | no |
+| Manual `scrape` from the exact 4 am trigger (`worker/cron`) | if list empty | yes | no |
+| `17 10 * * *` daily (4:17 am) | if list empty | yes, unless refreshed in the last 3 h (the 4 am trigger ran) | no |
 | `47 11 * * *`, `23 13 * * *` backups | if list empty | only if deals are 12 h+ old | no |
 | `45 21 * * *` alerts (3:45 pm) | if list empty | no | yes |
 | `5 9 * * 0` weekly (Sun 3:05 am) | yes | yes | no |
