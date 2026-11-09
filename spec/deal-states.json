@@ -1,0 +1,48 @@
+{
+  "about": "The one rulebook for when a deal is 'on'. pipeline/deal_state.py and site/deal-state.js must both pass every case here (tests/test_deal_state.py and tests/deal-state.test.mjs run them). Any other app that reads data/deals.json, such as the live foodish.ca app, should follow the same rules. Times are Edmonton wall-clock time. Days: 0 = Sunday ... 6 = Saturday.",
+  "states": {
+    "expired": "valid_until is before today. Hide it.",
+    "upcoming": "valid_from is after today. Hide it.",
+    "not_today": "The deal doesn't run on this day.",
+    "all_day": "Runs today with no start or end time. Show as 'All day', never as 'On now' (we don't know the restaurant's opening hours).",
+    "later": "Runs today and starts later.",
+    "on_now": "Its time window is open right now. Includes the after-midnight part of a deal that started yesterday (e.g. 9 pm to 2 am).",
+    "ended": "Ran earlier today and is over.",
+    "scheduled": "Runs on that day, when no time of day is given (e.g. looking at next Friday)."
+  },
+  "fields": {
+    "days": "list of 0-6; missing or empty means every day",
+    "start": "\"HH:MM\" 24-hour or null; null means from opening",
+    "end": "\"HH:MM\" 24-hour or null; null means until close (treated as midnight). An end at or before the start means the deal runs past midnight.",
+    "valid_from": "\"YYYY-MM-DD\" or missing",
+    "valid_until": "\"YYYY-MM-DD\" or missing; the deal still counts on that day"
+  },
+  "cases": [
+    {"name": "all-day deal at 2 am is not 'on now'", "deal": {}, "at": "2026-11-11T02:00", "expect": "all_day"},
+    {"name": "all-day deal in the evening is still 'all day'", "deal": {"days": [3]}, "at": "2026-11-11T19:00", "expect": "all_day"},
+    {"name": "all-day deal on another day", "deal": {"days": [3]}, "at": "2026-11-12T19:00", "expect": "not_today"},
+    {"name": "happy hour before it starts", "deal": {"start": "15:00", "end": "18:00"}, "at": "2026-11-11T14:59", "expect": "later"},
+    {"name": "happy hour at the exact start", "deal": {"start": "15:00", "end": "18:00"}, "at": "2026-11-11T15:00", "expect": "on_now"},
+    {"name": "happy hour one minute before the end", "deal": {"start": "15:00", "end": "18:00"}, "at": "2026-11-11T17:59", "expect": "on_now"},
+    {"name": "happy hour at the exact end", "deal": {"start": "15:00", "end": "18:00"}, "at": "2026-11-11T18:00", "expect": "ended"},
+    {"name": "start only runs until midnight", "deal": {"start": "16:00"}, "at": "2026-11-11T23:30", "expect": "on_now"},
+    {"name": "end only runs from opening", "deal": {"end": "11:00"}, "at": "2026-11-11T08:00", "expect": "on_now"},
+    {"name": "end only, after the end", "deal": {"end": "11:00"}, "at": "2026-11-11T11:30", "expect": "ended"},
+    {"name": "overnight deal before it starts", "deal": {"days": [3], "start": "21:00", "end": "02:00"}, "at": "2026-11-11T20:00", "expect": "later"},
+    {"name": "overnight deal in the evening", "deal": {"days": [3], "start": "21:00", "end": "02:00"}, "at": "2026-11-11T22:00", "expect": "on_now"},
+    {"name": "overnight deal after midnight counts from yesterday", "deal": {"days": [3], "start": "21:00", "end": "02:00"}, "at": "2026-11-12T01:00", "expect": "on_now"},
+    {"name": "overnight deal once the after-midnight part ends", "deal": {"days": [3], "start": "21:00", "end": "02:00"}, "at": "2026-11-12T03:00", "expect": "not_today"},
+    {"name": "overnight deal running every day, after its tail ends", "deal": {"start": "21:00", "end": "02:00"}, "at": "2026-11-11T03:00", "expect": "later"},
+    {"name": "same start and end means a full 24 hours", "deal": {"start": "22:00", "end": "22:00"}, "at": "2026-11-11T12:00", "expect": "on_now"},
+    {"name": "Saturday overnight tail lands on Sunday", "deal": {"days": [6], "start": "22:00", "end": "01:00"}, "at": "2026-11-15T00:30", "expect": "on_now"},
+    {"name": "valid until today still counts", "deal": {"valid_until": "2026-11-11"}, "at": "2026-11-11T23:59", "expect": "all_day"},
+    {"name": "valid until yesterday is expired", "deal": {"valid_until": "2026-11-10"}, "at": "2026-11-11T09:00", "expect": "expired"},
+    {"name": "valid from tomorrow is upcoming", "deal": {"valid_from": "2026-11-12", "start": "15:00", "end": "18:00"}, "at": "2026-11-11T16:00", "expect": "upcoming"},
+    {"name": "valid from today counts", "deal": {"valid_from": "2026-11-11", "start": "15:00", "end": "18:00"}, "at": "2026-11-11T16:00", "expect": "on_now"},
+    {"name": "another day with no time given", "deal": {"days": [5], "start": "15:00", "end": "18:00"}, "at": "2026-11-13", "expect": "scheduled"},
+    {"name": "another day the deal doesn't run", "deal": {"days": [5]}, "at": "2026-11-14", "expect": "not_today"},
+    {"name": "expired beats everything else", "deal": {"valid_until": "2026-11-01", "start": "00:00", "end": "23:59"}, "at": "2026-11-11T12:00", "expect": "expired"},
+    {"name": "empty days list means every day", "deal": {"days": [], "start": "11:00", "end": "15:00"}, "at": "2026-11-15T12:00", "expect": "on_now"},
+    {"name": "bad time text is ignored, not fatal", "deal": {"start": "late", "end": null}, "at": "2026-11-11T12:00", "expect": "all_day"}
+  ]
+}

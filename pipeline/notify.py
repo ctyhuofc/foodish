@@ -2,18 +2,17 @@
 
 Needs: API_URL, ADMIN_TOKEN, VAPID_PRIVATE_KEY, VAPID_SUBJECT (e.g. mailto:you@foodish.ca)
 """
-import datetime as dt
 import json
 import math
 import os
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import requests
 from pywebpush import WebPushException, webpush
 
+import deal_state as ds  # the shared deal-timing rules (spec/deal-states.json)
+
 ROOT = Path(__file__).resolve().parent.parent
-TZ = ZoneInfo("America/Edmonton")
 API = (os.environ.get("API_URL") or "").rstrip("/")
 AUTH = {"Authorization": f"Bearer {os.environ.get('ADMIN_TOKEN', '')}"}
 
@@ -30,10 +29,10 @@ def main():
         return
     data = json.loads((ROOT / "data" / "deals.json").read_text())
     by_id = {r["id"]: r for r in data["restaurants"]}
-    now = dt.datetime.now(TZ)
-    weekday = (now.weekday() + 1) % 7  # Python Mon=0 -> app Sun=0
-    today = now.date().isoformat()
-    todays = [d for d in data["deals"] if (not d.get("days") or weekday in d["days"]) and not (d.get("valid_until") and d["valid_until"] < today)]
+    now = ds.edmonton_now()
+    today = now.date
+    # deals that run today and are within their valid dates (same rules as the app)
+    todays = [d for d in data["deals"] if ds.deal_state(d, ds.Moment(now.date, now.day)) == ds.SCHEDULED]
 
     subs = requests.get(f"{API}/subscriptions", headers=AUTH, timeout=30).json()
     sent = gone = 0

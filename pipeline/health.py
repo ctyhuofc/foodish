@@ -13,12 +13,20 @@ import difflib
 import json
 import os
 import re
+import datetime as dt
+import sys
 from pathlib import Path
+
+import deal_state as ds  # Edmonton clock (UTC-6 year-round since Nov 2026)
 
 ROOT = Path(__file__).resolve().parent.parent
 REPORT = ROOT / "data" / "cache" / "report.json"
 DEALS = ROOT / "data" / "deals.json"
 CACHE = ROOT / "data" / "cache" / "sites.json"  # scrape.py keeps monthly AI usage under "_usage"
+
+
+def ds_utc_date() -> str:
+    return dt.datetime.now(dt.timezone.utc).date().isoformat()
 
 
 def norm(s: str) -> str:
@@ -30,7 +38,36 @@ def price_num(p):
     return float(m.group()) if m else None
 
 
+def gate(report: dict, today: set[str]) -> str | None:
+    """Is the robot broken? Returns what's wrong (and how to fix it), or None if it's working.
+    `today` holds the dates that count as today (scrape.py stamps its report with the runner's UTC date).
+    Used by the last workflow step: a non-None answer turns the run red, so GitHub emails the owner."""
+    if report.get("date") not in today:
+        return (f"Today's deal refresh didn't finish (the latest report is from {report.get('date', 'never')}). "
+                "Open this run's 'Scrape deals' step to see the error.")
+    stopped = report.get("ai_stopped")
+    if not stopped:
+        return None
+    low = stopped.lower()
+    if "401" in stopped or "x-api-key" in low or "authentication" in low or "llm_api_key" in low:
+        fix = ("The AI key in GitHub isn't valid (it was probably replaced or deleted). Create a key at "
+               "console.anthropic.com and save it as the LLM_API_KEY secret: repo Settings → Secrets and variables → Actions.")
+    elif "credit" in low or "billing" in low or "quota" in low or "429" in stopped:
+        fix = "The AI account is out of credit or over its limit. Add credit or raise the limit in the AI provider's console."
+    else:
+        fix = "The AI step kept failing the same way, so no new deals were read today."
+    return f"{fix} Error: {stopped}. Deals already on the site are kept, but nothing new is being picked up."
+
+
 def main() -> None:
+    if "--gate" in sys.argv:
+        report = json.loads(REPORT.read_text()) if REPORT.exists() else {}
+        problem = gate(report, {ds.edmonton_now().date, ds_utc_date()})
+        if problem:
+            print(f"::error title=Foodish robot needs attention::{problem}")
+            sys.exit(1)
+        print("Robot is healthy: today's refresh ran and the AI step worked.")
+        return
     lines: list[str] = []
     report = json.loads(REPORT.read_text()) if REPORT.exists() else {}
     data = json.loads(DEALS.read_text()) if DEALS.exists() else {"deals": [], "restaurants": []}
@@ -44,6 +81,18 @@ def main() -> None:
     lines.append(f"- **Published:** {len(data['deals'])} deals at {len(data['restaurants'])} locations")
     lines.append(f"- **Websites read:** {ok} of {total} ({ok * 100 // total}%)")
     lines.append(f"- **AI calls this run:** {report.get('ai_calls', 0)}" + (f" · ⚠️ stopped: {report['ai_stopped']}" if report.get("ai_stopped") else ""))
+    # Per-site outcomes (pipeline/site_state.py). Older reports don't have them.
+    oc = report.get("outcome_counts") or {}
+    if oc:
+        labels = [("unchanged", "unchanged"), ("extracted", "read by the AI"), ("no_deals", "no deals posted"),
+                  ("unreachable", "unreachable today"), ("gone", "gone (deals removed)")]
+        parts = [f"{oc[k]} {label}" for k, label in labels if oc.get(k)]
+        lines.append(f"- **Sites:** {', '.join(parts) or 'none'}")
+        waiting = {k: oc.get(k, 0) for k in ("deferred_budget", "ai_error", "deferred_ai_stopped")}
+        if any(waiting.values()):
+            why = {"deferred_budget": "AI limit reached", "ai_error": "AI error", "deferred_ai_stopped": "AI stopped"}
+            lines.append("- ⚠️ **Waiting for tomorrow (old deals kept):** "
+                         + ", ".join(f"{n} ({why[k]})" for k, n in waiting.items() if n))
     if CACHE.exists():
         try:
             usage = json.loads(CACHE.read_text()).get("_usage", {})

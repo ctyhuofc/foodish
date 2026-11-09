@@ -41,7 +41,8 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { headers: cors(req) });
-    const admin = req.headers.get("authorization") === `Bearer ${env.ADMIN_TOKEN}`;
+    // Without ADMIN_TOKEN set, "Bearer undefined" would otherwise match: admin stays off until it's configured.
+    const admin = Boolean(env.ADMIN_TOKEN) && req.headers.get("authorization") === `Bearer ${env.ADMIN_TOKEN}`;
 
     try {
       if (req.method === "POST" && url.pathname === "/subscribe") {

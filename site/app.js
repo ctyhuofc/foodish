@@ -13,9 +13,17 @@
   };
 
   // ---------- state ----------
+  // The app's states, named. Each machine has one function that changes it (setLoad, setLocation,
+  // syncAlertsBadge, setView) so the screen always matches the state. Documented in docs/STATE_MACHINES.md.
+  const LOAD = Object.freeze({ LOADING: "loading", READY: "ready", ERROR: "error" });
+  const LOC = Object.freeze({ LOCATING: "locating", PRECISE: "precise", LAST_KNOWN: "last_known", DEFAULT: "default" });
+  const STALE_AFTER_H = 36; // deals older than this get a gentle "last checked" note
+
   const state = {
+    load: LOAD.LOADING,     // loading -> ready | error; error -> loading (retry)
     data: null,
     byId: new Map(),
+    loc: null,              // locating | precise | last_known | default
     me: null,               // {lat, lng, label}
     day: null,              // 0-6, null = today
     onNow: false,
@@ -27,19 +35,12 @@
     watchId: null,
   };
 
-  // ---------- time in Edmonton ----------
-  function nowLocal() {
-    const parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone: CFG.TIMEZONE, weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false,
-    }).formatToParts(new Date());
-    const get = (t) => parts.find((p) => p.type === t)?.value;
-    const day = DAY_NAMES.indexOf(get("weekday"));
-    const mins = (parseInt(get("hour"), 10) % 24) * 60 + parseInt(get("minute"), 10);
-    return { day, mins };
-  }
-  const toMins = (hhmm) => { if (!hhmm) return null; const [h, m] = hhmm.split(":").map(Number); return h * 60 + (m || 0); };
+  // ---------- time + deal status: shared rules in deal-state.js (same as pipeline/deal_state.py) ----------
+  const DS = window.FoodishDealState;
+  const ST = DS.STATES;
+  const nowLocal = () => DS.zonedNow(CFG.TIMEZONE);
   function fmtTime(hhmm) {
-    const m = toMins(hhmm); if (m == null) return null;
+    const m = DS.toMins(hhmm); if (m == null) return null;
     const h = Math.floor(m / 60) % 24, mm = m % 60, ap = h >= 12 ? "pm" : "am", h12 = ((h + 11) % 12) + 1;
     return mm ? `${h12}:${String(mm).padStart(2, "0")} ${ap}` : `${h12} ${ap}`;
   }
@@ -50,24 +51,8 @@
     if (e) return `until ${e}`;
     return "All day";
   }
-  // status: "now" | "later" | "ended" | "other-day"
-  function dealStatus(d, day, mins) {
-    const days = d.days && d.days.length ? d.days : [0, 1, 2, 3, 4, 5, 6];
-    const s = toMins(d.start), e = toMins(d.end);
-    const overnight = s != null && e != null && e <= s;
-    if (mins != null && overnight && days.includes((day + 6) % 7) && mins < e) return "now"; // after-midnight tail of yesterday's deal
-    if (!days.includes(day)) return "other-day";
-    if (mins == null) return "later";
-    const start = s ?? 0, end = overnight ? 24 * 60 : (e ?? 24 * 60);
-    if (mins < start) return "later";
-    if (mins < end) return "now";
-    return "ended";
-  }
-  function isLive(d) {
-    if (d.valid_from && new Date(d.valid_from) > new Date()) return false;
-    if (d.valid_until && new Date(d.valid_until + "T23:59:59") < new Date()) return false;
-    return true;
-  }
+  // Display order within today: on now, then later today, then all day, then ended.
+  const RANK = { [ST.ON_NOW]: 0, [ST.LATER]: 1, [ST.ALL_DAY]: 2, [ST.SCHEDULED]: 2, [ST.ENDED]: 3 };
 
   // ---------- geo ----------
   function km(a, b) {
@@ -78,45 +63,78 @@
   }
   const fmtKm = (d) => (d < 1 ? `${Math.round(d * 1000 / 50) * 50} m` : `${d.toFixed(1)} km`);
 
+  // Location machine: locating -> precise (GPS) | last_known (saved spot) | default (Downtown).
+  function setLocation(loc, coords, note) {
+    state.loc = loc;
+    if (loc === LOC.PRECISE) {
+      state.me = { lat: coords.lat, lng: coords.lng, label: "Near you" };
+      store.set("lastLoc", { lat: coords.lat, lng: coords.lng });
+    } else if (loc === LOC.LAST_KNOWN) {
+      state.me = { ...coords, label: "Your last spot" };
+    } else if (loc === LOC.DEFAULT) {
+      state.me = { lat: CFG.DEFAULT_CENTER[0], lng: CFG.DEFAULT_CENTER[1], label: "Downtown Edmonton" };
+    }
+    $("locText").textContent = loc === LOC.LOCATING ? "Finding you…"
+      : loc === LOC.PRECISE ? "Showing deals near you"
+      : note || `Showing ${state.me.label} — tap to use my location`;
+    if (loc !== LOC.LOCATING) render();
+  }
+
   function locate({ quiet = false } = {}) {
-    if (!("geolocation" in navigator)) { setDefaultLocation("Location isn't available on this device"); return; }
-    $("locText").textContent = "Finding you…";
+    if (!("geolocation" in navigator)) { setFallbackLocation("Location isn't available on this device"); return; }
+    setLocation(LOC.LOCATING);
     navigator.geolocation.getCurrentPosition(
-      (p) => {
-        state.me = { lat: p.coords.latitude, lng: p.coords.longitude, label: "Near you" };
-        store.set("lastLoc", { lat: state.me.lat, lng: state.me.lng });
-        $("locText").textContent = "Showing deals near you";
-        render();
-      },
-      () => setDefaultLocation(quiet ? null : "Location off — showing Downtown. Tap to try again."),
+      (p) => setLocation(LOC.PRECISE, { lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => setFallbackLocation(quiet ? null : "Location off — showing Downtown. Tap to try again."),
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 }
     );
   }
-  function setDefaultLocation(msg) {
+  function setFallbackLocation(note) {
     const last = store.get("lastLoc", null);
-    state.me = last ? { ...last, label: "Your last spot" } : { lat: CFG.DEFAULT_CENTER[0], lng: CFG.DEFAULT_CENTER[1], label: "Downtown Edmonton" };
-    $("locText").textContent = msg || `Showing ${state.me.label} — tap to use my location`;
-    render();
+    if (last) setLocation(LOC.LAST_KNOWN, last, note);
+    else setLocation(LOC.DEFAULT, null, note);
   }
 
   // ---------- data ----------
+  // Data machine: loading -> ready | error. error -> loading on Retry, when the device comes back
+  // online, or when the tab is reopened. A failed refresh keeps the deals already on screen.
+  function setLoad(next, detail) {
+    state.load = next;
+    const status = $("status");
+    if (next === LOAD.LOADING && !state.data) status.textContent = "Loading today's deals…";
+    if (next === LOAD.ERROR && !state.data) {
+      status.innerHTML = `Couldn't load deals right now (${esc(detail)}). <button type="button" class="link-btn" id="retryLoad">Try again</button>`;
+      $("retryLoad").onclick = () => load();
+    }
+    if (next === LOAD.READY) {
+      const g = state.data.generated_at ? new Date(state.data.generated_at) : null;
+      if (g && !isNaN(g)) {
+        const ageH = (Date.now() - g.getTime()) / 36e5;
+        const when = g.toLocaleString("en-CA", { timeZone: DS.zoneFor(CFG.TIMEZONE, g), dateStyle: "medium", timeStyle: "short" });
+        $("updated").textContent = ageH > STALE_AFTER_H
+          ? `Deals last checked ${when}, over a day ago — some may have changed.`
+          : `Last updated ${when}`;
+      }
+      render();
+    }
+  }
+
   async function load() {
-    $("status").textContent = "Loading today's deals…";
+    if (state.load === LOAD.LOADING && state.data) return; // a refresh is already running
+    setLoad(LOAD.LOADING);
     try {
       const res = await fetch(CFG.DATA_URL, { cache: "no-cache" });
-      if (!res.ok) throw new Error(res.status);
-      state.data = await res.json();
+      if (!res.ok) throw new Error(`error ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data.deals) || !Array.isArray(data.restaurants)) throw new Error("unexpected file");
+      state.data = data;
     } catch (e) {
-      $("status").textContent = "Couldn't load deals right now. Check your connection and refresh.";
+      setLoad(LOAD.ERROR, navigator.onLine === false ? "you're offline" : e.message || "network error");
       return;
     }
     state.byId = new Map(state.data.restaurants.map((r) => [r.id, r]));
-    if (state.data.generated_at) {
-      const d = new Date(state.data.generated_at);
-      $("updated").textContent = `Last updated ${d.toLocaleString("en-CA", { timeZone: CFG.TIMEZONE, dateStyle: "medium", timeStyle: "short" })}`;
-    }
     buildChips();
-    render();
+    setLoad(LOAD.READY);
   }
 
   function buildChips() {
@@ -153,18 +171,17 @@
   // ---------- compute results ----------
   function results() {
     if (!state.data || !state.me) return [];
-    const { day: today, mins } = nowLocal();
+    const now = nowLocal();
     const viewingToday = state.day == null;
-    const day = viewingToday ? today : state.day;
+    // Another day: no time of day, and "today's date" is still today's (valid_until/valid_from are checked against it).
+    const at = viewingToday ? now : { date: now.date, day: state.day, mins: null };
     const q = state.q.trim().toLowerCase();
     const out = [];
     for (const d of state.data.deals) {
-      if (!isLive(d)) continue;
       if (state.cat && !(d.categories || []).includes(state.cat)) continue;
-      const status = dealStatus(d, day, viewingToday ? mins : null);
-      if (status === "other-day") continue;
-      if (viewingToday && status === "ended" && state.onNow) continue;
-      if (state.onNow && viewingToday && status !== "now") continue;
+      const status = DS.dealState(d, at);
+      if (!(status in RANK)) continue; // expired, upcoming, not_today
+      if (state.onNow && viewingToday && status !== ST.ON_NOW) continue;
       const branches = (d.restaurant_ids || []).map((id) => state.byId.get(id)).filter(Boolean)
         .map((r) => ({ r, dist: km(state.me, r) })).filter((x) => x.dist <= state.radius).sort((a, b) => a.dist - b.dist);
       if (!branches.length) continue;
@@ -172,26 +189,26 @@
         const hay = `${d.title} ${d.description || ""} ${(d.categories || []).join(" ")} ${branches[0].r.name}`.toLowerCase();
         if (!hay.includes(q)) continue;
       }
-      out.push({ d, status: viewingToday ? status : "later", nearest: branches[0], branches });
+      out.push({ d, status, nearest: branches[0], branches });
     }
-    const rank = { now: 0, later: 1, ended: 2 };
-    out.sort((a, b) => rank[a.status] - rank[b.status] || a.nearest.dist - b.nearest.dist);
+    out.sort((a, b) => RANK[a.status] - RANK[b.status] || a.nearest.dist - b.nearest.dist);
     return out;
   }
 
   // ---------- render ----------
   function render() {
     buildDays();
+    writeLinkFilters();
     const items = results();
     const viewingToday = state.day == null;
     $("headline").textContent = viewingToday ? (state.onNow ? "Deals on right now" : "Deals near you today") : `${DAY_LONG[state.day]}'s deals`;
     if (!state.data) return;
-    const nowCount = items.filter((i) => i.status === "now").length;
+    const nowCount = items.filter((i) => i.status === ST.ON_NOW).length;
     $("status").textContent = items.length
       ? `${items.length} deal${items.length === 1 ? "" : "s"}${viewingToday && nowCount ? ` · ${nowCount} on now` : ""}${state.radius < 999 ? ` within ${state.radius} km` : ""}`
       : "";
     renderList(items, viewingToday);
-    if (state.view === "map") renderMap(items);
+    if (state.view === "map" && state.me) renderMap(items); // the map needs a location to centre on
   }
 
   function renderList(items, viewingToday) {
@@ -203,8 +220,9 @@
     ul.innerHTML = items.map(({ d, status, nearest, branches }) => {
       const r = nearest.r;
       const badge = !viewingToday ? `<span class="badge">${timeLabel(d)}</span>`
-        : status === "now" ? `<span class="badge now">● On now · ${timeLabel(d)}</span>`
-        : status === "later" ? `<span class="badge later">Later today · ${timeLabel(d)}</span>`
+        : status === ST.ON_NOW ? `<span class="badge now">● On now · ${timeLabel(d)}</span>`
+        : status === ST.LATER ? `<span class="badge later">Later today · ${timeLabel(d)}</span>`
+        : status === ST.ALL_DAY ? `<span class="badge">All day</span>`
         : `<span class="badge">Ended · ${timeLabel(d)}</span>`;
       const days = d.days && d.days.length && d.days.length < 7 ? d.days.map((x) => DAY_NAMES[x]).join(", ") : "Every day";
       const more = branches.length > 1 ? ` · +${branches.length - 1} more location${branches.length > 2 ? "s" : ""} nearby` : "";
@@ -246,7 +264,7 @@
     const pins = new Map();
     items.forEach(({ d, status, branches }) => branches.forEach(({ r }) => {
       const p = pins.get(r.id) || { r, deals: [], now: false };
-      p.deals.push(d); p.now = p.now || status === "now"; pins.set(r.id, p);
+      p.deals.push(d); p.now = p.now || status === ST.ON_NOW; pins.set(r.id, p);
     }));
     const bounds = [[state.me.lat, state.me.lng]];
     pins.forEach(({ r, deals, now }) => {
@@ -264,6 +282,22 @@
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isStandalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
   const pushSupported = "serviceWorker" in navigator && "PushManager" in window && CFG.API_URL && CFG.VAPID_PUBLIC_KEY;
+
+  // Alerts state, derived (never stored twice): "on" only if the visitor asked for alerts AND the
+  // browser still allows notifications. If permission was revoked in settings, the bell says so.
+  function alertsState() {
+    const wanted = store.get("nearbyWatch", false) || store.get("pushDaily", false);
+    const perm = "Notification" in window ? Notification.permission : "unsupported";
+    if (!wanted) return "off";
+    return perm === "granted" ? "on" : "blocked";
+  }
+  function syncAlertsBadge() {
+    const st = alertsState();
+    const btn = $("alertsBtn");
+    btn.textContent = st === "on" ? "🔔" : "🔕";
+    btn.title = btn.ariaLabel = st === "on" ? "Deal alerts: on" : st === "blocked" ? "Deal alerts: blocked in browser settings" : "Deal alerts: off";
+    if (st !== "on") stopWatch();
+  }
 
   async function registerSW() {
     if (!("serviceWorker" in navigator)) return null;
@@ -310,7 +344,7 @@
       } catch (e) { msg.textContent = "Couldn't set up daily alerts right now — please try again later."; return; }
     }
     $("alertsDlg").close();
-    $("alertsBtn").textContent = wantWatch || wantPush ? "🔔" : "🔕";
+    syncAlertsBadge();
   }
 
   function b64ToU8(b64) {
@@ -330,11 +364,11 @@
   function stopWatch() { if (state.watchId != null) navigator.geolocation.clearWatch(state.watchId); state.watchId = null; }
   async function checkNearby() {
     if (!state.data || !("Notification" in window) || Notification.permission !== "granted") return;
-    const { day, mins } = nowLocal();
-    const todayKey = new Date().toISOString().slice(0, 10);
+    const now = nowLocal();
+    const todayKey = now.date; // Edmonton date, so "once per deal per day" follows the local day
     const seen = store.get("seen", {});
     for (const d of state.data.deals) {
-      if (!isLive(d) || dealStatus(d, day, mins) !== "now") continue;
+      if (DS.dealState(d, now) !== ST.ON_NOW) continue;
       for (const id of d.restaurant_ids || []) {
         const r = state.byId.get(id); if (!r) continue;
         if (km(state.me, r) > 0.4) continue;
@@ -362,27 +396,51 @@
       location.href = `mailto:hello@foodish.ca?subject=${encodeURIComponent("Deal for Foodish: " + body.restaurant)}&body=${encodeURIComponent(`${body.deal}\n${body.url || ""}`)}`;
       $("submitDlg").close(); return;
     }
+    const btn = $("sendSubmit");
+    if (btn.disabled) return; // already sending
+    btn.disabled = true; $("submitMsg").textContent = "Sending…";
     try {
       const r = await fetch(CFG.API_URL + "/submit", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       if (!r.ok) throw 0;
       $("submitMsg").textContent = "Thanks! We'll check it and add it soon.";
       f.reset(); setTimeout(() => $("submitDlg").close(), 1400);
     } catch { $("submitMsg").textContent = "Couldn't send that — please try again."; }
+    finally { btn.disabled = false; }
   }
 
   // ---------- wire up ----------
-  // Links from the /deals/ pages open the app pre-filtered: /?cat=wings or /?day=3 (0 = Sunday)
+  // The filters live in the address bar, so any view can be shared, bookmarked or opened by a link:
+  //   /?cat=wings  /?day=3 (0 = Sunday)  /?now=1 (on right now)  /?view=map  /?km=2  /?q=tacos
+  // The /deals/ pages link in this way too.
   function readLinkFilters() {
     const p = new URLSearchParams(location.search);
     const cat = (p.get("cat") || "").trim().toLowerCase();
     if (cat) state.cat = cat;
     const day = parseInt(p.get("day"), 10);
     if (day >= 0 && day <= 6) state.day = day === nowLocal().day ? null : day;
+    if (p.get("now") === "1") state.onNow = true;
+    if (p.get("view") === "map") state.view = "map";
+    const radius = parseFloat(p.get("km"));
+    if ([2, 5, 10, 999].includes(radius)) state.radius = radius;
+    if (p.get("q")) state.q = p.get("q");
+  }
+  function writeLinkFilters() {
+    const p = new URLSearchParams();
+    if (state.cat) p.set("cat", state.cat);
+    if (state.day != null) p.set("day", state.day);
+    if (state.onNow) p.set("now", "1");
+    if (state.view === "map") p.set("view", "map");
+    if (state.radius !== store.get("radius", 5)) p.set("km", state.radius);
+    if (state.q.trim()) p.set("q", state.q.trim());
+    const url = location.pathname + (p.toString() ? "?" + p : "") + location.hash;
+    if (url !== location.pathname + location.search + location.hash) history.replaceState(null, "", url);
   }
 
   function init() {
     readLinkFilters();
     $("radius").value = String(state.radius);
+    $("onNow").checked = state.onNow;
+    $("search").value = state.q;
     $("locBtn").onclick = () => locate();
     $("search").oninput = (e) => { state.q = e.target.value; render(); };
     $("onNow").onchange = (e) => { state.onNow = e.target.checked; render(); };
@@ -394,12 +452,22 @@
     $("submitBtn").onclick = () => { $("submitMsg").textContent = ""; $("submitDlg").showModal(); };
     $("sendSubmit").onclick = submitDeal;
     if (store.get("nearbyWatch", false)) startWatch();
+    syncAlertsBadge();
     registerSW();
+    // Data recovery: retry after an error when the connection returns; refresh a tab left open overnight.
+    window.addEventListener("online", () => { if (state.load === LOAD.ERROR) load(); });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState !== "visible") return;
+      syncAlertsBadge(); // permission may have changed in settings
+      const g = state.data && Date.parse(state.data.generated_at);
+      if (state.load === LOAD.ERROR || (g && Date.now() - g > 20 * 36e5)) load();
+    });
 
     // Ask for location straight away if previously granted; otherwise show Downtown until they tap.
     if (navigator.permissions?.query) {
-      navigator.permissions.query({ name: "geolocation" }).then((p) => (p.state === "granted" ? locate({ quiet: true }) : setDefaultLocation()), () => setDefaultLocation());
-    } else setDefaultLocation();
+      navigator.permissions.query({ name: "geolocation" }).then((p) => (p.state === "granted" ? locate({ quiet: true }) : setFallbackLocation()), () => setFallbackLocation());
+    } else setFallbackLocation();
+    if (state.view === "map") setView("map");
     load();
     setInterval(render, 60 * 1000); // keep "on now" badges fresh
   }
@@ -411,6 +479,6 @@
     render();
   }
   // exposed for tests
-  window.__foodish = { dealStatus, toMins, km };
+  window.__foodish = { dealState: DS.dealState, km, state, LOAD, LOC, alertsState };
   init();
 })();
