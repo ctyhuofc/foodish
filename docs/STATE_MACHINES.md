@@ -13,6 +13,7 @@ changes it, and the test that pins it down. If you're changing behaviour, change
 | 6 | App location | `site/app.js` `setLocation()` | browser check |
 | 7 | Alerts | `site/app.js` `alertsState()` / `syncAlertsBadge()`; `worker/worker.js` | browser check |
 | 8 | Filters ↔ address bar | `site/app.js` `readLinkFilters()` / `writeLinkFilters()` | browser check |
+| 9 | City (which city's deals are showing) | `site/app.js` `setCity()`; list in `cities.json` | `tests/test_cities.py`, browser check |
 
 Run everything: `python -m unittest discover -s tests && node --test tests/*.test.mjs`
 
@@ -41,9 +42,10 @@ stateDiagram-v2
 
 - `all_day` is **never** "on now": we don't know the restaurant's hours. (Before this change the
   repo's app showed all-day deals as "on now" at 2 am; the live Grok app already had the right rule.)
-- **Edmonton clock:** Alberta has stayed on UTC-6 year-round since 1 Nov 2026. Many devices' time-zone
-  data still expect UTC-7 from November, which would put every "on now" an hour off, so both versions
-  use the fixed offset after that date (`edmonton_time()` / `zoneFor()`).
+- **Each city's clock:** deal times are in the deal's own city. Alberta has stayed on UTC-6 and British
+  Columbia on UTC-7 year-round since 2026. Many devices' time-zone data still expect a November clock
+  change, which would put every "on now" an hour off, so both versions use the fixed offsets
+  (`now_in(zone)` / `zonedNow(zone)`).
 - Display order on today's list: `on_now`, `later`, `all_day`, `ended`.
 
 ## 2. Website lifecycle
@@ -114,3 +116,29 @@ Debug in the browser console: `__foodish.state`, `__foodish.alertsState()`.
 Alert subscriptions (worker): `subscribed` → `unsubscribed` (visitor turns it off) or `expired`
 (`notify.py` removes it when the push service answers 404/410). Admin endpoints stay locked unless
 `ADMIN_TOKEN` is set.
+
+## 9. City
+
+Which city's deals are showing. One value (`state.city`), changed only by `setCity()`, which swaps the
+data file, the centre, the clock and the labels together. The cities are data: `cities.json`.
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> from_link: ?city=vancouver (locked)
+    [*] --> last_used: the city used last time
+    [*] --> default_city: first visit
+    last_used --> by_location: visitor is within 100 km of another city
+    default_city --> by_location: visitor is within 100 km of another city
+    from_link --> picked: picker
+    last_used --> picked: picker (locked)
+    by_location --> picked: picker (locked)
+```
+
+- **Locked** (link or picker): the visitor's location no longer switches the city. If they're far from
+  it, the location state is `away` and distances are measured from that city's centre.
+- Visitors more than 100 km from every city stay on the current one and are told Foodish isn't in
+  their area yet.
+- The robot treats cities independently: the run plan (machine 3) is decided per city from that city's
+  own files, each city has its own website lifecycle cache (machine 2), and the health gate
+  (machine 4) checks every city that was refreshed. One city failing never blocks another.

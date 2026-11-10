@@ -1,5 +1,5 @@
 {
-  "about": "The one rulebook for when a deal is 'on'. pipeline/deal_state.py and site/deal-state.js must both pass every case here (tests/test_deal_state.py and tests/deal-state.test.mjs run them). Any other app that reads data/deals.json, such as the live foodish.ca app, should follow the same rules. Times are Edmonton wall-clock time. Days: 0 = Sunday ... 6 = Saturday.",
+  "about": "The one rulebook for when a deal is 'on'. pipeline/deal_state.py and site/deal-state.js must both pass every case here (tests/test_deal_state.py and tests/deal-state.test.mjs run them). Any other app that reads data/deals.json, such as the live foodish.ca app, should follow the same rules. Times are wall-clock time in the deal's own city (each deals.json names its city, timezone and utc_offset_hours; the list of cities is cities.json). Alberta stays on UTC-6 and British Columbia on UTC-7 all year, so use those fixed offsets, not device time-zone data. Days: 0 = Sunday ... 6 = Saturday.",
   "states": {
     "expired": "valid_until is before today. Hide it.",
     "upcoming": "valid_from is after today. Hide it.",

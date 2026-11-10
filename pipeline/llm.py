@@ -12,9 +12,9 @@ import time
 
 import requests
 
-PROMPT_VERSION = 4  # bump when the instructions change, so every site is re-read once
+PROMPT_VERSION = 5  # bump when the instructions change, so every site is re-read once
 
-PROMPT = """You extract restaurant DEALS for a deals app in Edmonton, Alberta. Today is {today}.
+PROMPT = """You extract restaurant DEALS for a deals app in {city}, {region}. Today is {today}.
 
 Restaurant: {name}
 Website: {url}
@@ -29,6 +29,8 @@ programs, birthday freebies, app-download or first-order offers, membership/stud
 discounts, delivery-fee offers, non-food activities, or deals that have clearly expired.
 Regular menu or coupon-menu pricing (e.g. a chain's list of pizza combos at everyday prices) is NOT a deal unless
 the text presents it as a special, a daily/weekly feature, or a limited-time offer.
+This app is for diners in the {city} area. If the text limits a deal to other provinces, other cities, or
+named locations outside the {city} area, leave it out. Deals with no stated place are fine.
 Return at most 6 deals per restaurant: the ones a diner would most want to know about.
 If there are no deals, return {{"deals": []}}.
 
@@ -105,8 +107,8 @@ def _call_openai_compatible(prompt):
     return r.json()["choices"][0]["message"]["content"]
 
 
-def extract_deals(name, url, text):
-    prompt = PROMPT.format(today=dt.date.today().isoformat(), name=name, url=url, text=text)
+def extract_deals(name, url, text, city="Edmonton", region="Alberta"):
+    prompt = PROMPT.format(today=dt.date.today().isoformat(), name=name, url=url, text=text, city=city, region=region)
     call = _call_openai_compatible if os.environ.get("LLM_PROVIDER", "anthropic") != "anthropic" else _call_anthropic
     for attempt in range(3):
         try:

@@ -11,7 +11,10 @@ Try it locally:
 
 Jobs:  discover (find restaurants on OpenStreetMap)  ·  scrape (read websites, publish deals)
        notify (send daily push alerts)
-The search pages and the health check run on every run (they only read data/deals.json).
+The decision is made per city (cities.json), from that city's own files: a new city with no
+restaurant list gets discovered first, and a backup run only refreshes cities whose deals are old.
+Outputs: discover / scrape / notify (true|false) and discover_cities / scrape_cities (city ids).
+The search pages and the health check run on every run (they only read each city's deals.json).
 """
 from __future__ import annotations
 
@@ -20,8 +23,10 @@ import datetime as dt
 import json
 import os
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
+
+import cities
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -74,14 +79,14 @@ def decide(event: str, schedule: str = "", task: str = "", *, restaurants_empty:
     return Plan(discover, scrape, task in ("all", "notify"), f"manual run: {task}")
 
 
-def _facts() -> dict:
+def _facts(city: cities.City) -> dict:
     facts = {"restaurants_empty": True, "deals_age_hours": None}
     try:
-        facts["restaurants_empty"] = not json.loads((ROOT / "data" / "restaurants.json").read_text())
+        facts["restaurants_empty"] = not json.loads(city.restaurants.read_text())
     except (OSError, ValueError):
         pass
     try:
-        g = dt.datetime.fromisoformat(json.loads((ROOT / "data" / "deals.json").read_text())["generated_at"])
+        g = dt.datetime.fromisoformat(json.loads(city.deals.read_text())["generated_at"])
         facts["deals_age_hours"] = (dt.datetime.now(dt.timezone.utc) - g).total_seconds() / 3600
     except (OSError, ValueError, KeyError):
         pass
@@ -95,12 +100,20 @@ def main(argv=None) -> int:
     ap.add_argument("--task", default=os.environ.get("PLAN_TASK", ""))
     args = ap.parse_args(argv)
     try:
-        plan = decide(args.event, args.schedule, args.task, **_facts())
+        plans = {c.id: decide(args.event, args.schedule, args.task, **_facts(c)) for c in cities.all_cities()}
     except ValueError as e:
         print(f"::error::{e}")
         return 1
-    out = {k: (str(v).lower() if isinstance(v, bool) else v) for k, v in asdict(plan).items()}
-    print(f"Plan: {plan.why} -> " + ", ".join(f"{job}={out[job]}" for job in ("discover", "scrape", "notify")))
+    for cid, p in plans.items():
+        print(f"Plan for {cid}: {p.why} -> discover={str(p.discover).lower()}, scrape={str(p.scrape).lower()}, notify={str(p.notify).lower()}")
+    discover = [cid for cid, p in plans.items() if p.discover]
+    scrape = [cid for cid, p in plans.items() if p.scrape]
+    out = {
+        "discover": str(bool(discover)).lower(), "scrape": str(bool(scrape)).lower(),
+        "notify": str(any(p.notify for p in plans.values())).lower(),
+        "discover_cities": " ".join(discover), "scrape_cities": " ".join(scrape),
+        "why": "; ".join(f"{cid}: {p.why}" for cid, p in plans.items()),
+    }
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
             f.writelines(f"{k}={v}\n" for k, v in out.items())

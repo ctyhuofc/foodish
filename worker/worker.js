@@ -3,6 +3,13 @@
 //   * "share a deal" submissions                             -> KV namespace SUBMISSIONS
 // Secrets: ADMIN_TOKEN (wrangler secret put ADMIN_TOKEN)
 
+// Generous boxes around each city Foodish covers (see cities.json), with the city centre as fallback.
+// When you add a city to cities.json, add it here too (tests/test_cities.py checks).
+const CITY_AREAS = [
+  { id: "edmonton", lat: 53.544, lng: -113.491, south: 53, north: 54, west: -114.2, east: -113 },
+  { id: "vancouver", lat: 49.283, lng: -123.121, south: 48.9, north: 49.6, west: -123.6, east: -122.4 },
+];
+
 const ALLOWED_ORIGINS = ["https://www.foodish.ca", "https://foodish.ca", "http://localhost:8000"];
 
 function cors(req) {
@@ -56,7 +63,15 @@ export default {
           categories: (Array.isArray(b.categories) ? b.categories : []).slice(0, 8).map((c) => String(c).slice(0, 30)),
           updated: new Date().toISOString(),
         };
-        if (!(rec.lat > 53 && rec.lat < 54 && rec.lng > -114.2 && rec.lng < -113)) { rec.lat = 53.544; rec.lng = -113.491; }
+        // A subscriber must be in or near a city Foodish covers; anything else falls back to the nearest
+        // city's centre, so a bad or far-away location can't sign up for alerts it will never get.
+        const home = CITY_AREAS.find((c) => rec.lat > c.south && rec.lat < c.north && rec.lng > c.west && rec.lng < c.east);
+        if (!home) {
+          const nearest = CITY_AREAS.map((c) => ({ c, d: Math.hypot(rec.lat - c.lat, rec.lng - c.lng) }))
+            .filter((x) => Number.isFinite(x.d)).sort((a, b) => a.d - b.d)[0];
+          const c = nearest ? nearest.c : CITY_AREAS[0];
+          rec.lat = c.lat; rec.lng = c.lng;
+        }
         await env.SUBS.put(await sha(sub.endpoint), JSON.stringify(rec));
         return json(req, { ok: true });
       }

@@ -1,15 +1,17 @@
-"""Step 2 (daily): visit each restaurant website, pull out its deals, publish data/deals.json.
+"""Step 2 (daily): visit each restaurant website, pull out its deals, publish each city's deals.json
+(Edmonton: data/deals.json, others: data/<city>/deals.json; the list of cities is cities.json).
 
 Why it's cheap:
   * One visit per *website*, not per location — a chain like Boston Pizza is read once and
-    the deals are applied to every Edmonton branch.
+    the deals are applied to every branch in that city.
   * Change detection — each site's text is fingerprinted. If nothing changed since yesterday
     (true for most "Wing Wednesday"-type deals), the saved deals are reused and no AI call is made.
   * Keyword pre-filter — pages with no price/deal words never reach the AI.
   * Hard caps — MAX_LLM_CALLS per run and MONTHLY_LLM_CALLS per month.
 
-Usage:  python pipeline/scrape.py            (needs LLM_API_KEY in the environment)
-        python pipeline/scrape.py --limit 30 (try it on 30 sites first)
+Usage:  python pipeline/scrape.py                      (every city; needs LLM_API_KEY in the environment)
+        python pipeline/scrape.py vancouver            (one city)
+        python pipeline/scrape.py vancouver --limit 30 (try it on 30 sites first)
 """
 import argparse
 import concurrent.futures as cf
@@ -23,20 +25,18 @@ import urllib.robotparser
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
+import collections
+import sys
+
 import requests
 from bs4 import BeautifulSoup
 
+import cities
 import deal_state as ds  # shared deal-timing rules (spec/deal-states.json)
 import site_state as ss  # the per-site lifecycle: unchanged / extracted / deferred_budget / ...
 from llm import PROMPT_VERSION, extract_deals
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA = ROOT / "data"
-RESTAURANTS = DATA / "restaurants.json"
-CACHE = DATA / "cache" / "sites.json"
-MANUAL = DATA / "manual_deals.json"
-OUT = DATA / "deals.json"
-SITE_COPY = ROOT / "site" / "data" / "deals.json"
 
 BOT = "FoodishBot"  # the name robots.txt rules are matched against
 UA = "Mozilla/5.0 (compatible; FoodishBot/1.0; +https://www.foodish.ca/bot)"
@@ -140,6 +140,18 @@ def candidate_links(html, base):
     return out[: MAX_PAGES_PER_SITE - 1]
 
 
+_read = {}  # site url -> (text, facts): a chain with branches in two cities is fetched once per run
+
+
+def read_site_once(site, info):
+    if site not in _read:
+        facts = {}
+        _read[site] = (read_site(site, facts), facts)
+    text, facts = _read[site]
+    info.update(facts)
+    return text
+
+
 def read_site(site, info):
     home = get(site)
     if not home:  # OpenStreetMap links often point at an old location page: fall back to the home page
@@ -220,20 +232,29 @@ def match_branches(applies_to, branches):
     return hits or [b["id"] for b in branches]
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--limit", type=int, default=0, help="only process N sites (for testing)")
-    ap.add_argument("--workers", type=int, default=12)
-    args = ap.parse_args()
+def used_elsewhere(city, month):
+    """AI calls other cities have made this month: MONTHLY_LLM_CALLS is one budget for all of Foodish."""
+    total = 0
+    for other in cities.all_cities():
+        if other.id != city.id and other.cache.exists():
+            try:
+                total += json.loads(other.cache.read_text()).get("_usage", {}).get(month, 0)
+            except ValueError:
+                pass
+    return total
 
-    max_calls = int(os.environ.get("MAX_LLM_CALLS", "400"))
-    monthly_cap = int(os.environ.get("MONTHLY_LLM_CALLS", "6000"))
 
-    restaurants = json.loads(RESTAURANTS.read_text())
-    cache = json.loads(CACHE.read_text()) if CACHE.exists() else {}
+def run_city(city, args):
+    """Read one city's restaurant websites and publish its deals file."""
+    max_calls = int(os.environ.get("MAX_LLM_CALLS", "400"))        # per city, per run
+    monthly_cap = int(os.environ.get("MONTHLY_LLM_CALLS", "6000"))  # all cities together, per month
+
+    restaurants = json.loads(city.restaurants.read_text())
+    cache = json.loads(city.cache.read_text()) if city.cache.exists() else {}
     month = TODAY[:7]
     usage = cache.setdefault("_usage", {})
-    used_this_month = usage.get(month, 0)
+    own_usage = usage.get(month, 0)
+    used_this_month = own_usage + used_elsewhere(city, month)
 
     sites = {}
     for r in restaurants:
@@ -242,14 +263,14 @@ def main():
     keys = sorted(sites, key=lambda k: -len(sites[k]["branches"]))  # chains first: most value per call
     if args.limit:
         keys = keys[: args.limit]
-    print(f"{len(keys)} sites to check · AI calls used this month: {used_this_month}/{monthly_cap}")
+    print(f"{city.name}: {len(keys)} sites to check · AI calls used this month: {used_this_month}/{monthly_cap}")
 
     # 1) fetch all sites in parallel (free)
     texts, report = {}, {}
     def work(k):
         info = {"url": sites[k]["url"], "locations": len(sites[k]["branches"])}
         report[k] = info
-        return read_site(sites[k]["url"], info)
+        return read_site_once(sites[k]["url"], info)
     with cf.ThreadPoolExecutor(args.workers) as ex:
         for k, text in zip(keys, ex.map(work, keys)):
             texts[k] = text
@@ -283,7 +304,7 @@ def main():
             elif step.action == ss.CALL_AI:
                 names = sorted({b["name"] for b in sites[k]["branches"]})
                 try:
-                    raw = extract_deals(names[0], sites[k]["url"], text)
+                    raw = extract_deals(names[0], sites[k]["url"], text, city=city.name, region=city.region)
                     calls += 1
                 except Exception as e:  # noqa: BLE001
                     msg = str(e)[:300]
@@ -303,19 +324,18 @@ def main():
         report[k]["outcome"] = outcome
     ai_stopped = breaker.stopped_with
 
-    usage[month] = used_this_month + calls
+    usage[month] = own_usage + calls
 
     # diagnostics report: why each site did or didn't produce deals
-    import collections
     status = collections.Counter(v.get("status", "?") for v in report.values())
     print("Site status:", ", ".join(f"{n}× {s}" for s, n in status.most_common()))
     results = collections.Counter(v.get("result", "unchanged/skipped") for v in report.values() if v.get("status") == "ok")
     print("Readable sites:", ", ".join(f"{n}× {s}" for s, n in results.most_common(8)))
     outcomes = collections.Counter(v.get("outcome") for v in report.values())
     print("Outcomes:", ", ".join(f"{n}× {o}" for o, n in outcomes.most_common()))
-    (DATA / "cache").mkdir(parents=True, exist_ok=True)
-    (DATA / "cache" / "report.json").write_text(json.dumps(
-        {"date": TODAY, "ai_calls": calls, "ai_stopped": ai_stopped, "status_counts": dict(status),
+    city.report.parent.mkdir(parents=True, exist_ok=True)
+    city.report.write_text(json.dumps(
+        {"date": TODAY, "city": city.id, "ai_calls": calls, "ai_stopped": ai_stopped, "status_counts": dict(status),
          "outcome_counts": {o: outcomes.get(o, 0) for o in ss.OUTCOMES}, "sites": report}, indent=1, ensure_ascii=False))
     print(f"AI calls this run: {calls} · sites with new content: {changed} · unreachable: {failed}")
 
@@ -332,8 +352,8 @@ def main():
             deals.append(d)
             used.update(ids)
 
-    if MANUAL.exists():
-        for m in json.loads(MANUAL.read_text()):
+    if city.manual_deals.exists():
+        for m in json.loads(city.manual_deals.read_text()):
             if m.get("valid_until") and m["valid_until"] < TODAY:
                 continue
             ids = m.get("restaurant_ids") or [
@@ -355,16 +375,41 @@ def main():
                 used.update(rids)
 
     pub_restaurants = [{k2: by_id[i].get(k2) for k2 in ("id", "name", "lat", "lng", "address", "website")} for i in sorted(used)]
-    out = {"generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "city": "Edmonton",
+    out = {"generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "city": city.name,
+           # this city's clock: deal days and times are in this local time (fixed offset, no clock changes)
+           "city_id": city.id, "timezone": city.timezone, "utc_offset_hours": city.utc_offset_hours,
            # how to tell whether a deal is on (days, times, valid dates): same rules for every app reading this file
            "rules": "https://github.com/ctyhuofc/foodish/blob/main/spec/deal-states.json",
            "restaurants": pub_restaurants, "deals": deals}
-    OUT.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")))
-    SITE_COPY.parent.mkdir(parents=True, exist_ok=True)
-    SITE_COPY.write_text(OUT.read_text())
-    CACHE.parent.mkdir(parents=True, exist_ok=True)
-    CACHE.write_text(json.dumps(cache, ensure_ascii=False, indent=0))
-    print(f"Published {len(deals)} deals at {len(pub_restaurants)} locations -> {OUT}")
+    city.deals.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")))
+    city.site_copy.parent.mkdir(parents=True, exist_ok=True)
+    city.site_copy.write_text(city.deals.read_text())
+    city.cache.parent.mkdir(parents=True, exist_ok=True)
+    city.cache.write_text(json.dumps(cache, ensure_ascii=False, indent=0))
+    print(f"Published {len(deals)} deals at {len(pub_restaurants)} locations -> {city.deals}")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("cities", nargs="*", help="city ids from cities.json (default: every city)")
+    ap.add_argument("--limit", type=int, default=0, help="only process N sites per city (for testing)")
+    ap.add_argument("--workers", type=int, default=12)
+    args = ap.parse_args()
+
+    failed = []
+    for city in cities.pick(args.cities):
+        if not city.restaurants.exists():
+            # discover.py hasn't found this city's restaurants yet (it reports its own errors)
+            print(f"::warning title={city.name} skipped::No restaurant list yet ({city.restaurants.relative_to(ROOT)}). "
+                  f"Run the workflow with task 'discover' or: python pipeline/discover.py {city.id}")
+            continue
+        try:
+            run_city(city, args)
+        except Exception as e:  # noqa: BLE001  one city failing must not stop the others
+            print(f"::error title=Deal refresh failed for {city.name}::{type(e).__name__}: {e}")
+            failed.append(city.name)
+    if failed:
+        sys.exit(f"Deal refresh failed for: {', '.join(failed)}")
 
 
 if __name__ == "__main__":

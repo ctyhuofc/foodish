@@ -1,0 +1,36 @@
+{
+  "about": "The cities Foodish covers. The robot (pipeline/cities.py) reads this file, and any app showing Foodish deals can too. To add a city: add an entry here, add it to CITIES in site/config.js, and add its clock rule to pipeline/deal_state.py and site/deal-state.js if its time zone is new. tests/test_cities.py checks they all agree. Each city has its own deals file at deals_url, in the same format; spec/deal-states.json explains how to tell whether a deal is on, using that city's local time.",
+  "default": "edmonton",
+  "cities": [
+    {
+      "id": "edmonton",
+      "name": "Edmonton",
+      "region": "Alberta",
+      "center": [53.5444, -113.4909],
+      "center_label": "Downtown Edmonton",
+      "bbox": [53.39, -113.72, 53.72, -113.27],
+      "covers": "Edmonton plus St. Albert, Sherwood Park and Windermere",
+      "timezone": "America/Edmonton",
+      "utc_offset_hours": -6,
+      "utc_offset_note": "Alberta stays on UTC-6 all year since 1 Nov 2026. Don't trust device time-zone data for this zone after that date.",
+      "data_dir": "data",
+      "pages_dir": "deals",
+      "deals_url": "https://raw.githubusercontent.com/ctyhuofc/foodish/main/data/deals.json"
+    },
+    {
+      "id": "vancouver",
+      "name": "Vancouver",
+      "region": "British Columbia",
+      "center": [49.2827, -123.1207],
+      "center_label": "Downtown Vancouver",
+      "bbox": [49.12, -123.27, 49.38, -122.87],
+      "covers": "Vancouver plus Burnaby, Richmond, New Westminster, North Vancouver and West Vancouver",
+      "timezone": "America/Vancouver",
+      "utc_offset_hours": -7,
+      "utc_offset_note": "British Columbia stays on UTC-7 all year since March 2026. Don't trust device time-zone data for this zone after 1 Nov 2026.",
+      "data_dir": "data/vancouver",
+      "pages_dir": "vancouver/deals",
+      "deals_url": "https://raw.githubusercontent.com/ctyhuofc/foodish/main/data/vancouver/deals.json"
+    }
+  ]
+}

@@ -4,8 +4,8 @@ Every part of Foodish that asks "does this deal count right now / today / on Fri
 and site/deal-state.js does the same in the browser. Both are checked against the same cases in
 spec/deal-states.json, so they can't drift apart.
 
-    from deal_state import deal_state, edmonton_now
-    deal_state(deal, edmonton_now())          # -> "on_now", "later", "all_day", "ended", ...
+    from deal_state import deal_state, now_in
+    deal_state(deal, now_in(city.timezone))   # -> "on_now", "later", "all_day", "ended", ...
     deal_state(deal, Moment("2026-11-13", 5)) # a future day with no time -> "scheduled" / "not_today"
 
 States (also listed in spec/deal-states.json):
@@ -25,7 +25,6 @@ import re
 from dataclasses import dataclass
 from zoneinfo import ZoneInfo
 
-TZ = ZoneInfo("America/Edmonton")
 EVERY_DAY = tuple(range(7))  # 0 = Sunday ... 6 = Saturday
 MIDNIGHT = 24 * 60
 
@@ -39,33 +38,51 @@ _HHMM = re.compile(r"([01]?\d|2[0-3]):([0-5]\d)")
 
 @dataclass(frozen=True)
 class Moment:
-    """An Edmonton wall-clock moment. mins=None means 'that day, no particular time'."""
+    """A wall-clock moment in the deal's own city. mins=None means 'that day, no particular time'."""
     date: str          # "YYYY-MM-DD"
     day: int           # 0 = Sunday ... 6 = Saturday
     mins: int | None = None
 
 
-# Alberta stopped changing its clocks on 1 Nov 2026 and stays on UTC-6 year-round. Many computers' and
-# phones' time-zone data still expect standard time (UTC-7) from November, which would put every
-# "on now" an hour off, so after that date we use the fixed offset instead of trusting local tz data.
-PERMANENT_UTC6_FROM = dt.datetime(2026, 11, 1, 8, 0, tzinfo=dt.timezone.utc)  # 2 am MDT, the old fall-back moment
-UTC6 = dt.timezone(dt.timedelta(hours=-6))
+# Alberta and British Columbia both stopped changing their clocks in 2026. Many computers' and phones'
+# time-zone data still expect the old November fall-back, which would put every "on now" an hour off,
+# so from that moment we use each zone's fixed offset instead of trusting local tz data.
+#   zone -> (the old fall-back moment in UTC, permanent offset in hours)
+FIXED_OFFSETS = {
+    "America/Edmonton": (dt.datetime(2026, 11, 1, 8, 0, tzinfo=dt.timezone.utc), -6),   # Alberta: UTC-6 all year
+    "America/Vancouver": (dt.datetime(2026, 11, 1, 9, 0, tzinfo=dt.timezone.utc), -7),  # B.C.: UTC-7 all year
+}
+DEFAULT_ZONE = "America/Edmonton"
 
 
-def edmonton_time(now: dt.datetime | None = None) -> dt.datetime:
+def local_time(zone: str = DEFAULT_ZONE, now: dt.datetime | None = None) -> dt.datetime:
+    """The wall-clock time in a city's zone (e.g. "America/Vancouver")."""
     t = now or dt.datetime.now(dt.timezone.utc)
     if t.tzinfo is None:
         t = t.replace(tzinfo=dt.timezone.utc)
-    return t.astimezone(UTC6 if t >= PERMANENT_UTC6_FROM else TZ)
+    fixed = FIXED_OFFSETS.get(zone)
+    if fixed and t >= fixed[0]:
+        return t.astimezone(dt.timezone(dt.timedelta(hours=fixed[1])))
+    return t.astimezone(ZoneInfo(zone))
 
 
-def edmonton_now(now: dt.datetime | None = None) -> Moment:
-    t = edmonton_time(now)
+def now_in(zone: str = DEFAULT_ZONE, now: dt.datetime | None = None) -> Moment:
+    """Right now in a city's zone, as a Moment for deal_state()."""
+    t = local_time(zone, now)
     return Moment(t.date().isoformat(), (t.weekday() + 1) % 7, t.hour * 60 + t.minute)
 
 
+# Edmonton shortcuts (the original names; still used where only Edmonton is involved)
+def edmonton_time(now: dt.datetime | None = None) -> dt.datetime:
+    return local_time("America/Edmonton", now)
+
+
+def edmonton_now(now: dt.datetime | None = None) -> Moment:
+    return now_in("America/Edmonton", now)
+
+
 def moment_from_local(text: str) -> Moment:
-    """'2026-11-11T17:40' or '2026-11-11' (Edmonton wall clock) -> Moment. Used by the test cases."""
+    """'2026-11-11T17:40' or '2026-11-11' (the city's wall clock) -> Moment. Used by the test cases."""
     date, _, clock = text.partition("T")
     d = dt.date.fromisoformat(date)
     mins = None

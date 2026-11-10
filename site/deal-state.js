@@ -20,14 +20,16 @@
     LATER: "later", ON_NOW: "on_now", ENDED: "ended", SCHEDULED: "scheduled",
   });
 
-  // Alberta stopped changing its clocks on 1 Nov 2026 and stays on UTC-6 year-round. Many phones' and
-  // browsers' time-zone data still expect standard time (UTC-7) from November, which would put every
-  // "on now" an hour off, so for Edmonton after that date we use the fixed offset instead.
-  const PERMANENT_UTC6_FROM = Date.UTC(2026, 10, 1, 8, 0); // 2 am MDT, the old fall-back moment
-  const FIXED = { "America/Edmonton": { from: PERMANENT_UTC6_FROM, zone: "Etc/GMT+6" } }; // Etc/GMT+6 = UTC-6
+  // Alberta and British Columbia both stopped changing their clocks in 2026. Many phones' and browsers'
+  // time-zone data still expect the old November fall-back, which would put every "on now" an hour
+  // off, so from that moment we use each zone's fixed offset instead. (Etc/GMT+6 means UTC-6.)
+  const FIXED = {
+    "America/Edmonton": { from: Date.UTC(2026, 10, 1, 8, 0), zone: "Etc/GMT+6" },  // Alberta: UTC-6 all year
+    "America/Vancouver": { from: Date.UTC(2026, 10, 1, 9, 0), zone: "Etc/GMT+7" }, // B.C.: UTC-7 all year
+  };
 
-  // An Edmonton wall-clock moment: { date: "YYYY-MM-DD", day: 0-6 (0 = Sunday), mins: minutes since midnight or null }
-  // The zone to format a moment with (handles Alberta's switch to permanent UTC-6).
+  // A wall-clock moment in the given zone: { date: "YYYY-MM-DD", day: 0-6 (0 = Sunday), mins: minutes since midnight or null }
+  // The zone to format a moment with (handles the switch to permanent offsets above).
   function zoneFor(timeZone, when) {
     const fixed = FIXED[timeZone];
     return fixed && when.getTime() >= fixed.from ? fixed.zone : timeZone;
