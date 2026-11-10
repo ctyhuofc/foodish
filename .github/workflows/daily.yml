@@ -24,7 +24,7 @@ concurrency: foodish
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 240   # every city is read in turn; a new city's first read is the slow one
     env:
       HAS_FTP: ${{ secrets.FTP_HOST != '' }}
     steps:
@@ -44,12 +44,14 @@ jobs:
           PLAN_TASK: ${{ inputs.task }}
         run: python pipeline/plan.py
 
-      - name: Discover restaurants (weekly)
+      # Cities come from cities.json. The plan lists which ones need each job this run.
+      - name: Discover restaurants (weekly, and for a newly added city)
         if: steps.plan.outputs.discover == 'true'
-        run: python pipeline/discover.py
+        run: python pipeline/discover.py ${{ steps.plan.outputs.discover_cities }}
 
       - name: Scrape deals (daily)
-        if: steps.plan.outputs.scrape == 'true'
+        # runs even if discovery failed for one city: the others still get fresh deals
+        if: ${{ !cancelled() && steps.plan.outputs.scrape == 'true' }}
         env:
           LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'anthropic' }}
           LLM_MODEL: ${{ vars.LLM_MODEL }}
@@ -58,9 +60,9 @@ jobs:
           RENDER_JS: ${{ vars.RENDER_JS }}
           MAX_LLM_CALLS: ${{ vars.MAX_LLM_CALLS || '400' }}
           MONTHLY_LLM_CALLS: ${{ vars.MONTHLY_LLM_CALLS || '6000' }}
-        run: python pipeline/scrape.py
+        run: python pipeline/scrape.py ${{ steps.plan.outputs.scrape_cities }}
 
-      - name: Build search-friendly deal pages (site/deals, sitemap.xml)
+      - name: Build search-friendly deal pages (site/deals, site/<city>/deals, sitemap.xml)
         if: always() && hashFiles('data/deals.json') != ''
         env:
           SITE_URL: ${{ vars.SITE_URL || 'https://www.foodish.ca' }}
@@ -71,11 +73,15 @@ jobs:
         run: python pipeline/health.py
 
       - name: Save updated data
+        # also when one city failed: every city that finished still gets published
+        if: ${{ !cancelled() }}
         run: |
           git config user.name "foodish-bot"
           git config user.email "bot@foodish.ca"
-          git add data site/data site/deals site/sitemap.xml site/robots.txt
+          git add -A data site   # each city's data, plus the generated pages and sitemap under site/
           git diff --cached --quiet || git commit -m "Daily deals update $(date -u +%F)"
+          # the repo may have changed while this ran (e.g. a merged pull request): replay on top, then push
+          git pull --rebase -q origin "${GITHUB_REF_NAME:-main}" || true
           git push
 
       - name: Upload deals file to your web host by FTP (optional)
@@ -91,7 +97,7 @@ jobs:
           lftp -u "$FTP_USER","$FTP_PASS" "$FTP_HOST" -e "mkdir -p -f $FTP_DIR; put -O $FTP_DIR data/deals.json; mirror -R --delete site/deals $SITE_DIR/deals; put -O $SITE_DIR site/sitemap.xml; put -O $SITE_DIR site/robots.txt; bye"
 
       - name: Send daily alerts
-        if: steps.plan.outputs.notify == 'true'
+        if: ${{ !cancelled() && steps.plan.outputs.notify == 'true' }}
         env:
           API_URL: ${{ vars.API_URL }}
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
@@ -104,4 +110,4 @@ jobs:
       # a green tick on a run that quietly read nothing.
       - name: Fail the run if the robot is broken
         if: always() && steps.plan.outputs.scrape == 'true'
-        run: python pipeline/health.py --gate
+        run: python pipeline/health.py --gate ${{ steps.plan.outputs.scrape_cities }}

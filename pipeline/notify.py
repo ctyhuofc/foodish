@@ -1,4 +1,5 @@
-"""Step 3 (daily, ~3:45 pm Edmonton): send each alert subscriber a push for today's deals near them.
+"""Step 3 (daily, ~3:45 pm Edmonton / 2:45 pm Vancouver): send each alert subscriber a push for today's
+deals near them. Deals from every city are considered; "near" is the subscriber's own radius.
 
 Needs: API_URL, ADMIN_TOKEN, VAPID_PRIVATE_KEY, VAPID_SUBJECT (e.g. mailto:you@foodish.ca)
 """
@@ -10,6 +11,7 @@ from pathlib import Path
 import requests
 from pywebpush import WebPushException, webpush
 
+import cities
 import deal_state as ds  # the shared deal-timing rules (spec/deal-states.json)
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -27,12 +29,16 @@ def main():
     if not API or not os.environ.get("VAPID_PRIVATE_KEY"):
         print("Push alerts aren't set up yet (README step 6) — skipping.")
         return
-    data = json.loads((ROOT / "data" / "deals.json").read_text())
-    by_id = {r["id"]: r for r in data["restaurants"]}
-    now = ds.edmonton_now()
-    today = now.date
-    # deals that run today and are within their valid dates (same rules as the app)
-    todays = [d for d in data["deals"] if ds.deal_state(d, ds.Moment(now.date, now.day)) == ds.SCHEDULED]
+    by_id, todays = {}, []
+    for city in cities.all_cities():
+        if not city.deals.exists():
+            continue
+        data = json.loads(city.deals.read_text())
+        by_id.update({r["id"]: r for r in data["restaurants"]})
+        now = ds.now_in(city.timezone)  # "today" on that city's own clock
+        # deals that run today and are within their valid dates (same rules as the app)
+        todays += [d for d in data["deals"] if ds.deal_state(d, ds.Moment(now.date, now.day)) == ds.SCHEDULED]
+    today = ds.now_in().date
 
     subs = requests.get(f"{API}/subscriptions", headers=AUTH, timeout=30).json()
     sent = gone = 0

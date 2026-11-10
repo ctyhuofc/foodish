@@ -1,14 +1,15 @@
 """Step 3 (daily, after scrape): build plain HTML pages search engines can read.
 
 The app itself draws deals with JavaScript, so Google mostly sees "Loading today's deals…".
-This writes simple, fast pages from data/deals.json:
+This writes simple, fast pages from each city's deals file (cities.json lists the cities):
 
-  site/deals/index.html            all days and deal types, with counts
+  site/deals/index.html            all days and deal types, with counts   (Edmonton)
   site/deals/monday.html …         one page per day of the week
   site/deals/wings.html …          one page per deal type with at least MIN_DEALS deals
+  site/vancouver/deals/…           the same for Vancouver
   site/sitemap.xml, site/robots.txt
 
-Each page links back into the app (e.g. /?cat=wings or /?day=3) so visitors land on the live map.
+Each page links back into the app (e.g. /?cat=wings or /?city=vancouver&day=3) so visitors land on the live map.
 No extra packages needed.  Run:  python pipeline/pages.py
 """
 from __future__ import annotations
@@ -20,14 +21,12 @@ import os
 import re
 from pathlib import Path
 
+import cities
 import deal_state as ds  # the shared deal-timing rules (spec/deal-states.json)
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA = ROOT / "data" / "deals.json"
 SITE = ROOT / "site"
-OUT = SITE / "deals"
 SITE_URL = os.environ.get("SITE_URL", "https://www.foodish.ca").rstrip("/")
-CITY = "Edmonton"
 MIN_DEALS = 3
 DAY_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -80,7 +79,13 @@ def live(d: dict, today: str) -> bool:
     return ds.is_live(d, today)
 
 
-def deal_card(d: dict, by_id: dict) -> str:
+def app_link(city: cities.City, query: str = "") -> str:
+    """Link that opens the app in this city, e.g. /?cat=wings or /?city=vancouver&cat=wings."""
+    q = "&".join(x for x in (city.app_query, query) if x)
+    return "/?" + q if q else "/"
+
+
+def deal_card(d: dict, by_id: dict, city: cities.City) -> str:
     places = [by_id[i] for i in d.get("restaurant_ids", []) if i in by_id]
     if not places:
         return ""
@@ -97,7 +102,7 @@ def deal_card(d: dict, by_id: dict) -> str:
     who = names[0] if len(names) == 1 else ", ".join(names[:2]) + (f" and {len(names) - 2} more" if len(names) > 2 else "")
     where = places[0].get("address") or ""
     if len(places) > 1:
-        where = f"{len(places)} Edmonton locations"
+        where = f"{len(places)} {city.name} locations"
     price = f'<span class="price">{esc(d["price"])}</span>' if d.get("price") else ""
     src = d.get("source_url") or (places[0].get("website") if places else None)
     link = f' · <a href="{esc(src)}" rel="nofollow noopener">restaurant site</a>' if src else ""
@@ -125,7 +130,7 @@ h2{font-size:18px;margin:26px 0 6px}footer{color:var(--muted);font-size:13px;mar
 """
 
 
-def page(title: str, desc: str, path: str, body: str, updated: str) -> str:
+def page(title: str, desc: str, path: str, body: str, updated: str, city: cities.City) -> str:
     url = f"{SITE_URL}/{path}"
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -135,27 +140,30 @@ def page(title: str, desc: str, path: str, body: str, updated: str) -> str:
 <meta property="og:title" content="{esc(title)}"><meta property="og:description" content="{esc(desc)}"><meta property="og:url" content="{esc(url)}">
 <link rel="icon" href="/icon.svg" type="image/svg+xml"><meta name="theme-color" content="#d9412b">
 <style>{CSS}</style></head>
-<body><header><a class="wordmark" href="/">foodish</a><span class="city">{CITY}</span></header>
+<body><header><a class="wordmark" href="/">foodish</a><span class="city">{city.name}</span></header>
 {body}
 <footer>Deals are gathered from restaurants' own websites and checked daily. Always confirm with the restaurant before you go. Updated {esc(updated)}.</footer>
 </body></html>
 """
 
 
-def nav(day_counts: dict, cat_counts: dict, cats: list[str]) -> str:
-    days = "".join(f'<a href="/deals/{slug(DAY_LONG[i])}.html">{DAY_LONG[i]} <span>({day_counts[i]})</span></a>' for i in range(7))
-    types = "".join(f'<a href="/deals/{slug(c)}.html">{esc(TITLES.get(c, c.capitalize() + " deals"))} <span>({cat_counts[c]})</span></a>' for c in cats)
+def nav(day_counts: dict, cat_counts: dict, cats: list[str], city: cities.City) -> str:
+    base = city.pages_dir
+    days = "".join(f'<a href="/{base}/{slug(DAY_LONG[i])}.html">{DAY_LONG[i]} <span>({day_counts[i]})</span></a>' for i in range(7))
+    types = "".join(f'<a href="/{base}/{slug(c)}.html">{esc(TITLES.get(c, c.capitalize() + " deals"))} <span>({cat_counts[c]})</span></a>' for c in cats)
     return f'<h2>By day</h2><nav class="links">{days}</nav><h2>By type</h2><nav class="links">{types}</nav>'
 
 
-def main() -> None:
-    data = json.loads(DATA.read_text())
-    today = ds.edmonton_now().date
+def build(city: cities.City, others: list[cities.City]) -> list[str]:
+    """Write one city's pages; returns their paths (relative to the site) for the sitemap."""
+    CITY, OUT, base = city.name, city.pages, city.pages_dir
+    data = json.loads(city.deals.read_text())
+    today = ds.now_in(city.timezone).date
     by_id = {r["id"]: r for r in data.get("restaurants", [])}
     deals = [d for d in data.get("deals", []) if live(d, today) and any(i in by_id for i in d.get("restaurant_ids", []))]
     deals.sort(key=lambda d: (-len(d.get("restaurant_ids", [])), (d.get("title") or "").lower()))
     try:
-        updated = ds.edmonton_time(dt.datetime.fromisoformat(data["generated_at"])).strftime("%b %-d, %Y")
+        updated = ds.local_time(city.timezone, dt.datetime.fromisoformat(data["generated_at"])).strftime("%b %-d, %Y")
     except Exception:  # noqa: BLE001
         updated = today
 
@@ -165,47 +173,58 @@ def main() -> None:
         for c in d.get("categories") or []:
             cat_counts[c] = cat_counts.get(c, 0) + 1
     cats = sorted((c for c, n in cat_counts.items() if n >= MIN_DEALS), key=lambda c: -cat_counts[c])
-    links = nav(day_counts, cat_counts, cats)
+    links = nav(day_counts, cat_counts, cats, city)
 
     OUT.mkdir(parents=True, exist_ok=True)
     for old in OUT.glob("*.html"):  # remove pages for deal types that dropped below the minimum
         old.unlink()
     written = []
 
-    def write(name: str, title: str, desc: str, lead: str, app_link: str, items: list[dict]) -> None:
-        cards = "".join(deal_card(d, by_id) for d in items)
+    def write(name: str, title: str, desc: str, lead: str, link: str, items: list[dict]) -> None:
+        cards = "".join(deal_card(d, by_id, city) for d in items)
         body = (f"<h1>{esc(title)}</h1><p class=\"lead\">{esc(lead)}</p>"
-                f'<a class="cta" href="{esc(app_link)}">See these on the map near you →</a>'
+                f'<a class="cta" href="{esc(link)}">See these on the map near you →</a>'
                 f'<ul class="cards">{cards}</ul>{links}')
-        (OUT / name).write_text(page(title, desc, f"deals/{name}", body, updated))
-        written.append(f"deals/{name}")
+        (OUT / name).write_text(page(title, desc, f"{base}/{name}", body, updated, city))
+        written.append(f"{base}/{name}")
 
     for i, day in enumerate(DAY_LONG):
         items = [d for d in deals if ds.runs_on(d, i)]
         write(f"{slug(day)}.html", f"{day} restaurant deals in {CITY}",
               f"{len(items)} restaurant deals on {day}s in {CITY}: happy hours, wing nights, drink specials and more, checked daily.",
-              f"{len(items)} deals on {day}s, from restaurants' own websites.", f"/?day={i}", items)
+              f"{len(items)} deals on {day}s, from restaurants' own websites.", app_link(city, f"day={i}"), items)
 
     for c in cats:
         items = [d for d in deals if c in (d.get("categories") or [])]
         title = f"{TITLES.get(c, c.capitalize() + ' deals')} in {CITY}"
         write(f"{slug(c)}.html", title,
               f"{len(items)} {c} deals at {CITY} restaurants, with days, times and prices, checked daily.",
-              f"{len(items)} deals, with the days and times they run.", f"/?cat={c}", items)
+              f"{len(items)} deals, with the days and times they run.", app_link(city, f"cat={c}"), items)
 
+    # the hub page also points to the other cities that have pages
+    elsewhere = "".join(f'<a href="/{o.pages_dir}/">{esc(o.name)}</a>' for o in others)
+    elsewhere = f'<h2>Other cities</h2><nav class="links">{elsewhere}</nav>' if elsewhere else ""
     hub_body = (f"<h1>Restaurant deals in {CITY}</h1>"
                 f'<p class="lead">{len(deals)} deals at {len({i for d in deals for i in d.get("restaurant_ids", []) if i in by_id})} '
                 f'locations, gathered from restaurants\' own websites and checked daily.</p>'
-                f'<a class="cta" href="/">Open Foodish near you →</a>{links}')
+                f'<a class="cta" href="{esc(app_link(city))}">Open Foodish near you →</a>{links}{elsewhere}')
     (OUT / "index.html").write_text(page(f"Restaurant deals in {CITY}",
-        f"Every restaurant deal we know of in {CITY}, by day and by type. Updated daily.", "deals/", hub_body, updated))
-    written.insert(0, "deals/")
+        f"Every restaurant deal we know of in {CITY}, by day and by type. Updated daily.", f"{base}/", hub_body, updated, city))
+    written.insert(0, f"{base}/")
+    print(f"{CITY}: wrote {len(written)} pages for {len(deals)} deals ({len(cats)} deal types)")
+    return written
 
-    urls = [""] + written
+
+def main() -> None:
+    ready = [c for c in cities.all_cities() if c.deals.exists()]  # a new city has no deals file until its first run
+    urls = [""]
+    for city in ready:
+        urls += build(city, [o for o in ready if o.id != city.id])
+    today = ds.now_in().date
     sitemap = "".join(f"<url><loc>{esc(SITE_URL + '/' + u)}</loc><lastmod>{today}</lastmod></url>" for u in urls)
     (SITE / "sitemap.xml").write_text(f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{sitemap}</urlset>\n')
     (SITE / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}/sitemap.xml\n")
-    print(f"Wrote {len(written)} pages for {len(deals)} deals ({len(cats)} deal types) + sitemap.xml")
+    print(f"Wrote sitemap.xml with {len(urls)} pages for {len(ready)} cit{'y' if len(ready) == 1 else 'ies'}")
 
 
 if __name__ == "__main__":

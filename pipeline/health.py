@@ -1,7 +1,10 @@
 """Daily health check: a one-screen summary of how the robot did.
 
 On GitHub it appears on the run's page (Actions → the run → Summary). Locally it prints to the terminal.
-Reads data/cache/report.json (written by scrape.py) and data/deals.json. No extra packages.
+Reads each city's cache/report.json (written by scrape.py) and deals.json. No extra packages.
+
+    python pipeline/health.py                  summary for every city
+    python pipeline/health.py --gate [cities]  exit 1 if the robot is broken (last workflow step)
 
 It answers: how many deals went out, which big chains we can't read (most locations lost),
 how much AI was used, and which hand-added deals are now duplicated by the robot.
@@ -17,12 +20,10 @@ import datetime as dt
 import sys
 from pathlib import Path
 
-import deal_state as ds  # Edmonton clock (UTC-6 year-round since Nov 2026)
+import cities
+import deal_state as ds  # each city's clock (fixed offsets since Nov 2026)
 
 ROOT = Path(__file__).resolve().parent.parent
-REPORT = ROOT / "data" / "cache" / "report.json"
-DEALS = ROOT / "data" / "deals.json"
-CACHE = ROOT / "data" / "cache" / "sites.json"  # scrape.py keeps monthly AI usage under "_usage"
 
 
 def ds_utc_date() -> str:
@@ -59,24 +60,30 @@ def gate(report: dict, today: set[str]) -> str | None:
     return f"{fix} Error: {stopped}. Deals already on the site are kept, but nothing new is being picked up."
 
 
-def main() -> None:
-    if "--gate" in sys.argv:
-        report = json.loads(REPORT.read_text()) if REPORT.exists() else {}
-        problem = gate(report, {ds.edmonton_now().date, ds_utc_date()})
+def check_gate(which: list[cities.City]) -> None:
+    problems = []
+    for city in which:
+        report = json.loads(city.report.read_text()) if city.report.exists() else {}
+        problem = gate(report, {ds.now_in(city.timezone).date, ds_utc_date()})
         if problem:
-            print(f"::error title=Foodish robot needs attention::{problem}")
-            sys.exit(1)
-        print("Robot is healthy: today's refresh ran and the AI step worked.")
-        return
+            problems.append(f"{city.name}: {problem}")
+    if problems:
+        for p in problems:
+            print(f"::error title=Foodish robot needs attention::{p}")
+        sys.exit(1)
+    print(f"Robot is healthy for {', '.join(c.name for c in which)}: today's refresh ran and the AI step worked.")
+
+
+def summary(city: cities.City) -> list[str]:
     lines: list[str] = []
-    report = json.loads(REPORT.read_text()) if REPORT.exists() else {}
-    data = json.loads(DEALS.read_text()) if DEALS.exists() else {"deals": [], "restaurants": []}
+    report = json.loads(city.report.read_text()) if city.report.exists() else {}
+    data = json.loads(city.deals.read_text()) if city.deals.exists() else {"deals": [], "restaurants": []}
     sites = report.get("sites", {})
     status = report.get("status_counts", {})
     total = sum(status.values()) or 1
     ok = status.get("ok", 0)
 
-    lines.append(f"## Foodish daily check · {report.get('date', '?')}")
+    lines.append(f"## Foodish daily check · {city.name} · {report.get('date', 'no run yet')}")
     lines.append("")
     lines.append(f"- **Published:** {len(data['deals'])} deals at {len(data['restaurants'])} locations")
     lines.append(f"- **Websites read:** {ok} of {total} ({ok * 100 // total}%)")
@@ -93,15 +100,15 @@ def main() -> None:
             why = {"deferred_budget": "AI limit reached", "ai_error": "AI error", "deferred_ai_stopped": "AI stopped"}
             lines.append("- ⚠️ **Waiting for tomorrow (old deals kept):** "
                          + ", ".join(f"{n} ({why[k]})" for k, n in waiting.items() if n))
-    if CACHE.exists():
+    if city.cache.exists():  # scrape.py keeps monthly AI usage under "_usage"
         try:
-            usage = json.loads(CACHE.read_text()).get("_usage", {})
+            usage = json.loads(city.cache.read_text()).get("_usage", {})
             month, used = sorted(usage.items())[-1]
             lines.append(f"- **AI calls this month ({month}):** {used}")
         except Exception:  # noqa: BLE001
             pass
 
-    # Biggest losses: unreadable sites ranked by how many Edmonton locations they cover
+    # Biggest losses: unreadable sites ranked by how many of the city's locations they cover
     failing = sorted(((v.get("locations", 0), k, v.get("status")) for k, v in sites.items() if v.get("status") != "ok"), reverse=True)
     if failing:
         lines += ["", "### Chains we couldn't read (most locations first)", "", "| Site | Locations | Problem |", "| --- | --- | --- |"]
@@ -114,7 +121,7 @@ def main() -> None:
                       "Setting the GitHub variable `RENDER_JS` = `1` lets the robot read these."]
 
     # Likely duplicates: a hand-added deal (data/manual_deals.json) that the robot now also finds on the website
-    manual_path = ROOT / "data" / "manual_deals.json"
+    manual_path = city.manual_deals
     manual_ids = {m.get("id") for m in json.loads(manual_path.read_text())} if manual_path.exists() else set()
     names = {r["id"]: r.get("name", "") for r in data["restaurants"]}
     manual = [d for d in data["deals"] if d.get("id") in manual_ids]
@@ -133,12 +140,26 @@ def main() -> None:
                 dupes.append(f"{names.get(next(iter(shared)), '?')}: your manual “{m.get('title')}” ({m.get('id')}) looks like the website's “{s_.get('title')}”")
     if dupes:
         lines += ["", "### Hand-added deals the robot now finds itself", ""] + [f"- {x}" for x in sorted(set(dupes))[:10]]
-        lines.append("\nIf they match, delete the manual entry from `data/manual_deals.json` so the deal isn't listed twice.")
+        lines.append(f"\nIf they match, delete the manual entry from `{manual_path.relative_to(ROOT)}` so the deal isn't listed twice.")
+    return lines
 
+
+def main() -> None:
+    args = [a for a in sys.argv[1:] if a != "--gate"]
+    if "--gate" in sys.argv:
+        check_gate(cities.pick(args))
+        return
+    lines: list[str] = []
+    for city in cities.pick(args):
+        if not city.report.exists() and not city.deals.exists():
+            lines += [f"## Foodish daily check · {city.name} · no run yet", "",
+                      "This city's restaurants haven't been found yet. It starts on the next daily run.", ""]
+            continue
+        lines += summary(city) + [""]
     out = "\n".join(lines) + "\n"
-    summary = os.environ.get("GITHUB_STEP_SUMMARY")
-    if summary:
-        with open(summary, "a", encoding="utf-8") as f:
+    summary_file = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary_file:
+        with open(summary_file, "a", encoding="utf-8") as f:
             f.write(out)
     print(out)
 

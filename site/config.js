@@ -1,9 +1,22 @@
-// Foodish configuration — edit these three values after setup (see README.md).
+// Foodish configuration (see README.md).
 window.FOODISH_CONFIG = {
-  // Where the daily deal file lives. While testing, the copy next to this page works.
-  // After setup, point it at your GitHub repo's raw file, e.g.
-  // "https://raw.githubusercontent.com/YOUR-GITHUB-NAME/foodish/main/data/deals.json"
-  DATA_URL: "https://raw.githubusercontent.com/ctyhuofc/foodish/main/data/deals.json",
+  // The cities Foodish covers. Keep in step with cities.json (tests/test_cities.py checks they match).
+  // dataUrl is where each city's daily deal file lives. While testing on your computer you can use the
+  // copies next to this page instead: "data/deals.json" and "data/vancouver/deals.json".
+  CITIES: [
+    {
+      id: "edmonton", name: "Edmonton", label: "Downtown Edmonton",
+      center: [53.5444, -113.4909], timezone: "America/Edmonton",
+      dataUrl: "https://raw.githubusercontent.com/ctyhuofc/foodish/main/data/deals.json",
+    },
+    {
+      id: "vancouver", name: "Vancouver", label: "Downtown Vancouver",
+      center: [49.2827, -123.1207], timezone: "America/Vancouver",
+      dataUrl: "https://raw.githubusercontent.com/ctyhuofc/foodish/main/data/vancouver/deals.json",
+    },
+  ],
+  // Shown when we don't know where the visitor is and they haven't picked a city.
+  DEFAULT_CITY: "edmonton",
 
   // Cloudflare Worker URL for alerts + deal submissions (leave "" until set up).
   // e.g. "https://foodish-api.YOUR-SUBDOMAIN.workers.dev"
@@ -11,9 +24,4 @@ window.FOODISH_CONFIG = {
 
   // Public VAPID key for web push (generated in setup step 4). Leave "" to hide push alerts.
   VAPID_PUBLIC_KEY: "",
-
-  // Fallback map centre if the visitor declines location (Downtown Edmonton).
-  DEFAULT_CENTER: [53.5444, -113.4909],
-  TIMEZONE: "America/Edmonton",
-  CITY: "Edmonton",
 };

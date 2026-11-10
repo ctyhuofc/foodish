@@ -16,14 +16,22 @@
   // The app's states, named. Each machine has one function that changes it (setLoad, setLocation,
   // syncAlertsBadge, setView) so the screen always matches the state. Documented in docs/STATE_MACHINES.md.
   const LOAD = Object.freeze({ LOADING: "loading", READY: "ready", ERROR: "error" });
-  const LOC = Object.freeze({ LOCATING: "locating", PRECISE: "precise", LAST_KNOWN: "last_known", DEFAULT: "default" });
+  // "away": we know where the visitor is, but it's far from the city being shown (browsing another
+  // city, or somewhere Foodish doesn't cover yet), so distances are measured from that city's centre.
+  const LOC = Object.freeze({ LOCATING: "locating", PRECISE: "precise", LAST_KNOWN: "last_known", DEFAULT: "default", AWAY: "away" });
   const STALE_AFTER_H = 36; // deals older than this get a gentle "last checked" note
+  const CITIES = CFG.CITIES; // the cities Foodish covers (config.js, kept in step with cities.json)
+  const NEAR_KM = 100;       // a visitor within this distance of a city's centre counts as "in" that city
+  const cityById = (id) => CITIES.find((c) => c.id === id);
 
   const state = {
+    city: CFG.DEFAULT_CITY, // which city's deals are showing; changed only by setCity()
+    cityLocked: false,      // true when the link (?city=) or the picker chose it: location won't switch it
+    gps: null,              // the visitor's last real position {lat, lng}, if they shared it
     load: LOAD.LOADING,     // loading -> ready | error; error -> loading (retry)
     data: null,
     byId: new Map(),
-    loc: null,              // locating | precise | last_known | default
+    loc: null,              // locating | precise | last_known | default | away
     me: null,               // {lat, lng, label}
     day: null,              // 0-6, null = today
     onNow: false,
@@ -38,7 +46,9 @@
   // ---------- time + deal status: shared rules in deal-state.js (same as pipeline/deal_state.py) ----------
   const DS = window.FoodishDealState;
   const ST = DS.STATES;
-  const nowLocal = () => DS.zonedNow(CFG.TIMEZONE);
+  const city = () => cityById(state.city);
+  const cityCentre = () => ({ lat: city().center[0], lng: city().center[1] });
+  const nowLocal = () => DS.zonedNow(city().timezone); // the shown city's own clock
   function fmtTime(hhmm) {
     const m = DS.toMins(hhmm); if (m == null) return null;
     const h = Math.floor(m / 60) % 24, mm = m % 60, ap = h >= 12 ? "pm" : "am", h12 = ((h + 11) % 12) + 1;
@@ -63,7 +73,27 @@
   }
   const fmtKm = (d) => (d < 1 ? `${Math.round(d * 1000 / 50) * 50} m` : `${d.toFixed(1)} km`);
 
-  // Location machine: locating -> precise (GPS) | last_known (saved spot) | default (Downtown).
+  // City machine: which city's deals are showing. Chosen by, in order: the link (?city=vancouver),
+  // the city picker, the visitor's location (nearest city within NEAR_KM), the last city used, the default.
+  function nearestCity(pt) {
+    return CITIES.map((c) => ({ city: c, km: km(pt, { lat: c.center[0], lng: c.center[1] }) })).sort((a, b) => a.km - b.km)[0];
+  }
+  function setCity(id, { locked = state.cityLocked } = {}) {
+    if (!cityById(id)) return;
+    const changed = id !== state.city;
+    state.city = id; state.cityLocked = locked;
+    store.set("city", id);
+    $("cityPick").value = id;
+    $("radius").querySelector('option[value="999"]').textContent = `All of ${city().name}`;
+    document.title = `Foodish — Restaurant deals near you in ${city().name}`;
+    if (changed) { // another city's deals: forget this one's and load the new file
+      state.data = null; state.byId = new Map(); state.cat = null;
+      $("chips").innerHTML = ""; $("list").innerHTML = ""; $("updated").textContent = "";
+      load();
+    }
+  }
+
+  // Location machine: locating -> precise (GPS) | last_known (saved spot) | default (city centre) | away.
   function setLocation(loc, coords, note) {
     state.loc = loc;
     if (loc === LOC.PRECISE) {
@@ -71,8 +101,8 @@
       store.set("lastLoc", { lat: coords.lat, lng: coords.lng });
     } else if (loc === LOC.LAST_KNOWN) {
       state.me = { ...coords, label: "Your last spot" };
-    } else if (loc === LOC.DEFAULT) {
-      state.me = { lat: CFG.DEFAULT_CENTER[0], lng: CFG.DEFAULT_CENTER[1], label: "Downtown Edmonton" };
+    } else if (loc === LOC.DEFAULT || loc === LOC.AWAY) {
+      state.me = { ...cityCentre(), label: city().label };
     }
     $("locText").textContent = loc === LOC.LOCATING ? "Finding you…"
       : loc === LOC.PRECISE ? "Showing deals near you"
@@ -80,19 +110,36 @@
     if (loc !== LOC.LOCATING) render();
   }
 
+  // A real position arrived: follow the visitor to their city (unless the city was chosen on purpose),
+  // then measure from them if they're in the shown city, or from its centre if they're away.
+  function applyPosition(coords) {
+    state.gps = coords;
+    const near = nearestCity(coords);
+    if (near.km <= NEAR_KM && near.city.id !== state.city && !state.cityLocked) setCity(near.city.id);
+    if (km(coords, cityCentre()) <= NEAR_KM) setLocation(LOC.PRECISE, coords);
+    else setLocation(LOC.AWAY, null, near.km > NEAR_KM
+      ? `Foodish isn't in your area yet — showing ${city().label}`
+      : `Showing ${city().label}`);
+  }
+
   function locate({ quiet = false } = {}) {
     if (!("geolocation" in navigator)) { setFallbackLocation("Location isn't available on this device"); return; }
     setLocation(LOC.LOCATING);
     navigator.geolocation.getCurrentPosition(
-      (p) => setLocation(LOC.PRECISE, { lat: p.coords.latitude, lng: p.coords.longitude }),
-      () => setFallbackLocation(quiet ? null : "Location off — showing Downtown. Tap to try again."),
+      (p) => applyPosition({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => setFallbackLocation(quiet ? null : `Location off — showing ${city().label}. Tap to try again.`),
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 }
     );
   }
   function setFallbackLocation(note) {
     const last = store.get("lastLoc", null);
-    if (last) setLocation(LOC.LAST_KNOWN, last, note);
+    if (last && km(last, cityCentre()) <= NEAR_KM) setLocation(LOC.LAST_KNOWN, last, note); // only if it's in this city
     else setLocation(LOC.DEFAULT, null, note);
+  }
+  // After the city changes: place the visitor again relative to the new city.
+  function relocate() {
+    if (state.gps) applyPosition(state.gps);
+    else setFallbackLocation();
   }
 
   // ---------- data ----------
@@ -110,7 +157,7 @@
       const g = state.data.generated_at ? new Date(state.data.generated_at) : null;
       if (g && !isNaN(g)) {
         const ageH = (Date.now() - g.getTime()) / 36e5;
-        const when = g.toLocaleString("en-CA", { timeZone: DS.zoneFor(CFG.TIMEZONE, g), dateStyle: "medium", timeStyle: "short" });
+        const when = g.toLocaleString("en-CA", { timeZone: DS.zoneFor(city().timezone, g), dateStyle: "medium", timeStyle: "short" });
         $("updated").textContent = ageH > STALE_AFTER_H
           ? `Deals last checked ${when}, over a day ago — some may have changed.`
           : `Last updated ${when}`;
@@ -121,14 +168,19 @@
 
   async function load() {
     if (state.load === LOAD.LOADING && state.data) return; // a refresh is already running
+    const forCity = state.city;
     setLoad(LOAD.LOADING);
     try {
-      const res = await fetch(CFG.DATA_URL, { cache: "no-cache" });
+      const res = await fetch(city().dataUrl, { cache: "no-cache" });
+      if (forCity !== state.city) return; // the visitor switched city while this was loading
+      if (res.status === 404) throw new Error(`${city().name} deals aren't ready yet`);
       if (!res.ok) throw new Error(`error ${res.status}`);
       const data = await res.json();
+      if (forCity !== state.city) return;
       if (!Array.isArray(data.deals) || !Array.isArray(data.restaurants)) throw new Error("unexpected file");
       state.data = data;
     } catch (e) {
+      if (forCity !== state.city) return;
       setLoad(LOAD.ERROR, navigator.onLine === false ? "you're offline" : e.message || "network error");
       return;
     }
@@ -332,7 +384,7 @@
         let sub = await reg.pushManager.getSubscription();
         if (wantPush) {
           if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(CFG.VAPID_PUBLIC_KEY) });
-          const spot = state.me || { lat: CFG.DEFAULT_CENTER[0], lng: CFG.DEFAULT_CENTER[1] };
+          const spot = state.me || cityCentre();
           await fetch(CFG.API_URL + "/subscribe", {
             method: "POST", headers: { "content-type": "application/json" },
             body: JSON.stringify({ subscription: sub, lat: +spot.lat.toFixed(3), lng: +spot.lng.toFixed(3), radius_km: Math.min(state.radius, 25), categories: cats }),
@@ -357,7 +409,9 @@
   function startWatch() {
     if (state.watchId != null || !("geolocation" in navigator)) return;
     state.watchId = navigator.geolocation.watchPosition((p) => {
-      state.me = { lat: p.coords.latitude, lng: p.coords.longitude, label: "Near you" };
+      state.gps = { lat: p.coords.latitude, lng: p.coords.longitude };
+      if (km(state.gps, cityCentre()) > NEAR_KM) return; // not in the city being shown
+      state.me = { ...state.gps, label: "Near you" };
       checkNearby();
     }, () => {}, { enableHighAccuracy: false, maximumAge: 60000 });
   }
@@ -365,7 +419,7 @@
   async function checkNearby() {
     if (!state.data || !("Notification" in window) || Notification.permission !== "granted") return;
     const now = nowLocal();
-    const todayKey = now.date; // Edmonton date, so "once per deal per day" follows the local day
+    const todayKey = now.date; // the city's local date, so "once per deal per day" follows the local day
     const seen = store.get("seen", {});
     for (const d of state.data.deals) {
       if (DS.dealState(d, now) !== ST.ON_NOW) continue;
@@ -410,10 +464,12 @@
 
   // ---------- wire up ----------
   // The filters live in the address bar, so any view can be shared, bookmarked or opened by a link:
-  //   /?cat=wings  /?day=3 (0 = Sunday)  /?now=1 (on right now)  /?view=map  /?km=2  /?q=tacos
+  //   /?city=vancouver  /?cat=wings  /?day=3 (0 = Sunday)  /?now=1 (on right now)  /?view=map  /?km=2  /?q=tacos
   // The /deals/ pages link in this way too.
   function readLinkFilters() {
     const p = new URLSearchParams(location.search);
+    const linkCity = (p.get("city") || "").trim().toLowerCase();
+    if (cityById(linkCity)) { state.city = linkCity; state.cityLocked = true; } // a link to a city always opens that city
     const cat = (p.get("cat") || "").trim().toLowerCase();
     if (cat) state.cat = cat;
     const day = parseInt(p.get("day"), 10);
@@ -426,6 +482,7 @@
   }
   function writeLinkFilters() {
     const p = new URLSearchParams();
+    if (state.cityLocked || state.city !== CFG.DEFAULT_CITY) p.set("city", state.city);
     if (state.cat) p.set("cat", state.cat);
     if (state.day != null) p.set("day", state.day);
     if (state.onNow) p.set("now", "1");
@@ -437,7 +494,12 @@
   }
 
   function init() {
+    const lastCity = store.get("city", null); // start where the visitor was last time; location may correct it
+    if (cityById(lastCity)) state.city = lastCity;
     readLinkFilters();
+    $("cityPick").innerHTML = CITIES.map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
+    $("cityPick").onchange = (e) => { setCity(e.target.value, { locked: true }); relocate(); };
+    setCity(state.city);
     $("radius").value = String(state.radius);
     $("onNow").checked = state.onNow;
     $("search").value = state.q;
@@ -463,7 +525,7 @@
       if (state.load === LOAD.ERROR || (g && Date.now() - g > 20 * 36e5)) load();
     });
 
-    // Ask for location straight away if previously granted; otherwise show Downtown until they tap.
+    // Ask for location straight away if previously granted; otherwise show the city centre until they tap.
     if (navigator.permissions?.query) {
       navigator.permissions.query({ name: "geolocation" }).then((p) => (p.state === "granted" ? locate({ quiet: true }) : setFallbackLocation()), () => setFallbackLocation());
     } else setFallbackLocation();
@@ -479,6 +541,6 @@
     render();
   }
   // exposed for tests
-  window.__foodish = { dealState: DS.dealState, km, state, LOAD, LOC, alertsState };
+  window.__foodish = { dealState: DS.dealState, km, state, LOAD, LOC, alertsState, setCity, nearestCity };
   init();
 })();
