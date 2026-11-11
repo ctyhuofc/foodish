@@ -118,7 +118,7 @@ def summary(city: cities.City) -> list[str]:
     js_only = sorted(((v.get("locations", 0), k) for k, v in sites.items() if v.get("status") == "ok" and v.get("js_page") and not v.get("deal_chars")), reverse=True)
     if js_only:
         lines += ["", f"**JavaScript-only sites with no readable text:** {', '.join(f'{k} ({n})' for n, k in js_only[:8])}. "
-                      "Setting the GitHub variable `RENDER_JS` = `1` lets the robot read these."]
+                      "The browser step reads these unless the GitHub variable `RENDER_JS` is `0`; if this list stays long, the browser couldn't render them either."]
 
     # Likely duplicates: a hand-added deal (data/manual_deals.json) that the robot now also finds on the website
     manual_path = city.manual_deals
