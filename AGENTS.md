@@ -1,6 +1,6 @@
 # Working on Foodish (for AI agents and developers)
 
-Foodish finds restaurant deals near you in Edmonton and Vancouver (the list is `cities.json`). A GitHub Actions robot reads restaurant websites
+Foodish finds restaurant deals near you in Edmonton, Vancouver and Toronto (the list is `cities.json`). A GitHub Actions robot reads restaurant websites
 daily and publishes `data/deals.json`; the app (`site/`, and the live foodish.ca app built in Grok)
 reads that file. The owner isn't a developer: explain changes in plain words.
 
@@ -19,7 +19,7 @@ place that changes it. Change the machine, not a copy of its logic.
   (`python pipeline/scrape.py vancouver`; none = every city). Edmonton's paths (`data/deals.json`, …)
   must never move: the live site reads them.
 - **Local time** → `deal_state.now_in(city.timezone)` / `FoodishDealState.zonedNow(zone)`. Alberta is
-  UTC-6 and B.C. is UTC-7 year-round; don't use raw `ZoneInfo(...)` or `Intl` for "now".
+  UTC-6 and B.C. is UTC-7 year-round; Ontario (Toronto) still changes clocks and uses normal tz data; don't use raw `ZoneInfo(...)` or `Intl` for "now".
 
 ## Check your work
 ```bash

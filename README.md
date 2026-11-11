@@ -1,4 +1,4 @@
-# Foodish — restaurant deals near you (Edmonton and Vancouver)
+# Foodish — restaurant deals near you (Edmonton, Vancouver and Toronto)
 
 A location-aware web app for **www.foodish.ca**. Open it on a Wednesday downtown and it shows the wing night 1.6 km away that's on right now, with directions. Deals refresh automatically every day.
 
@@ -24,18 +24,19 @@ foodish/
 ```
 
 ## Cities
-Foodish covers the cities listed in [`cities.json`](cities.json): **Edmonton** and **Vancouver**. Each city has its own restaurant list, its own deals file and its own clock, and the robot reads them one after another on every run.
+Foodish covers the cities listed in [`cities.json`](cities.json): **Edmonton**, **Vancouver** and **Toronto**. Each city has its own restaurant list, its own deals file and its own clock, and the robot reads them one after another on every run.
 
 | City | Area covered | Deals file | Clock |
 |---|---|---|---|
 | Edmonton | Edmonton plus St. Albert, Sherwood Park and Windermere | `data/deals.json` | UTC-6 all year |
 | Vancouver | Vancouver plus Burnaby, Richmond, New Westminster, North and West Vancouver | `data/vancouver/deals.json` | UTC-7 all year |
+| Toronto | The City of Toronto: downtown, North York, Scarborough, Etobicoke and East York | `data/toronto/deals.json` | UTC-5 winter, UTC-4 summer (Ontario still changes clocks) |
 
 The app opens the city the visitor is in (within 100 km of its centre), a link like `/?city=vancouver` opens that city, and the picker beside the logo switches by hand.
 
 **A new city's first days:** the next run finds its restaurants, then reads up to `MAX_LLM_CALLS` (400) changed websites per city per run, biggest chains first. A large city can take two or three daily runs to be fully read; after that only changed sites are re-read. `MONTHLY_LLM_CALLS` is one budget shared by all cities.
 
-**To add another city:** add it to `cities.json` (the search box, centre and time zone), to `CITIES` in `site/config.js`, to `CITY_AREAS` in `worker/worker.js`, and, if its time zone is new, to the clock rules in `pipeline/deal_state.py` and `site/deal-state.js`. `tests/test_cities.py` fails until they all agree. Hand-added deals for a city go in `data/<city>/manual_deals.json`.
+**To add another city:** add it to `cities.json` (the search box, centre and time zone), to `CITIES` in `site/config.js`, to `CITY_AREAS` in `worker/worker.js`, and, if its province has stopped changing clocks, to the fixed offsets in `pipeline/deal_state.py` and `site/deal-state.js` (if it still changes clocks, set `"observes_dst": true` in `cities.json` instead). `tests/test_cities.py` fails until they all agree. Hand-added deals for a city go in `data/<city>/manual_deals.json`.
 
 ## How it stays cheap and current
 
@@ -87,6 +88,7 @@ In `site/config.js` set:
 // one dataUrl per city, inside CITIES:
 dataUrl: "https://raw.githubusercontent.com/YOUR-GITHUB-NAME/foodish/main/data/deals.json",            // Edmonton
 dataUrl: "https://raw.githubusercontent.com/YOUR-GITHUB-NAME/foodish/main/data/vancouver/deals.json",  // Vancouver
+dataUrl: "https://raw.githubusercontent.com/YOUR-GITHUB-NAME/foodish/main/data/toronto/deals.json",    // Toronto
 ```
 
 ### 5. Put the app on foodish.ca

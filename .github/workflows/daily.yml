@@ -59,7 +59,7 @@ jobs:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           RENDER_JS: ${{ vars.RENDER_JS }}
           MAX_LLM_CALLS: ${{ vars.MAX_LLM_CALLS || '400' }}
-          MONTHLY_LLM_CALLS: ${{ vars.MONTHLY_LLM_CALLS || '6000' }}
+          MONTHLY_LLM_CALLS: ${{ vars.MONTHLY_LLM_CALLS || '12000' }}   # all cities together
         run: python pipeline/scrape.py ${{ steps.plan.outputs.scrape_cities }}
 
       - name: Build search-friendly deal pages (site/deals, site/<city>/deals, sitemap.xml)

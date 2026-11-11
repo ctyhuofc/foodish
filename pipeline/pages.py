@@ -6,7 +6,7 @@ This writes simple, fast pages from each city's deals file (cities.json lists th
   site/deals/index.html            all days and deal types, with counts   (Edmonton)
   site/deals/monday.html …         one page per day of the week
   site/deals/wings.html …          one page per deal type with at least MIN_DEALS deals
-  site/vancouver/deals/…           the same for Vancouver
+  site/vancouver/deals/…           the same for Vancouver (and site/toronto/deals/… for Toronto)
   site/sitemap.xml, site/robots.txt
 
 Each page links back into the app (e.g. /?cat=wings or /?city=vancouver&day=3) so visitors land on the live map.
