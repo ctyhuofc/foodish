@@ -379,7 +379,7 @@ def run_city(city, args):
            # this city's clock: deal days and times are in this local time. utc_offset_hours is the offset in
            # effect now; observes_dst says whether it changes in spring and fall (Toronto) or never (AB, BC)
            "city_id": city.id, "timezone": city.timezone, "observes_dst": city.observes_dst,
-           "utc_offset_hours": int(deal_state.local_time(city.timezone).utcoffset().total_seconds() // 3600),
+           "utc_offset_hours": int(ds.local_time(city.timezone).utcoffset().total_seconds() // 3600),
            # how to tell whether a deal is on (days, times, valid dates): same rules for every app reading this file
            "rules": "https://github.com/ctyhuofc/foodish/blob/main/spec/deal-states.json",
            "restaurants": pub_restaurants, "deals": deals}
