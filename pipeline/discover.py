@@ -7,6 +7,7 @@ Usage:  python pipeline/discover.py              (every city)
         python pipeline/discover.py vancouver    (one city)
 """
 import json
+import unicodedata
 import re
 import sys
 import time
@@ -72,9 +73,61 @@ def fetch(bbox):
     raise RuntimeError(f"OpenStreetMap (Overpass) didn't answer: {last}")
 
 
+# Names too generic to treat as one business: two "Café"s in a city are usually unrelated.
+GENERIC_NAMES = {"cafe", "coffee", "coffeeshop", "restaurant", "pizza", "sushi", "pho", "bar", "pub", "grill",
+                 "kitchen", "deli", "bakery", "cafeteria", "foodcourt", "bistro", "diner", "tea", "bubbletea",
+                 "shawarma", "donair", "burger", "burgers", "noodles", "ramen", "takeout", "snackbar", "canteen"}
+
+
+def name_key(name: str | None) -> str:
+    """'Thaï Express', 'thai express!' and 'Thai-Express' all become 'thaiexpress'."""
+    s = unicodedata.normalize("NFKD", (name or "").lower().replace("&", "and"))
+    return re.sub(r"[^a-z0-9]", "", "".join(c for c in s if not unicodedata.combining(c)))
+
+
+def load_brand_sites() -> dict:
+    """data/brand_sites.json: chain name -> website, for chains whose branches have none on OpenStreetMap.
+    Keys starting with "_" are notes. Shared by every city, so list only real chains, not common names."""
+    raw = json.loads(BRAND_SITES.read_text()) if BRAND_SITES.exists() else {}
+    return {name_key(k): v for k, v in raw.items() if not k.startswith("_")}
+
+
+def link_websites(rows: list[dict], brand_sites: dict) -> int:
+    """Give branches with no website one they can share. Only fills gaps: a listed website is never replaced.
+      1. another branch in this city with the same brand tag or the same (non-generic) name has one
+      2. the chain is in brand_sites.json
+    Returns how many places got a website."""
+    known = {}
+    for r in rows:
+        if r.get("website"):
+            for k in {name_key(r.get("brand")), name_key(r["name"])} - {""}:
+                known.setdefault(k, r["website"])
+    filled = 0
+    for r in rows:
+        if r.get("website"):
+            continue
+        for k in [name_key(r.get("brand")), name_key(r["name"])]:
+            if not k or k in GENERIC_NAMES:
+                continue
+            site = known.get(k) or norm_site(brand_sites.get(k))
+            if site:
+                r["website"] = site
+                filled += 1
+                break
+    return filled
+
+
+def relink(city: cities.City) -> None:
+    """Re-apply link_websites() to a city's saved list without asking OpenStreetMap again."""
+    rows = json.loads(city.restaurants.read_text())
+    before = sum(1 for r in rows if r.get("website"))
+    n = link_websites(rows, load_brand_sites())
+    city.restaurants.write_text(json.dumps(rows, indent=1, ensure_ascii=False))
+    print(f"{city.name}: {n} more places now have a website ({before} -> {before + n} of {len(rows)})")
+
+
 def discover(city: cities.City) -> None:
     els = fetch(city.bbox)
-    brand_sites = json.loads(BRAND_SITES.read_text()) if BRAND_SITES.exists() else {}
     rows = []
     for e in els:
         t = e.get("tags", {})
@@ -96,17 +149,7 @@ def discover(city: cities.City) -> None:
             "kind": t.get("amenity"),
         })
 
-    # Chains: branches without a website inherit the brand's site (from overrides or another branch).
-    by_brand = {}
-    for r in rows:
-        if r["brand"] and r["website"]:
-            by_brand.setdefault(r["brand"], r["website"])
-    for r in rows:
-        key = r["brand"] or r["name"]
-        if key in brand_sites:
-            r["website"] = norm_site(brand_sites[key]) or r["website"]
-        elif not r["website"] and r["brand"] in by_brand:
-            r["website"] = by_brand[r["brand"]]
+    link_websites(rows, load_brand_sites())
 
     if city.extra_restaurants.exists():
         rows.extend(json.loads(city.extra_restaurants.read_text()))
@@ -122,8 +165,13 @@ def discover(city: cities.City) -> None:
 
 
 def main():
+    args = sys.argv[1:]
+    if "--relink" in args:  # fill websites from brand_sites.json and same-name branches, no OpenStreetMap query
+        for city in cities.pick([a for a in args if a != "--relink"]):
+            relink(city)
+        return
     failed = []
-    for city in cities.pick(sys.argv[1:]):
+    for city in cities.pick(args):
         try:
             discover(city)
         except Exception as e:  # noqa: BLE001  one city failing must not stop the others
