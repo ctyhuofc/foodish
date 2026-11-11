@@ -148,6 +148,32 @@ def add_overture(city: cities.City, rows: list[dict]) -> None:
         print(f"::warning title=Overture skipped for {city.name}::{type(e).__name__}: {str(e)[:200]}")
 
 
+KEEP_MISSING_DAYS = 21  # OpenStreetMap can answer with an incomplete list: keep a vanished place this long
+
+
+def keep_missing(rows: list[dict], city: cities.City, today: str | None = None) -> list[dict]:
+    """Places on the previous list that OpenStreetMap didn't return this time are kept, marked
+    missing_since, for KEEP_MISSING_DAYS; then they're dropped (closed or deleted for real).
+    Places that come back lose the mark."""
+    today = today or time.strftime("%Y-%m-%d")
+    try:
+        previous = json.loads(city.restaurants.read_text())
+    except (OSError, ValueError):
+        return rows
+    seen = {r["id"] for r in rows}
+    cutoff = time.strftime("%Y-%m-%d", time.gmtime(time.mktime(time.strptime(today, "%Y-%m-%d")) - KEEP_MISSING_DAYS * 86400))
+    kept = []
+    for r in previous:
+        if r["id"] in seen or not str(r["id"]).startswith("osm-"):  # hand-added places are re-read from their file
+            continue
+        since = r.get("missing_since") or today
+        if since > cutoff:
+            kept.append({**r, "missing_since": since})
+    if kept:
+        print(f"{city.name}: {len(kept)} places missing from OpenStreetMap this time; kept until they've been gone {KEEP_MISSING_DAYS} days")
+    return rows + kept
+
+
 def relink(city: cities.City) -> None:
     """Re-apply link_websites() to a city's saved list without asking OpenStreetMap again."""
     rows = json.loads(city.restaurants.read_text())
@@ -182,6 +208,8 @@ def discover(city: cities.City) -> None:
 
     link_websites(rows, load_brand_sites())
     add_overture(city, rows)
+
+    rows = keep_missing(rows, city)
 
     if city.extra_restaurants.exists():
         rows.extend(json.loads(city.extra_restaurants.read_text()))

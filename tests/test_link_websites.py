@@ -64,3 +64,19 @@ class NotARestaurantSite(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class KeepMissing(unittest.TestCase):
+    def test_a_vanished_place_is_kept_three_weeks_then_dropped(self):
+        import json, tempfile
+        import cities as C
+        from discover import keep_missing
+        tmp = Path(tempfile.mkdtemp())
+        city = C.City(**{**C.get("edmonton").__dict__, "data_dir": str(tmp)})
+        prev = [{"id": "osm-n1", "name": "A&W"}, {"id": "osm-n2", "name": "Gone Cafe", "missing_since": "2026-10-01"},
+                {"id": "manual-1", "name": "Hand added"}]
+        (tmp / "restaurants.json").write_text(json.dumps(prev))
+        out = keep_missing([{"id": "osm-n3", "name": "New Place"}], city, today="2026-11-11")
+        self.assertEqual([(r["id"], r.get("missing_since")) for r in out], [("osm-n3", None), ("osm-n1", "2026-11-11")])
+        back = keep_missing([{"id": "osm-n1", "name": "A&W"}], city, today="2026-11-18")
+        self.assertEqual([r.get("missing_since") for r in back if r["id"] == "osm-n1"], [None])
