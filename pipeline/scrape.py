@@ -101,7 +101,7 @@ def get(url):
 
 
 def render_js(url):
-    """Optional: for sites that build their page with JavaScript. Enabled with RENDER_JS=1."""
+    """For sites that build their page with JavaScript. On in the daily workflow unless RENDER_JS=0."""
     if os.environ.get("RENDER_JS") != "1" or not allowed(url):
         return None
     try:

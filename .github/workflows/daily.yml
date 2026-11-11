@@ -32,8 +32,10 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: pip }
       - run: pip install -r pipeline/requirements.txt
-      - name: Browser for JavaScript-only sites (optional, set variable RENDER_JS=1)
-        if: vars.RENDER_JS == '1'
+      # On by default: about 450 sites (Tim Hortons, Starbucks, Pizza Pizza...) only show text in a browser.
+      # To turn it off, set the GitHub variable RENDER_JS to 0.
+      - name: Browser for JavaScript-only sites (on unless variable RENDER_JS=0)
+        if: vars.RENDER_JS != '0'
         run: pip install playwright && python -m playwright install --with-deps chromium
 
       - name: Decide what this run does (pipeline/plan.py)
@@ -57,7 +59,7 @@ jobs:
           LLM_MODEL: ${{ vars.LLM_MODEL }}
           LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          RENDER_JS: ${{ vars.RENDER_JS }}
+          RENDER_JS: ${{ vars.RENDER_JS || '1' }}
           MAX_LLM_CALLS: ${{ vars.MAX_LLM_CALLS || '400' }}
           MONTHLY_LLM_CALLS: ${{ vars.MONTHLY_LLM_CALLS || '12000' }}   # all cities together
         run: python pipeline/scrape.py ${{ steps.plan.outputs.scrape_cities }}

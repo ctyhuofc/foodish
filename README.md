@@ -60,7 +60,7 @@ The app opens the city the visitor is in (within 100 km of its centre), a link l
 - ✅ Chain deals are applied to every Edmonton branch automatically; location-only deals stay at that location.
 - ⚠️ OpenStreetMap doesn't list a website for every place. After the first run, open `data/restaurants.json` to see coverage, and add fixes in `data/brand_sites.json` or `data/extra_restaurants.json`.
 - ❌ Deals posted **only** on Instagram/Facebook can't be collected automatically (login walls and their terms forbid scraping). That's what the in-app **"Know a deal we're missing?"** form is for — and later, a free "list your deals" page for restaurants is the strongest way to close the gap.
-- Sites built entirely in JavaScript show little text to a simple reader. Set the GitHub variable `RENDER_JS` = `1` to read those too (slower, still free).
+- Sites built entirely in JavaScript show little text to a simple reader, so the robot opens those in a real browser (about 450 sites, including Tim Hortons, Starbucks and Pizza Pizza). It's on by default; set the GitHub variable `RENDER_JS` = `0` to turn it off.
 
 ---
 
