@@ -5,7 +5,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "pipeline"))
 import cities  # noqa: E402
-import overture_test as ot  # noqa: E402
+import overture as ot  # noqa: E402
+import overture_test  # noqa: E402,F401  (the report still imports)
 
 OSM = [
     {"id": "a", "name": "Gal's Sushi", "lat": 43.6600, "lng": -79.3900},
@@ -31,10 +32,26 @@ class Match(unittest.TestCase):
         self.assertIsNone(ot.usable_site(["https://instagram.com/x"]))
 
     def test_report_counts(self):
-        rep = ot.report(cities.get("toronto"), OSM, OV)
+        rep = overture_test.report(cities.get("toronto"), OSM, OV)
         self.assertEqual((rep["osm_missing_website"], rep["websites_filled"]), (2, 1))
         self.assertEqual(rep["extra_food_places_in_overture"], 2)  # Kinton (unmatched, far) and the taco spot; not the dentist
         self.assertEqual(rep["sample_fills"][0]["website"], "https://www.galsushi.com")
+
+
+class Fill(unittest.TestCase):
+    def test_fills_only_missing_websites_and_marks_the_source(self):
+        rows = [dict(r) for r in OSM]
+        n = ot.fill_websites(cities.get("toronto"), rows, OV)
+        self.assertEqual(n, 1)
+        self.assertEqual((rows[0]["website"], rows[0]["website_source"]), ("https://www.galsushi.com", "overture"))
+        self.assertEqual(rows[2]["website"], "https://joes.ca")  # a listed site is never replaced
+        self.assertNotIn("website_source", rows[2])
+
+    def test_food_categories_match_whole_words(self):
+        for c in ["sushi_restaurant", "gastropub", "coffee_shop", "pub"]:
+            self.assertTrue(ot.FOOD.search(c), c)
+        for c in ["public_school", "barber_shop", "dentist", "teacher"]:
+            self.assertFalse(ot.FOOD.search(c), c)
 
 
 if __name__ == "__main__":

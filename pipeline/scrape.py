@@ -382,6 +382,10 @@ def run_city(city, args):
            "utc_offset_hours": int(ds.local_time(city.timezone).utcoffset().total_seconds() // 3600),
            # how to tell whether a deal is on (days, times, valid dates): same rules for every app reading this file
            "rules": "https://github.com/ctyhuofc/foodish/blob/main/spec/deal-states.json",
+           # where the restaurant list comes from (both licences ask for credit when the data is shared)
+           "attribution": "Places © OpenStreetMap contributors (ODbL, openstreetmap.org/copyright) and "
+                          "Overture Maps Foundation (CDLA-Permissive-2.0 / Apache-2.0, overturemaps.org). "
+                          "Deals from each restaurant's own website.",
            "restaurants": pub_restaurants, "deals": deals}
     city.deals.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")))
     city.site_copy.parent.mkdir(parents=True, exist_ok=True)

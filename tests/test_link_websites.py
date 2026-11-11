@@ -48,5 +48,19 @@ class LinkWebsites(unittest.TestCase):
             self.assertRegex(url, r"^https?://[^/\s]+\.[a-z]{2,}")
 
 
+class NotARestaurantSite(unittest.TestCase):
+    def test_directories_social_and_delivery_links_are_dropped(self):
+        from discover import norm_site
+        for u in ["http://www.pagesjaunes.ca/goframe/1", "http://twitter.com", "https://x.com/a", "https://m.facebook.com/a",
+                  "https://order.ubereats.com/a", "https://www.yelp.ca/biz/a", "https://maps.google.com/a",
+                  "https://www.tripadvisor.co.uk/a", "https://linktr.ee/a", "https://www.opentable.ca/r/a"]:
+            self.assertIsNone(norm_site(u), u)
+
+    def test_real_sites_that_look_similar_are_kept(self):
+        from discover import norm_site
+        for u in ["https://x.company.ca", "https://yelpizza.ca", "https://boxcar.ca", "https://www.galsushi.com"]:
+            self.assertIsNotNone(norm_site(u), u)
+
+
 if __name__ == "__main__":
     unittest.main()

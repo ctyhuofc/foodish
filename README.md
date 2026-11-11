@@ -9,7 +9,9 @@ foodish/
 │   ├── sw.js, manifest.webmanifest, icons  (installable app + notifications)
 │   └── data/deals.json    (starter data; replaced daily)
 ├── pipeline/              ← the daily robot (runs free on GitHub)
-│   ├── discover.py        weekly: finds every restaurant/bar/café in each city (OpenStreetMap)
+│   ├── discover.py        weekly: finds every restaurant/bar/café in each city (OpenStreetMap),
+│   │                      fills missing websites from chain branches, brand_sites.json and Overture Maps
+│   ├── overture.py        Overture Maps places: websites OpenStreetMap is missing (needs duckdb)
 │   ├── scrape.py          daily: reads their websites, extracts deals, publishes deals.json
 │   ├── llm.py             the AI step (Claude or Grok API — your choice)
 │   ├── pages.py           daily: search-friendly deal pages + sitemap.xml
