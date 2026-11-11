@@ -7,6 +7,7 @@ Usage:  python pipeline/discover.py              (every city)
         python pipeline/discover.py vancouver    (one city)
 """
 import json
+import os
 import unicodedata
 import re
 import sys
@@ -39,6 +40,22 @@ out center tags;
 """
 
 
+# Links that aren't a restaurant's own website (social pages, directories, delivery and booking apps).
+# Matched on whole domain labels, so "x.com" never blocks "x.company.ca" and "yelp" never blocks "yelpizza.ca".
+NOT_A_RESTAURANT_SITE = {
+    "facebook", "instagram", "linktr", "tiktok", "twitter", "x", "youtube", "linkedin", "foursquare",
+    "doordash", "skipthedishes", "ubereats", "grubhub", "fantuan", "ritual", "yelp", "tripadvisor",
+    "pagesjaunes", "yellowpages", "google", "goo", "opentable", "zomato", "allmenus", "menupages", "mapquest",
+}
+
+
+def not_restaurant_site(host: str) -> bool:
+    labels = host.lower().split(":")[0].removeprefix("www.").split(".")
+    # the site's own name is the label before the ending: yelp.ca, m.facebook.com, tripadvisor.co.uk
+    end = 2 if len(labels) > 2 and labels[-2] in {"co", "com", "org", "net"} else 1
+    return len(labels) > end and labels[-end - 1] in NOT_A_RESTAURANT_SITE
+
+
 def norm_site(url):
     if not url:
         return None
@@ -46,8 +63,8 @@ def norm_site(url):
     if not re.match(r"^https?://", url):
         url = "https://" + url
     p = urlparse(url)
-    if not p.netloc or any(s in p.netloc for s in ("facebook.com", "instagram.com", "linktr.ee", "tiktok.com", "doordash", "skipthedishes", "ubereats")):
-        return None  # social pages can't be scraped reliably / allowed
+    if not p.netloc or not_restaurant_site(p.netloc):
+        return None  # social pages, directories and delivery apps: not the restaurant's own site
     return f"{p.scheme}://{p.netloc.lower()}{p.path.rstrip('/') or ''}"
 
 
@@ -117,6 +134,20 @@ def link_websites(rows: list[dict], brand_sites: dict) -> int:
     return filled
 
 
+def add_overture(city: cities.City, rows: list[dict]) -> None:
+    """Fill remaining gaps from Overture Maps, then share those sites with same-name branches.
+    Optional: if Overture can't be reached (or OVERTURE=0), the city keeps what it has."""
+    if os.environ.get("OVERTURE") == "0":
+        return
+    try:
+        import overture
+        n = overture.fill_websites(city, rows)
+        n += link_websites(rows, {})
+        print(f"{city.name}: Overture Maps filled {n} more websites")
+    except Exception as e:  # noqa: BLE001
+        print(f"::warning title=Overture skipped for {city.name}::{type(e).__name__}: {str(e)[:200]}")
+
+
 def relink(city: cities.City) -> None:
     """Re-apply link_websites() to a city's saved list without asking OpenStreetMap again."""
     rows = json.loads(city.restaurants.read_text())
@@ -150,6 +181,7 @@ def discover(city: cities.City) -> None:
         })
 
     link_websites(rows, load_brand_sites())
+    add_overture(city, rows)
 
     if city.extra_restaurants.exists():
         rows.extend(json.loads(city.extra_restaurants.read_text()))

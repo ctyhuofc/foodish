@@ -232,6 +232,24 @@ def match_branches(applies_to, branches):
     return hits or [b["id"] for b in branches]
 
 
+def place_words(city) -> list[str]:
+    """Names a restaurant's own site is likely to mention: the city, province and areas it covers."""
+    covers = next((c.get("covers", "") for c in cities._config()["cities"] if c["id"] == city.id), "")
+    words = {city.name, city.region} | {w for w in re.findall(r"[A-Z][a-zA-Z.'-]{3,}(?: [A-Z][a-z]{3,})?", covers)}
+    return sorted(w for w in words if w not in ("The City", "City", "Plus"))
+
+
+def confirmed_site(text: str, branches: list[dict], places: list[str]) -> bool:
+    """A website taken from Overture Maps (not from the restaurant's own OpenStreetMap entry) is only used
+    if its pages mention the city, an area it covers, or a branch's street. This stops a name match from
+    pinning some unrelated site's deals (e.g. a comics publisher) on a restaurant."""
+    if not all(b.get("website_source") == "overture" for b in branches):
+        return True
+    low = text.lower()
+    streets = {m.group(1) for b in branches for m in [re.search(r"\d+[a-z]?\s+([A-Za-z][A-Za-z'.-]{3,})", b.get("address") or "")] if m}
+    return any(w.lower() in low for w in [*places, *streets])
+
+
 def used_elsewhere(city, month):
     """AI calls other cities have made this month: MONTHLY_LLM_CALLS is one budget for all of Foodish."""
     total = 0
@@ -267,10 +285,15 @@ def run_city(city, args):
 
     # 1) fetch all sites in parallel (free)
     texts, report = {}, {}
+    places = place_words(city)
     def work(k):
         info = {"url": sites[k]["url"], "locations": len(sites[k]["branches"])}
         report[k] = info
-        return read_site_once(sites[k]["url"], info)
+        text = read_site_once(sites[k]["url"], info)
+        if text and not confirmed_site(text, sites[k]["branches"], places):
+            info["unconfirmed"] = True  # treated as a site with no deals, so nothing wrong is published
+            return ""
+        return text
     with cf.ThreadPoolExecutor(args.workers) as ex:
         for k, text in zip(keys, ex.map(work, keys)):
             texts[k] = text
@@ -382,6 +405,10 @@ def run_city(city, args):
            "utc_offset_hours": int(ds.local_time(city.timezone).utcoffset().total_seconds() // 3600),
            # how to tell whether a deal is on (days, times, valid dates): same rules for every app reading this file
            "rules": "https://github.com/ctyhuofc/foodish/blob/main/spec/deal-states.json",
+           # where the restaurant list comes from (both licences ask for credit when the data is shared)
+           "attribution": "Places © OpenStreetMap contributors (ODbL, openstreetmap.org/copyright) and "
+                          "Overture Maps Foundation (CDLA-Permissive-2.0 / Apache-2.0, overturemaps.org). "
+                          "Deals from each restaurant's own website.",
            "restaurants": pub_restaurants, "deals": deals}
     city.deals.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")))
     city.site_copy.parent.mkdir(parents=True, exist_ok=True)
