@@ -20,6 +20,8 @@ jobs:
         with: { python-version: "3.12" }
       - uses: actions/setup-node@v4
         with: { node-version: "22" }
+      - name: Install the robot's packages (so the scraper's publish step can be tested)
+        run: pip install -r pipeline/requirements.txt
       - name: Python tests
         run: python -m unittest discover -s tests -v
       - name: Browser-rule tests
