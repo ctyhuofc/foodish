@@ -23,6 +23,7 @@
   // Alberta and British Columbia both stopped changing their clocks in 2026. Many phones' and browsers'
   // time-zone data still expect the old November fall-back, which would put every "on now" an hour
   // off, so from that moment we use each zone's fixed offset instead. (Etc/GMT+6 means UTC-6.)
+  // Zones not listed here (e.g. America/Toronto, which still changes clocks) use the device's normal tz data.
   const FIXED = {
     "America/Edmonton": { from: Date.UTC(2026, 10, 1, 8, 0), zone: "Etc/GMT+6" },  // Alberta: UTC-6 all year
     "America/Vancouver": { from: Date.UTC(2026, 10, 1, 9, 0), zone: "Etc/GMT+7" }, // B.C.: UTC-7 all year

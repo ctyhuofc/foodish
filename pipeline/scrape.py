@@ -247,7 +247,7 @@ def used_elsewhere(city, month):
 def run_city(city, args):
     """Read one city's restaurant websites and publish its deals file."""
     max_calls = int(os.environ.get("MAX_LLM_CALLS", "400"))        # per city, per run
-    monthly_cap = int(os.environ.get("MONTHLY_LLM_CALLS", "6000"))  # all cities together, per month
+    monthly_cap = int(os.environ.get("MONTHLY_LLM_CALLS", "12000"))  # all cities together, per month
 
     restaurants = json.loads(city.restaurants.read_text())
     cache = json.loads(city.cache.read_text()) if city.cache.exists() else {}
@@ -376,8 +376,10 @@ def run_city(city, args):
 
     pub_restaurants = [{k2: by_id[i].get(k2) for k2 in ("id", "name", "lat", "lng", "address", "website")} for i in sorted(used)]
     out = {"generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "city": city.name,
-           # this city's clock: deal days and times are in this local time (fixed offset, no clock changes)
-           "city_id": city.id, "timezone": city.timezone, "utc_offset_hours": city.utc_offset_hours,
+           # this city's clock: deal days and times are in this local time. utc_offset_hours is the offset in
+           # effect now; observes_dst says whether it changes in spring and fall (Toronto) or never (AB, BC)
+           "city_id": city.id, "timezone": city.timezone, "observes_dst": city.observes_dst,
+           "utc_offset_hours": int(deal_state.local_time(city.timezone).utcoffset().total_seconds() // 3600),
            # how to tell whether a deal is on (days, times, valid dates): same rules for every app reading this file
            "rules": "https://github.com/ctyhuofc/foodish/blob/main/spec/deal-states.json",
            "restaurants": pub_restaurants, "deals": deals}

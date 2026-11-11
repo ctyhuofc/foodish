@@ -29,10 +29,11 @@ class City:
     center_label: str
     bbox: tuple[float, float, float, float]  # south, west, north, east
     timezone: str
-    utc_offset_hours: int
+    utc_offset_hours: int   # the standard (winter) offset; fixed all year unless observes_dst
     data_dir: str
     pages_dir: str      # under site/, e.g. "deals" or "vancouver/deals"
     deals_url: str
+    observes_dst: bool = False  # True where clocks still change (Toronto); False where they're fixed (AB, BC)
 
     # ---- files ----
     @property
@@ -89,7 +90,7 @@ def all_cities() -> list[City]:
     fields = City.__dataclass_fields__
     out = []
     for c in _config()["cities"]:
-        kw = {k: c[k] for k in fields}
+        kw = {k: c[k] for k in fields if k in c}  # optional fields keep their defaults
         kw["center"], kw["bbox"] = tuple(c["center"]), tuple(c["bbox"])
         out.append(City(**kw))
     return out

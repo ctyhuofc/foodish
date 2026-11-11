@@ -8,6 +8,7 @@
 const CITY_AREAS = [
   { id: "edmonton", lat: 53.544, lng: -113.491, south: 53, north: 54, west: -114.2, east: -113 },
   { id: "vancouver", lat: 49.283, lng: -123.121, south: 48.9, north: 49.6, west: -123.6, east: -122.4 },
+  { id: "toronto", lat: 43.653, lng: -79.383, south: 43.3, north: 44.2, west: -80.0, east: -78.8 },
 ];
 
 const ALLOWED_ORIGINS = ["https://www.foodish.ca", "https://foodish.ca", "http://localhost:8000"];

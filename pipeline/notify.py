@@ -1,4 +1,4 @@
-"""Step 3 (daily, ~3:45 pm Edmonton / 2:45 pm Vancouver): send each alert subscriber a push for today's
+"""Step 3 (daily, ~3:45 pm Edmonton / 2:45 pm Vancouver / 4:45 or 5:45 pm Toronto): send each alert subscriber a push for today's
 deals near them. Deals from every city are considered; "near" is the subscriber's own radius.
 
 Needs: API_URL, ADMIN_TOKEN, VAPID_PRIVATE_KEY, VAPID_SUBJECT (e.g. mailto:you@foodish.ca)

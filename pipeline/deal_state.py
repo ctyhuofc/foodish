@@ -47,6 +47,7 @@ class Moment:
 # Alberta and British Columbia both stopped changing their clocks in 2026. Many computers' and phones'
 # time-zone data still expect the old November fall-back, which would put every "on now" an hour off,
 # so from that moment we use each zone's fixed offset instead of trusting local tz data.
+# Zones not listed here (e.g. America/Toronto, which still changes clocks) use normal tz data.
 #   zone -> (the old fall-back moment in UTC, permanent offset in hours)
 FIXED_OFFSETS = {
     "America/Edmonton": (dt.datetime(2026, 11, 1, 8, 0, tzinfo=dt.timezone.utc), -6),   # Alberta: UTC-6 all year

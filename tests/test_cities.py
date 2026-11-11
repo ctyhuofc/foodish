@@ -80,16 +80,36 @@ class AppAgrees(unittest.TestCase):
         self.assertEqual(pages.app_link(cities.get("edmonton")), "/")
         self.assertEqual(pages.app_link(cities.get("vancouver"), "day=3"), "/?city=vancouver&day=3")
         self.assertEqual(pages.app_link(cities.get("vancouver")), "/?city=vancouver")
+        self.assertEqual(pages.app_link(cities.get("toronto"), "cat=wings"), "/?city=toronto&cat=wings")
 
 
 class Clocks(unittest.TestCase):
-    def test_every_city_has_a_fixed_clock_rule_matching_cities_json(self):
+    def test_every_city_has_a_clock_rule_matching_cities_json(self):
         for c in cities.all_cities():
-            self.assertIn(c.timezone, ds.FIXED_OFFSETS, f"add {c.timezone} to FIXED_OFFSETS in deal_state.py and FIXED in deal-state.js")
             winter = ds.local_time(c.timezone, dt.datetime(2027, 1, 15, 12, 0, tzinfo=UTC))
             summer = ds.local_time(c.timezone, dt.datetime(2027, 7, 15, 12, 0, tzinfo=UTC))
-            for t in (winter, summer):
-                self.assertEqual(t.utcoffset(), dt.timedelta(hours=c.utc_offset_hours), c.id)
+            self.assertEqual(winter.utcoffset(), dt.timedelta(hours=c.utc_offset_hours), c.id)
+            if c.observes_dst:  # clocks still change: one hour ahead in summer, and no fixed-offset override
+                self.assertNotIn(c.timezone, ds.FIXED_OFFSETS, c.id)
+                self.assertEqual(summer.utcoffset(), dt.timedelta(hours=c.utc_offset_hours + 1), c.id)
+            else:
+                self.assertIn(c.timezone, ds.FIXED_OFFSETS, f"add {c.timezone} to FIXED_OFFSETS in deal_state.py and FIXED in deal-state.js")
+                self.assertEqual(summer.utcoffset(), dt.timedelta(hours=c.utc_offset_hours), c.id)
+
+    def test_toronto_follows_ontario_clock_changes(self):
+        # 3:30 pm Edmonton on Wed 11 Nov 2026 is 4:30 pm in Toronto (EST, UTC-5)
+        self.assertEqual(ds.now_in("America/Toronto", dt.datetime(2026, 11, 11, 21, 30, tzinfo=UTC)).mins, 16 * 60 + 30)
+        # summer 2027: EDT, UTC-4
+        self.assertEqual(ds.now_in("America/Toronto", dt.datetime(2027, 7, 15, 16, 0, tzinfo=UTC)).mins, 12 * 60)
+        # spring forward 14 Mar 2027 at 2 am (07:00 UTC): 1:59 am then 3:00 am
+        self.assertEqual(ds.now_in("America/Toronto", dt.datetime(2027, 3, 14, 6, 59, tzinfo=UTC)).mins, 1 * 60 + 59)
+        self.assertEqual(ds.now_in("America/Toronto", dt.datetime(2027, 3, 14, 7, 0, tzinfo=UTC)).mins, 3 * 60)
+
+    def test_toronto_late_night_rolls_to_the_next_day_before_edmonton(self):
+        at = dt.datetime(2026, 11, 12, 5, 30, tzinfo=UTC)  # 12:30 am Thu Toronto, 11:30 pm Wed Edmonton
+        t, e = ds.now_in("America/Toronto", at), ds.now_in("America/Edmonton", at)
+        self.assertEqual((t.date, t.day), ("2026-11-12", 4))
+        self.assertEqual((e.date, e.day), ("2026-11-11", 3))
 
     def test_vancouver_is_one_hour_behind_edmonton(self):
         at = dt.datetime(2026, 11, 11, 21, 30, tzinfo=UTC)

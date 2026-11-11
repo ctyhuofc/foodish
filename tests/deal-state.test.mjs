@@ -29,12 +29,20 @@ test("Edmonton clock: old winters were UTC-7", () => assert.equal(at("2026-01-15
 // Every city in cities.json keeps its fixed UTC offset all year, whatever the device's tz data says.
 const cities = JSON.parse(readFileSync(new URL("../cities.json", import.meta.url), "utf8")).cities;
 for (const c of cities) {
-  test(`${c.name} clock: UTC${c.utc_offset_hours} in January and July 2027`, () => {
-    const noon = (12 + c.utc_offset_hours + 24) % 24 * 60;
-    assert.equal(ds.zonedNow(c.timezone, new Date("2027-01-15T12:00:00Z")).mins, noon);
-    assert.equal(ds.zonedNow(c.timezone, new Date("2027-07-15T12:00:00Z")).mins, noon);
+  const summer = c.utc_offset_hours + (c.observes_dst ? 1 : 0);
+  test(`${c.name} clock: UTC${c.utc_offset_hours} in January, UTC${summer} in July 2027`, () => {
+    const noon = (off) => (12 + off + 24) % 24 * 60;
+    assert.equal(ds.zonedNow(c.timezone, new Date("2027-01-15T12:00:00Z")).mins, noon(c.utc_offset_hours));
+    assert.equal(ds.zonedNow(c.timezone, new Date("2027-07-15T12:00:00Z")).mins, noon(summer));
   });
 }
+test("Toronto clock: one hour ahead of Edmonton this winter", () => {
+  assert.equal(ds.zonedNow("America/Toronto", new Date("2026-11-11T21:30:00Z")).mins, 990);
+});
+test("Toronto clock: springs forward on 14 Mar 2027", () => {
+  assert.equal(ds.zonedNow("America/Toronto", new Date("2027-03-14T06:59:00Z")).mins, 119);
+  assert.equal(ds.zonedNow("America/Toronto", new Date("2027-03-14T07:00:00Z")).mins, 180);
+});
 test("Vancouver clock: an hour behind Edmonton", () => {
   const at = new Date("2026-11-11T21:30:00Z");
   assert.equal(ds.zonedNow("America/Edmonton", at).mins, 930);

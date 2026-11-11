@@ -1,14 +1,22 @@
 {
-  "about": "The cities Foodish covers. The robot (pipeline/cities.py) reads this file, and any app showing Foodish deals can too. To add a city: add an entry here, add it to CITIES in site/config.js, and add its clock rule to pipeline/deal_state.py and site/deal-state.js if its time zone is new. tests/test_cities.py checks they all agree. Each city has its own deals file at deals_url, in the same format; spec/deal-states.json explains how to tell whether a deal is on, using that city's local time.",
+  "about": "The cities Foodish covers. The robot (pipeline/cities.py) reads this file, and any app showing Foodish deals can too. To add a city: add an entry here, add it to CITIES in site/config.js, and if its province stopped changing clocks, add its fixed offset to pipeline/deal_state.py and site/deal-state.js; if it still changes clocks, set observes_dst to true. tests/test_cities.py checks they all agree. Each city has its own deals file at deals_url, in the same format; spec/deal-states.json explains how to tell whether a deal is on, using that city's local time.",
   "default": "edmonton",
   "cities": [
     {
       "id": "edmonton",
       "name": "Edmonton",
       "region": "Alberta",
-      "center": [53.5444, -113.4909],
+      "center": [
+        53.5444,
+        -113.4909
+      ],
       "center_label": "Downtown Edmonton",
-      "bbox": [53.39, -113.72, 53.72, -113.27],
+      "bbox": [
+        53.39,
+        -113.72,
+        53.72,
+        -113.27
+      ],
       "covers": "Edmonton plus St. Albert, Sherwood Park and Windermere",
       "timezone": "America/Edmonton",
       "utc_offset_hours": -6,
@@ -21,9 +29,17 @@
       "id": "vancouver",
       "name": "Vancouver",
       "region": "British Columbia",
-      "center": [49.2827, -123.1207],
+      "center": [
+        49.2827,
+        -123.1207
+      ],
       "center_label": "Downtown Vancouver",
-      "bbox": [49.12, -123.27, 49.38, -122.87],
+      "bbox": [
+        49.12,
+        -123.27,
+        49.38,
+        -122.87
+      ],
       "covers": "Vancouver plus Burnaby, Richmond, New Westminster, North Vancouver and West Vancouver",
       "timezone": "America/Vancouver",
       "utc_offset_hours": -7,
@@ -31,6 +47,30 @@
       "data_dir": "data/vancouver",
       "pages_dir": "vancouver/deals",
       "deals_url": "https://raw.githubusercontent.com/ctyhuofc/foodish/main/data/vancouver/deals.json"
+    },
+    {
+      "id": "toronto",
+      "name": "Toronto",
+      "region": "Ontario",
+      "center": [
+        43.6532,
+        -79.3832
+      ],
+      "center_label": "Downtown Toronto",
+      "bbox": [
+        43.58,
+        -79.64,
+        43.86,
+        -79.11
+      ],
+      "covers": "The City of Toronto: downtown, North York, Scarborough, Etobicoke and East York",
+      "timezone": "America/Toronto",
+      "utc_offset_hours": -5,
+      "observes_dst": true,
+      "utc_offset_note": "Ontario still changes its clocks: UTC-5 from November to March, UTC-4 from March to November. Use normal time-zone data for this zone. utc_offset_hours here is the winter (standard) offset; each deals.json carries the offset in effect when it was made.",
+      "data_dir": "data/toronto",
+      "pages_dir": "toronto/deals",
+      "deals_url": "https://raw.githubusercontent.com/ctyhuofc/foodish/main/data/toronto/deals.json"
     }
   ]
 }
