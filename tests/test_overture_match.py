@@ -54,5 +54,25 @@ class Fill(unittest.TestCase):
             self.assertFalse(ot.FOOD.search(c), c)
 
 
+class ConfirmedSite(unittest.TestCase):
+    def setUp(self):
+        import scrape
+        self.scrape, self.places = scrape, scrape.place_words(cities.get("toronto"))
+
+    def test_unrelated_site_from_overture_is_not_used(self):
+        b = [{"website_source": "overture", "address": "2401 Bloor Street West"}]
+        self.assertFalse(self.scrape.confirmed_site("Dark Horse Comics, Milwaukie, Oregon", b, self.places))
+
+    def test_site_mentioning_city_area_or_street_is_used(self):
+        b = [{"website_source": "overture", "address": "2401 Bloor Street West"}]
+        for text in ["Find us in Scarborough", "2401 Bloor St W", "Best pho in TORONTO"]:
+            self.assertTrue(self.scrape.confirmed_site(text, b, self.places), text)
+
+    def test_sites_from_openstreetmap_are_never_second_guessed(self):
+        self.assertTrue(self.scrape.confirmed_site("Milwaukie, Oregon", [{"website": "https://x.ca"}], self.places))
+        mixed = [{"website_source": "overture"}, {"website": "https://x.ca"}]
+        self.assertTrue(self.scrape.confirmed_site("Milwaukie, Oregon", mixed, self.places))
+
+
 if __name__ == "__main__":
     unittest.main()
