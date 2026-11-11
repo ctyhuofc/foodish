@@ -1,0 +1,31 @@
+name: Overture test
+
+# Read-only experiment: how many missing restaurant websites would Overture Maps fill?
+# Changes no data and commits nothing. Results are on the run's Summary page and in the
+# overture-report artifact. Run it by hand from Actions, or it runs when this test changes.
+on:
+  workflow_dispatch:
+    inputs:
+      city:
+        description: "city id from cities.json"
+        default: "toronto"
+  pull_request:
+    paths: ["pipeline/overture_test.py", ".github/workflows/overture-test.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r pipeline/requirements.txt duckdb
+      - name: Match Overture places to restaurants missing a website
+        run: python pipeline/overture_test.py ${{ inputs.city || 'toronto' }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: overture-report, path: overture_report.json, if-no-files-found: ignore }
