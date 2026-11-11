@@ -1,24 +1,24 @@
 {
  "date": "2026-11-11",
  "city": "edmonton",
- "ai_calls": 2,
+ "ai_calls": 4,
  "ai_stopped": null,
  "status_counts": {
-  "ok": 311,
+  "ok": 312,
   "HTTP 403": 11,
   "timeout": 8,
-  "can't connect (site down or domain gone)": 36,
-  "SSL error": 5,
+  "can't connect (site down or domain gone)": 34,
+  "SSL error": 7,
   "HTTP 503": 1,
   "HTTP 404": 7,
-  "blocked by robots.txt": 2,
+  "blocked by robots.txt": 1,
   "HTTP 525": 1
  },
  "outcome_counts": {
-  "unchanged": 309,
-  "extracted": 2,
+  "unchanged": 308,
+  "extracted": 4,
   "no_deals": 0,
-  "unreachable": 68,
+  "unreachable": 67,
   "gone": 3,
   "deferred_budget": 0,
   "ai_error": 0,
@@ -181,8 +181,9 @@
    "status": "ok",
    "home_chars": 3486,
    "pages": 4,
-   "deal_chars": 9026,
-   "outcome": "unchanged"
+   "deal_chars": 9087,
+   "result": "0 deals",
+   "outcome": "extracted"
   },
   "locations.tacotimecanada.com": {
    "url": "https://locations.tacotimecanada.com/store/albany",
@@ -272,7 +273,7 @@
    "url": "https://www.chezcora.com/sherwood-park",
    "locations": 7,
    "status": "ok",
-   "home_chars": 6814,
+   "home_chars": 6827,
    "pages": 1,
    "deal_chars": 0,
    "outcome": "unchanged"
@@ -602,7 +603,7 @@
    "url": "https://www.jugojuice.com",
    "locations": 2,
    "status": "ok",
-   "home_chars": 2787,
+   "home_chars": 3208,
    "pages": 1,
    "deal_chars": 0,
    "outcome": "unchanged"
@@ -1227,9 +1228,12 @@
   "desi-licious.ca": {
    "url": "https://desi-licious.ca",
    "locations": 1,
-   "fallback": "can't connect (site down or domain gone)",
-   "status": "can't connect (site down or domain gone)",
-   "outcome": "unreachable"
+   "status": "ok",
+   "home_chars": 5933,
+   "pages": 3,
+   "deal_chars": 5715,
+   "result": "0 deals",
+   "outcome": "extracted"
   },
   "devillecoffee.ca": {
    "url": "https://devillecoffee.ca",
@@ -1767,8 +1771,8 @@
   "khazanarestaurant.ca": {
    "url": "https://www.khazanarestaurant.ca/downtown",
    "locations": 1,
-   "fallback": "can't connect (site down or domain gone)",
-   "status": "can't connect (site down or domain gone)",
+   "fallback": "SSL error",
+   "status": "SSL error",
    "outcome": "unreachable"
   },
   "kindicecream.ca": {
@@ -2106,7 +2110,7 @@
    "status": "ok",
    "home_chars": 6487,
    "pages": 4,
-   "deal_chars": 1765,
+   "deal_chars": 1758,
    "result": "0 deals",
    "outcome": "extracted"
   },
@@ -2177,8 +2181,8 @@
   "noodlecheer.com": {
    "url": "https://noodlecheer.com",
    "locations": 1,
-   "fallback": "blocked by robots.txt",
-   "status": "blocked by robots.txt",
+   "fallback": "SSL error",
+   "status": "SSL error",
    "outcome": "unreachable"
   },
   "noodlextreme.com": {
