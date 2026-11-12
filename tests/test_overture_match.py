@@ -64,8 +64,8 @@ class ConfirmedSite(unittest.TestCase):
         self.assertFalse(self.scrape.confirmed_site("Dark Horse Comics, Milwaukie, Oregon", b, self.places))
 
     def test_site_mentioning_city_area_or_street_is_used(self):
-        b = [{"website_source": "overture", "address": "2401 Bloor Street West"}]
-        for text in ["Find us in Scarborough", "2401 Bloor St W", "Best pho in TORONTO"]:
+        b = [{"website_source": "overture", "name": "Pho Hoang", "address": "2401 Bloor Street West"}]
+        for text in ["Pho Hoang: find us in Scarborough", "Pho Hoang, 2401 Bloor St W", "Pho Hoang, best pho in TORONTO"]:
             self.assertTrue(self.scrape.confirmed_site(text, b, self.places), text)
 
     def test_sites_from_openstreetmap_are_never_second_guessed(self):

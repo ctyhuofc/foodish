@@ -30,7 +30,8 @@ discounts, delivery-fee offers, non-food activities, or deals that have clearly 
 Regular menu or coupon-menu pricing (e.g. a chain's list of pizza combos at everyday prices) is NOT a deal unless
 the text presents it as a special, a daily/weekly feature, or a limited-time offer.
 This app is for diners in the {city} area. If the text limits a deal to other provinces, other cities, or
-named locations outside the {city} area, leave it out. Deals with no stated place are fine.
+named locations outside the {city} area, leave it out (e.g. "at our Brampton or Milton locations" is not a
+Toronto deal). Deals with no stated place are fine.
 Return at most 6 deals per restaurant: the ones a diner would most want to know about.
 If there are no deals, return {{"deals": []}}.
 
