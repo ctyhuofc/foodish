@@ -29,6 +29,10 @@ jobs:
       HAS_FTP: ${{ secrets.FTP_HOST != '' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # the branch as it is when the run STARTS, not when it was queued: a queued run must begin
+          # from the latest deals and caches, or it redoes earlier work and can't save over it
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: pip }
       - run: pip install -r pipeline/requirements.txt
@@ -84,8 +88,15 @@ jobs:
           git config user.email "bot@foodish.ca"
           git add -A data site   # each city's data, plus the generated pages and sitemap under site/
           git diff --cached --quiet || git commit -m "Daily deals update $(date -u +%F)"
-          # the repo may have changed while this ran (e.g. a merged pull request): replay on top, then push
-          git pull --rebase -q origin "${GITHUB_REF_NAME:-main}" || true
+          # The repo may have changed while this ran (a merged pull request, another run's data).
+          # Replay this run on top. Where both changed the same data file, this run's copy is the newer
+          # read, so it wins ("-X theirs" means this run's commit during a rebase). Code changes from
+          # others are kept: this step only commits data/ and site/.
+          if ! git pull --rebase -X theirs -q origin "${GITHUB_REF_NAME:-main}"; then
+            git rebase --abort || true
+            echo "::error title=Couldn't save this run's data::Another change conflicts with it. Nothing was published; the next run will redo it."
+            exit 1
+          fi
           git push
 
       - name: Upload deals file to your web host by FTP (optional)
