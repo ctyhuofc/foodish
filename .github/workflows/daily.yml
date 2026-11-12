@@ -35,7 +35,9 @@ jobs:
       # On by default: about 450 sites (Tim Hortons, Starbucks, Pizza Pizza...) only show text in a browser.
       # To turn it off, set the GitHub variable RENDER_JS to 0.
       - name: Browser for JavaScript-only sites (on unless variable RENDER_JS=0)
-        if: vars.RENDER_JS != '0'
+        # (vars.RENDER_JS || '1') turns "not set" into '1': comparing an unset variable straight to '0'
+        # counts as equal in GitHub's expressions (null becomes 0), which skipped this step.
+        if: (vars.RENDER_JS || '1') != '0'
         run: pip install playwright && python -m playwright install --with-deps chromium
 
       - name: Decide what this run does (pipeline/plan.py)
