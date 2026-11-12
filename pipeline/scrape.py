@@ -152,6 +152,9 @@ def read_site_once(site, info):
     return text
 
 
+_full_text = {}  # site url -> all visible text read this run (for confirmed_site; never saved)
+
+
 def read_site(site, info):
     home = get(site)
     if not home:  # OpenStreetMap links often point at an old location page: fall back to the home page
@@ -170,10 +173,12 @@ def read_site(site, info):
     info["status"] = "ok"
     info["home_chars"] = len(visible_text(home))
     pages = [(site, visible_text(home))]
+    _full_text[site] = pages[0][1][:200_000]
     for link in candidate_links(home, site):
         html = get(link)
         if html:
             pages.append((link, visible_text(html)))
+            _full_text[site] = (_full_text.get(site, "") + "\n" + pages[-1][1])[:400_000]
         time.sleep(0.5)  # be polite
     # keep only the deal-relevant chunks of each page
     blocks = []
@@ -192,6 +197,42 @@ def read_site(site, info):
 
 # ---------------- main ----------------
 DAYS = {"sun": 0, "mon": 1, "tue": 2, "wed": 3, "thu": 4, "fri": 5, "sat": 6}
+
+
+ELSEWHERE = re.compile(r"\b(?:at|in) (?:our |the )?((?:[A-Z][a-zA-Z.'-]+ ?){1,3}(?:(?:,| or| and| &) (?:[A-Z][a-zA-Z.'-]+ ?){1,3})*)"
+                       r"(?:location|locations|store|stores|branch|branches|restaurant|restaurants)\b")
+# Towns and cities outside the areas Foodish covers. A deal "only at our Brampton or Milton locations" is left
+# out; one at a neighbourhood or street we don't know ("the English Bay location") is kept.
+OTHER_PLACES = {
+    # Ontario
+    "Brampton", "Mississauga", "Milton", "Oakville", "Burlington", "Hamilton", "Vaughan", "Markham", "Richmond Hill",
+    "Newmarket", "Aurora", "Pickering", "Ajax", "Whitby", "Oshawa", "Barrie", "Kitchener", "Waterloo", "Cambridge",
+    "Guelph", "London", "Windsor", "Ottawa", "Kingston", "Niagara Falls", "St. Catharines", "Woodbridge", "Concord",
+    "Thornhill", "Stouffville", "Bolton", "Orangeville", "Sudbury", "Peterborough", "Belleville",
+    # B.C.
+    "Surrey", "Coquitlam", "Port Coquitlam", "Port Moody", "Langley", "Delta", "Ladner", "Tsawwassen", "White Rock",
+    "Maple Ridge", "Abbotsford", "Chilliwack", "Squamish", "Whistler", "Victoria", "Nanaimo", "Kelowna", "Kamloops",
+    # Alberta
+    "Calgary", "Red Deer", "Leduc", "Spruce Grove", "Stony Plain", "Fort Saskatchewan", "Beaumont", "Lethbridge",
+    "Grande Prairie", "Fort McMurray", "Airdrie", "Okotoks", "Canmore", "Banff", "Camrose", "Medicine Hat",
+    # elsewhere
+    "Montreal", "Montréal", "Quebec City", "Laval", "Gatineau", "Winnipeg", "Regina", "Saskatoon", "Halifax",
+    "Moncton", "Fredericton", "St. John's", "Charlottetown", "Seattle", "Bellingham",
+}
+OTHER_LOWER = {p.lower() for p in OTHER_PLACES}
+
+
+def limited_elsewhere(d: dict, allowed: list[str]) -> bool:
+    """True if a deal says it's only at named branches and every one is in a town outside this city's area:
+    'Dine in at our Brampton or Milton locations' on a Toronto restaurant. `allowed` (the city and the areas
+    it covers) is never treated as outside, so a covered suburb like Burnaby still counts for Vancouver."""
+    text = f"{d.get('title') or ''}. {d.get('description') or ''}"
+    ok = {a.lower() for a in allowed}
+    for m in ELSEWHERE.finditer(text):
+        named = [n.strip().lower() for n in re.split(r",| or | and | & ", m.group(1)) if n.strip()]
+        if named and all(n in OTHER_LOWER and n not in ok for n in named):
+            return True
+    return False
 
 
 def clean_deal(d, site_url):
@@ -247,7 +288,29 @@ def confirmed_site(text: str, branches: list[dict], places: list[str]) -> bool:
         return True
     low = text.lower()
     streets = {m.group(1) for b in branches for m in [re.search(r"\d+[a-z]?\s+([A-Za-z][A-Za-z'.-]{3,})", b.get("address") or "")] if m}
-    return any(w.lower() in low for w in [*places, *streets])
+    if not any(w.lower() in low for w in [*places, *streets]):
+        return False
+    # ...and the restaurant's own name, so a similar-named neighbour's site isn't used
+    # ("California Pizza Kitchen" matched to State & Main's site)
+    return any(names_on_page(b.get("name") or "", low) for b in branches)
+
+
+NAME_FILLER = {"restaurant", "restaurants", "bar", "grill", "cafe", "café", "kitchen", "pizza", "pizzeria", "sushi",
+               "the", "and", "pub", "bistro", "house", "lounge", "eatery", "diner", "bakery", "tavern", "express",
+               "food", "foods", "coffee", "tea", "shop", "co", "ltd", "inc", "of", "on", "at", "in", "de", "la", "le"}
+
+
+def names_on_page(name: str, low: str) -> bool:
+    """True if the page mentions the restaurant: every distinctive word of its name (up to three),
+    e.g. 'liberty' for 'Liberty Pizza', or the whole name squashed together when every word is generic."""
+    import unicodedata
+    plain = "".join(c for c in unicodedata.normalize("NFKD", name.lower()) if not unicodedata.combining(c))
+    words = [w for w in re.findall(r"[a-z0-9]+", plain.replace("'", "")) if w not in NAME_FILLER and len(w) >= 3]
+    page = "".join(c for c in unicodedata.normalize("NFKD", low) if not unicodedata.combining(c)).replace("'", "")
+    if words:
+        return all(re.search(rf"\b{re.escape(w)}", page) for w in words[:3])
+    squashed = re.sub(r"[^a-z0-9]", "", plain)
+    return bool(squashed) and squashed in re.sub(r"[^a-z0-9]", "", page)
 
 
 def used_elsewhere(city, month):
@@ -290,7 +353,7 @@ def run_city(city, args):
         info = {"url": sites[k]["url"], "locations": len(sites[k]["branches"])}
         report[k] = info
         text = read_site_once(sites[k]["url"], info)
-        if text and not confirmed_site(text, sites[k]["branches"], places):
+        if text and not confirmed_site(_full_text.get(sites[k]["url"], text), sites[k]["branches"], places):
             info["unconfirmed"] = True  # treated as a site with no deals, so nothing wrong is published
             return ""
         return text
@@ -364,11 +427,14 @@ def run_city(city, args):
 
     # 3) build the published file
     by_id = {r["id"]: r for r in restaurants}
-    deals, used = [], set()
+    deals, used, dropped_elsewhere = [], set(), 0
     for k, info in sites.items():
         for i, d in enumerate(cache.get(k, {}).get("deals", [])):
             if not ds.is_live(d, TODAY):
                 continue  # its valid_until has passed since the AI read it
+            if limited_elsewhere(d, places):
+                dropped_elsewhere += 1
+                continue  # only at branches outside this city ("at our Brampton or Milton locations")
             ids = match_branches(d.get("applies_to"), info["branches"])
             d = {kk: vv for kk, vv in d.items() if kk != "applies_to"}
             d.update(id=f"{k}-{i}", restaurant_ids=ids, verified_at=cache[k].get("ok_at"))
@@ -415,7 +481,8 @@ def run_city(city, args):
     city.site_copy.write_text(city.deals.read_text())
     city.cache.parent.mkdir(parents=True, exist_ok=True)
     city.cache.write_text(json.dumps(cache, ensure_ascii=False, indent=0))
-    print(f"Published {len(deals)} deals at {len(pub_restaurants)} locations -> {city.deals}")
+    print(f"Published {len(deals)} deals at {len(pub_restaurants)} locations -> {city.deals}"
+          f" ({dropped_elsewhere} left out: only at branches outside {city.name})")
 
 
 def main():
