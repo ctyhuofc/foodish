@@ -484,8 +484,8 @@
       if (!g || g.key !== key) { g = { key, end: p.end, left: p.left, places: [] }; groups.push(g); }
       g.places.push(p);
     }
-    let prev = null, first = true, html = "", shown = 0;
-    const cap = state.nowAll ? Infinity : 8;
+    let html = "", shown = 0;
+    const cap = state.nowAll ? Infinity : 12;
     for (const g of groups) {
       if (shown >= cap) break;
       const title = g.end == null ? "Until close" : g.end % 1440 === 0 ? "Until midnight" : `Until ${clock(g.end)} ${ampm(g.end)}`;
@@ -495,43 +495,14 @@
       for (let i = 0; i < g.places.length && shown < cap; i++) {
         const p = g.places[i];
         shown++;
-        let kind = first ? "marquee" : pickKind(p, g.places[i + 1], prev);
-        first = false;
-        if (kind === "twin") { blocks += twin(p, g.places[i + 1]); i++; shown++; }
-        else blocks += BLOCK[kind](p);
-        prev = kind;
+        blocks += placeRow(p);
       }
-      html += `<section class="group" aria-label="${esc(title)}"><div class="ghead"><h2>${esc(title)}</h2><span class="meta${hot ? " hot" : ""}">${esc(meta)}</span></div><div class="flow">${blocks}</div></section>`;
+      html += `<section class="group" aria-label="${esc(title)}"><div class="ghead"><h2>${esc(title)}</h2><span class="meta${hot ? " hot" : ""}">${esc(meta)}</span></div><div class="rows">${blocks}</div></section>`;
     }
     if (places.length > shown) html += `<button type="button" class="show-more" data-nowall>Show ${places.length - shown} more ${places.length - shown === 1 ? "place" : "places"} on now</button>`;
     return html;
   }
   // Pick a treatment from the shape of the place's deals; never the same one twice in a row.
-  function pickKind(p, next, prev) {
-    const n = p.items.length;
-    const priced = p.items.filter((i) => priceValue(i.d.price) != null).length;
-    const opts = [];
-    if (priced >= 4 && (p.left == null || p.left > 60)) opts.push("ladder");
-    if (n <= 2 && percentOff(p.items[0].d.price) != null) opts.push("cut");
-    if (n === 2) opts.push("split");
-    if (n >= 3) opts.push("stack");
-    if (n === 1 && next && next.items.length === 1) opts.push("twin");
-    if (n === 1) opts.push("banner", "stamp");
-    if (n >= 4) opts.push("marquee");
-    opts.push("stack", "banner");
-    return opts.find((k) => k !== prev) || opts[0];
-  }
-  const glowCls = (p) => (p.left == null || p.left > 60 ? " glow" : "");
-  const emberDot = (p) => (p.left != null && p.left < 45 ? '<span class="ember" aria-hidden="true"></span>' : "");
-  function timebar(p, now) {
-    const its = p.items.map((i) => ({ s: DS.startOf(i.d), e: endsAt(i.d, now) })).filter((x) => x.s != null && x.e != null);
-    if (!its.length) return "";
-    const s = Math.min(...its.map((x) => x.s)), e = p.end ?? Math.max(...its.map((x) => x.e));
-    const startAt = s > now.mins ? s - 1440 : s; // started before midnight
-    const pct = Math.min(100, Math.max(0, ((now.mins - startAt) / (e - startAt)) * 100));
-    return `<div class="timebar" aria-hidden="true"><div class="bar"><div class="done" style="width:${pct.toFixed(1)}%"></div><div class="tick" style="left:${pct.toFixed(1)}%"></div></div>
-      <div class="ends"><span>${clock(s)}</span><span>${clock(e)}</span></div></div>`;
-  }
   // "Something wrong?" link for a place: an email to Foodish with the listing filled in.
   const CONTACT = CFG.CONTACT_EMAIL || "yates@foodish.ca";
   function fixLink(r) {
@@ -552,67 +523,13 @@
       ${more ? `<button type="button" data-open="${esc(id)}" aria-expanded="${open}">${open ? "Less" : "What's included"}</button>` : "<span></span>"}
       <span class="acts"><button type="button" data-mapsel="${esc(id)}">On the map</button><a href="${directions(p.r)}" target="_blank" rel="noopener">Directions</a>${srcs[0] ? `<a href="${esc(srcs[0])}" target="_blank" rel="noopener">Their site</a>` : ""}</span></div>`;
   }
-  const BLOCK = {
-    marquee(p) {
-      const now = nowLocal();
-      // The countdown is the hero, while it's short enough to matter; after 3 hours, show the end time.
-      const lt = p.left == null ? { num: "ON", unit: "UNTIL<br>CLOSE" } : p.left < 100 ? { num: String(p.left), unit: "MIN<br>LEFT" }
-        : p.left < 180 ? { num: `${Math.floor(p.left / 60)}:${String(p.left % 60).padStart(2, "0")}`, unit: "HRS<br>LEFT" }
-        : { num: clock(p.end), unit: `${ampm(p.end).toUpperCase()}<br>ENDS` };
-      const show = p.items.slice(0, 4);
-      const panes = show.map((i, k) => `<div class="pane${show.length === 1 || (show.length === 3 && k === 2) ? " wide" : ""}">${fig(i.d)}${under(i.d)}</div>`).join("");
-      const extra = p.items.length > 4 ? `<p class="unit" style="margin:8px 0 0">+ ${p.items.length - 4} more here</p>` : "";
-      return `<article class="blk marquee full${glowCls(p)}" id="p-${esc(p.r.id)}">${emberDot(p)}
-        <div class="mq-col"><div class="mq-top"><div class="mq-left${lt.num.length > 3 ? " long" : ""}"><span class="mq-num">${esc(lt.num)}</span><span class="mq-unit">${lt.unit}</span></div><span class="km">${kmCaps(p.dist)}</span></div>
-        <h3 class="nm">${esc(p.r.name)}</h3></div>
-        <div class="mq-col2"><div class="panes">${panes}</div>${extra}${timebar(p, now)}</div>${details(p)}</article>`;
-    },
-    ladder(p) {
-      const now = nowLocal();
-      const priced = p.items.filter((i) => priceValue(i.d.price) != null).sort((a, b) => priceValue(a.d.price) - priceValue(b.d.price)).slice(0, 6);
-      const max = Math.max(...priced.map((i) => priceValue(i.d.price)));
-      const cols = priced.map((i) => `<div class="col"><span class="num">${esc(i.d.price)}</span><i style="height:${Math.max(6, Math.round((priceValue(i.d.price) / max) * 110))}px"></i></div>`).join("");
-      const units = priced.map((i) => `<span>${esc(what(i.d))}</span>`).join("");
-      const label = priced.map((i) => `${what(i.d)} ${i.d.price}`).join(", ");
-      const rest = p.items.length - priced.length;
-      return `<article class="blk ladder full${glowCls(p)}" id="p-${esc(p.r.id)}">${emberDot(p)}
-        <div class="lad-head"><h3 class="nm">${esc(p.r.name)}</h3><span class="km">${kmCaps(p.dist)}</span></div>
-        <p class="lead">${priced.length} prices, cheapest first${rest ? `, plus ${rest} more` : ""}.</p>
-        <div class="bars" role="img" aria-label="${esc(label)}">${cols}</div><div class="bar-units" aria-hidden="true">${units}</div>${timebar(p, now)}${details(p)}</article>`;
-    },
-    cut(p) {
-      const d = p.items[0].d, pc = Math.min(90, Math.max(10, percentOff(d.price)));
-      const rest = p.items.slice(1).map((i) => `${i.d.title}${i.d.price ? ", " + i.d.price : ""}`).join(". ");
-      return `<article class="cut-wrap inset" id="p-${esc(p.r.id)}">
-        <div class="cut"><div class="blk${glowCls(p)}" style="flex:0 0 ${100 - pc}%">${emberDot(p)}<span class="num">${esc(d.price)}</span><span class="unit" style="margin-top:4px">${esc(d.price_unit || d.title)}</span>${d.description || rest ? `<p>${esc(rest || d.description)}</p>` : ""}</div>
-        <div class="gap" aria-hidden="true"><span>−${pc}%</span></div></div>
-        <div class="cut-head" style="margin:10px 0 0"><h3 class="nm">${esc(p.r.name)}</h3><span class="km">${kmCaps(p.dist)}</span></div>${details(p)}</article>`;
-    },
-    split(p) {
-      const [a, b] = p.items;
-      return `<article class="split-wrap inset" id="p-${esc(p.r.id)}"><div class="split-head"><h3 class="nm">${esc(p.r.name)}</h3><span class="km">${kmCaps(p.dist)}</span></div>
-        <div class="blk split${glowCls(p)}">${emberDot(p)}<svg class="diag" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M100 0 0 100"/></svg>
-        <div class="tl">${fig(a.d)}${under(a.d)}</div><div class="br">${fig(b.d)}${under(b.d)}</div></div>${details(p)}</article>`;
-    },
-    stack(p) {
-      const rows = p.items.slice(0, 5).map((i) => `<div class="row">${fig(i.d)}${under(i.d)}</div>`).join("");
-      return `<article class="blk stack inset${glowCls(p)}" id="p-${esc(p.r.id)}">${emberDot(p)}<div class="stack-head"><h3 class="nm">${esc(p.r.name)}</h3><span class="km">${kmCaps(p.dist)}</span></div>${rows}${p.items.length > 5 ? `<p class="unit">+ ${p.items.length - 5} more here</p>` : ""}${details(p)}</article>`;
-    },
-    banner(p) {
-      const d = p.items[0].d;
-      return `<article class="blk banner inset${glowCls(p)}" id="p-${esc(p.r.id)}" style="flex-wrap:wrap">${emberDot(p)}${fig(d)}
-        <div class="txt"><h3 class="nm">${esc(p.r.name)}</h3><span class="unit">${esc([what(d), kmCaps(p.dist)].filter(Boolean).join(" · "))}</span>${d.price ? "" : under(d)}</div><div style="flex-basis:100%">${details(p)}</div></article>`;
-    },
-    stamp(p) {
-      const d = p.items[0].d;
-      return `<article class="stamp-wrap inset" id="p-${esc(p.r.id)}"><div class="blk stamp${glowCls(p)}">${emberDot(p)}${fig(d)}<span class="unit">${esc(d.price ? d.price_unit || "" : "")}</span></div>
-        <div class="txt"><h3 class="nm">${esc(p.r.name)}</h3><p class="sub">${esc(d.title)}</p><span class="km">${kmCaps(p.dist)}</span>${details(p)}</div></article>`;
-    },
-  };
-  function twin(a, b) {
-    const one = (p) => { const d = p.items[0].d; return `<article class="blk${glowCls(p)}" id="p-${esc(p.r.id)}">${emberDot(p)}${fig(d)}${under(d)}
-      <h3 class="nm">${esc(p.r.name)}</h3><span class="km">${kmCaps(p.dist)}</span><div class="blk-foot"><span class="acts"><button type="button" data-mapsel="${esc(p.r.id)}">Map</button><a href="${directions(p.r)}" target="_blank" rel="noopener">Directions</a></span></div></article>`; };
-    return `<div class="twin">${one(a)}${one(b)}</div>`;
+  // Every place on now gets the same plain row, nearest first within each end time: the list is for
+  // comparing quickly, not for promoting one restaurant over another.
+  function placeRow(p) {
+    const deals = p.items.slice(0, 3).map((i) => (i.d.price ? `${i.d.price} ${what(i.d)}` : i.d.title)).join(" · ")
+      + (p.items.length > 3 ? ` · +${p.items.length - 3} more` : "");
+    return `<article class="nrow" id="p-${esc(p.r.id)}"><div class="nrow-main"><div class="txt"><h3 class="nm">${esc(p.r.name)}</h3>
+      <p class="deals">${esc(deals)}</p></div><span class="km">${esc(kmShort(p.dist))} km</span></div>${details(p)}</article>`;
   }
 
   function laterSection(later, now) {
@@ -1134,6 +1051,6 @@
       render();
     }, 60 * 1000);
   }
-  window.__foodish = { dealState: DS.dealState, km, state, LOAD, LOC, alertsState, setCity, nearestCity, wantedLook, isChain, priceValue, pickKind };
+  window.__foodish = { dealState: DS.dealState, km, state, LOAD, LOC, alertsState, setCity, nearestCity, wantedLook, isChain, priceValue };
   init();
 })();

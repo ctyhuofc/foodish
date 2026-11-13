@@ -134,7 +134,6 @@ html[data-look="day"] .street { border-bottom-color: var(--ink); }
 .ghead .meta { font-size: 13px; font-weight: 700; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; white-space: nowrap; }
 .ghead .meta.hot { color: var(--ember); }
 html[data-look="day"] .ghead .meta.hot { color: #B33A12; }
-.flow { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
 .empty { margin: 40px var(--gutter) 0; padding-top: 18px; border-top: 1px solid var(--rule); }
 .empty .big { margin: 0; font-family: var(--f-name); font-style: italic; font-weight: 700; font-size: 26px; line-height: 1.15; }
 .empty p { margin: 8px 0 0; color: var(--muted); }
@@ -164,89 +163,17 @@ html[data-look="day"] .timebar .done { background: var(--ink); }
 .timebar .tick { position: absolute; top: -4px; width: 2px; height: 14px; background: var(--ink); }
 .timebar .ends { display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px; font-weight: 700; letter-spacing: .08em; }
 
-/* Marquee: the first place on now. The countdown is the hero. */
-.marquee { padding: 18px var(--gutter) 10px; }
-.mq-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 8px; }
-.mq-left { display: flex; align-items: flex-end; gap: 8px; }
-.mq-num { font-family: var(--f-num); font-weight: 800; font-size: 176px; line-height: .8; letter-spacing: -.02em; }
-.mq-unit { font-family: var(--f-num); font-weight: 800; font-size: 18px; letter-spacing: .08em; line-height: 1.05; padding-bottom: 6px; text-transform: uppercase; }
-.mq-left.long .mq-num { font-size: 120px; }
-.marquee .nm { margin-top: 18px; font-size: 34px; }
-.panes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; margin-top: 16px; background: var(--ink); border: 2px solid var(--ink); }
-.pane { background: var(--blk-bg); padding: 12px 12px 10px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.pane.wide { grid-column: span 2; }
-.pane .num { font-size: 52px; line-height: .9; overflow-wrap: anywhere; }
-.pane .num.word { font-size: 32px; line-height: 1; }
-
-/* Twin: two single-deal places side by side. */
-.twin { display: flex; gap: 8px; margin: 0 var(--gutter); }
-.twin .blk { overflow: hidden; flex: 1 1 0; min-width: 0; min-height: 216px; padding: 14px 12px 12px; display: flex; flex-direction: column; }
-.twin .num { font-size: clamp(40px, 13vw, 64px); white-space: nowrap; }
-.twin .num.word { font-size: 30px; line-height: 1; white-space: normal; overflow-wrap: anywhere; }
-.twin .unit { margin-top: 4px; }
-.twin .nm { margin-top: auto; padding-top: 14px; font-size: 22px; }
-.twin .km { align-self: flex-end; margin-top: 4px; }
-
-/* Split: two deals, one block cut by a diagonal. */
-.split-head, .cut-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
-.split-head .nm, .cut-head .nm { color: var(--text); font-size: 24px; }
-.split-head .km, .cut-head .km { color: var(--muted); }
-.split { position: relative; height: 168px; }
-.split .diag { position: absolute; inset: 0; width: 100%; height: 100%; }
-.split .diag path { stroke: var(--ink); stroke-width: 2; vector-effect: non-scaling-stroke; }
-.split .tl { position: absolute; left: 14px; top: 12px; display: flex; flex-direction: column; max-width: 58%; }
-.split .br { position: absolute; right: 14px; bottom: 12px; display: flex; flex-direction: column; align-items: flex-end; text-align: right; max-width: 58%; }
-.split .num { font-size: 56px; line-height: .9; }
-.split .num.word { font-size: 28px; line-height: 1; }
-.split-wrap .blk-foot { color: var(--text); }
-.split-wrap .blk-foot a, .split-wrap .blk-foot button, .cut-wrap .blk-foot a, .cut-wrap .blk-foot button, .stamp-wrap .blk-foot a, .stamp-wrap .blk-foot button { color: var(--text); }
-
-/* Cut: a percentage off, drawn as the missing share of the block. */
-.cut { display: flex; min-height: 176px; animation: rise .6s cubic-bezier(.2,.7,.2,1) both; }
-.cut .blk { animation: none; padding: 14px; display: flex; flex-direction: column; }
-.cut .num { font-size: 64px; }
-.cut .blk p { margin: auto 0 0; padding-top: 10px; font-size: 14px; line-height: 1.35; }
-.cut .gap { flex: 1 1 auto; margin-left: 2px; border: 1.5px dashed var(--lamp); display: grid; place-items: center; min-width: 0; overflow: hidden; }
-html[data-look="day"] .cut .gap { border-color: var(--ink); }
-.cut .gap span { display: block; transform: rotate(90deg); white-space: nowrap; font-family: var(--f-num); font-weight: 800; font-size: 28px; letter-spacing: .04em; color: var(--lamp); }
-html[data-look="day"] .cut .gap span { color: var(--ink); }
-
-/* Ladder: many prices, drawn as columns, cheapest first. */
-.ladder { padding: 18px var(--gutter) 10px; }
-.ladder .lad-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.ladder .nm { font-size: 30px; }
-.ladder .lead { margin: 4px 0 0; font-size: 14px; }
-.bars { display: flex; align-items: flex-end; gap: 4px; height: 160px; margin-top: 18px; }
-.bars .col { flex: 1 1 0; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.bars .col .num { font-size: 26px; line-height: 1; text-align: center; }
-.bars .col i { display: block; background: var(--ink); }
-.bar-units { display: flex; gap: 4px; margin-top: 6px; }
-.bar-units span { flex: 1 1 0; min-width: 0; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: .04em; line-height: 1.2; text-transform: uppercase; overflow-wrap: break-word; hyphens: auto; }
-
-/* Stack: three or so deals as big price rows. */
-.stack { padding: 16px 14px 8px; }
-.stack .row { display: flex; align-items: baseline; gap: 12px; padding: 8px 0; border-top: 2px solid var(--ink); }
-.stack .row:first-of-type { border-top: 0; }
-.stack .row .num { flex: 0 0 auto; font-size: 44px; min-width: 96px; }
-.stack .row .num.word { font-size: 24px; }
-.stack .stack-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 6px; }
-.stack .nm { font-size: 26px; }
-
-/* Banner: one deal, a wide strip. */
-.banner { min-height: 96px; padding: 12px 14px; display: flex; align-items: center; gap: 14px; }
-.banner .num { flex: 0 0 auto; font-size: 56px; max-width: 50%; overflow-wrap: anywhere; }
-.banner .num.word { font-size: 28px; line-height: 1; }
-.banner .txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.banner .nm { font-size: 22px; }
-/* Stamp: one deal, a square lamp beside plain text. */
-.stamp-wrap { display: flex; gap: 14px; align-items: flex-start; }
-.stamp { flex: 0 0 132px; height: 132px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; }
-.stamp .num { font-size: 48px; overflow-wrap: anywhere; }
-.stamp .num.word { font-size: 24px; line-height: 1; }
-.stamp-wrap .txt { flex: 1 1 auto; min-width: 0; padding-top: 4px; }
-.stamp-wrap .nm { font-size: 22px; }
-.stamp-wrap .txt .sub { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
-.stamp-wrap .km { color: var(--muted); display: block; margin-top: 6px; }
+/* ---------- places on now: one plain row each ---------- */
+.group .rows { margin: 8px var(--gutter) 0; }
+.nrow { padding: 12px 0 2px; border-bottom: 1px solid var(--rule); }
+.nrow-main { display: flex; align-items: baseline; gap: 12px; }
+.nrow .txt { flex: 1 1 auto; min-width: 0; }
+.nrow .nm { font-size: 22px; }
+.nrow .deals { margin: 4px 0 0; font-size: 15px; font-weight: 600; line-height: 1.35; }
+.nrow .km { flex: 0 0 auto; color: var(--muted); font-size: 13px; }
+.nrow .blk-foot { margin-top: 0; color: var(--muted); }
+.nrow .blk-foot a, .nrow .blk-foot button { color: inherit; font-size: 13px; }
+.nrow .more-text { border-top: 1px solid var(--rule); color: var(--muted); }
 
 /* ---------- later today ---------- */
 .later { margin-top: 64px; padding: 0 var(--gutter); }
@@ -442,22 +369,13 @@ html[data-look="day"] .map .leaflet-tile-pane { filter: grayscale(1) sepia(.12) 
   .sheet .line .num { font-size: 36px; }
   .sheet .lines.many .line .num { font-size: 28px; }
   .group:first-child { margin-top: 0; }
-  .flow { flex-direction: row; flex-wrap: wrap; }
-  .flow > * { flex: 1 1 300px; min-width: 0; }
-  .flow > .marquee, .flow > .ladder, .flow > .full { flex-basis: 100%; }
-  .marquee { display: flex; flex-wrap: wrap; gap: 0 24px; padding: 22px; }
-  .marquee .mq-col { flex: 1 1 240px; }
-  .marquee .mq-col2 { flex: 1 1 300px; }
-  .marquee .panes { margin-top: 0; }
-  .marquee .blk-foot { flex-basis: 100%; }
-  .twin { margin: 0; }
-  .ladder { padding: 20px; }
   .later { padding: 0; }
   .allday, .ended { padding: 22px; margin-top: 8px; }
   .allday { margin-top: 32px; }
   .allday .rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); column-gap: 28px; border-top: 0; }
   .allday .arow { border-top: 1px solid var(--allday-rule); border-bottom: 0; }
   .ghead { margin: 0; }
+  .group .rows { margin: 8px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); column-gap: 28px; }
   .empty, .sched { margin-left: 0; margin-right: 0; }
   .foot { padding: 40px 32px; }
   .foot-grid { display: flex; flex-wrap: wrap; gap: 32px 64px; }
@@ -517,16 +435,8 @@ html[data-look="day"] .map .leaflet-tile-pane { filter: grayscale(1) sepia(.12) 
   .cats-row { margin-top: 6px; }
   .cats button { font-size: 18px; min-height: 40px; }
 
-  /* the first place on now: still the biggest card, but not bigger than the screen */
+  .group { margin-top: 24px; }
   .ghead h2 { font-size: 30px; }
-  .mq-num { font-size: 84px; }
-  .mq-left.long .mq-num { font-size: 64px; }
-  .mq-unit { font-size: 14px; padding-bottom: 4px; }
-  .marquee .nm { margin-top: 10px; font-size: 26px; }
-  .panes { margin-top: 10px; }
-  .pane { padding: 8px 10px; }
-  .pane .num { font-size: 34px; }
-  .pane .num.word { font-size: 24px; }
 
   /* mornings: when deals switch on later, skip the "nothing on" note and lead with the first places */
   .empty { margin-top: 14px; padding-top: 12px; }
