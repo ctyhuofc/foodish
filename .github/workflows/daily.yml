@@ -117,7 +117,7 @@ jobs:
           API_URL: ${{ vars.API_URL }}
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
-          VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT || 'mailto:hello@foodish.ca' }}
+          VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT || 'mailto:yates@foodish.ca' }}
         run: python pipeline/notify.py
 
       # Last on purpose: everything above has already saved and published. If the robot is broken
