@@ -977,7 +977,7 @@
     const f = $("submitForm");
     if (!f.reportValidity()) return;
     const body = Object.fromEntries(new FormData(f).entries());
-    if (!CFG.API_URL) {
+    if (CFG.TIPS !== "service" || !CFG.API_URL) {
       location.href = `mailto:${CONTACT}?subject=${encodeURIComponent("Deal for Foodish: " + body.restaurant)}&body=${encodeURIComponent(`${body.deal}\n${body.url || ""}`)}`;
       $("submitMsg").textContent = "Your email app should open with the deal filled in.";
       return;
