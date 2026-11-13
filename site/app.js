@@ -376,11 +376,11 @@
     let n, word;
     if (today) {
       n = sel.filter((i) => i.status === ST.ON_NOW).length;
-      word = n === 1 ? "light on" : "lights on";
+      word = n === 1 ? "discount on now" : "discounts on now";
       $("kickerTime").textContent = `${DAY_LONG[now.day]} · ${clockAP(now.mins)}`;
     } else {
       n = sel.length;
-      word = `${n === 1 ? "deal" : "deals"} on ${DAY_LONG[state.day]}`;
+      word = `${n === 1 ? "discount" : "discounts"} on ${DAY_LONG[state.day]}`;
       $("kickerTime").textContent = `${DAY_LONG[state.day]} ${dateForDay(state.day).getUTCDate()}`;
     }
     $("count").textContent = String(n);
@@ -594,7 +594,7 @@
   function endedSection(items) {
     const txt = items.sort((a, b) => (DS.toMins(b.d.end) ?? 0) - (DS.toMins(a.d.end) ?? 0))
       .map((i) => `${i.nearest.r.name} ${i.d.title.charAt(0).toLowerCase() + i.d.title.slice(1)}${i.d.price ? " " + i.d.price : ""}, ${clock(DS.toMins(i.d.end))}`).join(" · ");
-    return `<section class="ended" aria-label="Ended today"><p class="title">LIGHTS OUT</p><p class="lst"><span class="sr">Ended today: </span>${esc(txt)}</p></section>`;
+    return `<section class="ended" aria-label="Ended today"><p class="title">ENDED TODAY</p><p class="lst"><span class="sr">Ended today: </span>${esc(txt)}</p></section>`;
   }
   function comingUpSection() {
     const hits = comingUp();

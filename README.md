@@ -117,7 +117,7 @@ Location needs **https** (all the options above provide it).
 
 Re-run step 4 whenever `worker/worker.js` changes.
 
-**How alerts work:** the bell button and the "Leave a light on" section offer (a) "while Foodish is open, ping me when I walk near a deal that's on now" and (b) a daily ~4 pm "deals near you today" push. On iPhone, push only works after the visitor taps Share → **Add to Home Screen** (an Apple rule); the app tells them this.
+**How alerts work:** the bell button and the "Get deal alerts" section offer (a) "while Foodish is open, ping me when I walk near a deal that's on now" and (b) a daily ~4 pm "deals near you today" push. On iPhone, push only works after the visitor taps Share → **Add to Home Screen** (an Apple rule); the app tells them this.
 
 ### Reviewing submitted deals
 ```bash
