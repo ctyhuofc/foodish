@@ -29,6 +29,9 @@ window.FOODISH_CONFIG = {
   // Cloudflare Worker URL for alerts + deal submissions (leave "" until set up).
   // e.g. "https://foodish-api.YOUR-SUBDOMAIN.workers.dev"
   API_URL: "https://foodish-api.foodish-ca.workers.dev",
+  // "A light we missed?" tips: "email" opens the visitor's email app addressed to CONTACT_EMAIL;
+  // "service" posts them to API_URL instead (read them at API_URL/submissions with ADMIN_TOKEN).
+  TIPS: "email",
 
   // Public VAPID key for web push (generated in setup step 4). Leave "" to hide push alerts.
   VAPID_PUBLIC_KEY: "BFlF9-pzdbneGxm25SlbShV5PoA-eYI6SKvUlAIzqnJtMBX1uM9ecwUppMJTa5AQt5dodyPWiVdhPxEgaD9WX_E",
