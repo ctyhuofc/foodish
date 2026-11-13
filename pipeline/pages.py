@@ -146,7 +146,7 @@ def page(title: str, desc: str, path: str, body: str, updated: str, city: cities
 <style>{CSS}</style>{COUNTER}</head>
 <body><header><a class="wordmark" href="/">foodish</a><span class="city">{city.name}</span></header>
 {body}
-<footer>Deals are gathered from restaurants' own websites and checked daily. Always confirm with the restaurant before you go. Updated {esc(updated)}.</footer>
+<footer>Deals are gathered from restaurants' own websites and checked daily. Always confirm with the restaurant before you go. Updated {esc(updated)}.<br><a href="/bot/">About the robot</a> · <a href="/privacy/">Privacy</a> · Restaurants: <a href="mailto:yates@foodish.ca?subject=Foodish%20listing">fix or remove a listing</a></footer>
 </body></html>
 """
 

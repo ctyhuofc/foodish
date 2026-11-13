@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FoodishBot: the robot that reads restaurant websites | Foodish</title>
+<meta name="description" content="What FoodishBot reads, how often, and how a restaurant can correct a listing, be removed, or block the robot.">
+<link rel="canonical" href="https://www.foodish.ca/bot/">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<style>
+:root{--bg:#fbf6ee;--ink:#1f1a17;--muted:#6f655d;--line:#eadfd1;--accent:#d9412b;--code:#f3ebe0}
+@media (prefers-color-scheme:dark){:root{--bg:#171311;--ink:#f4ece4;--muted:#b3a79c;--line:#3a302a;--accent:#ff6a50;--code:#2a221e}}
+body{margin:0 auto;max-width:680px;padding:0 18px 48px;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+a{color:var(--accent)}header{padding:16px 0 0}.wordmark{font-weight:800;font-size:26px;letter-spacing:-.02em;color:var(--accent);text-decoration:none}
+h1{font-size:30px;line-height:1.15;margin:18px 0 8px}h2{font-size:19px;margin:28px 0 6px}
+pre,code{background:var(--code);border-radius:6px;font:14px ui-monospace,Menlo,monospace}pre{padding:10px 12px;overflow-x:auto}code{padding:1px 5px}
+footer{margin-top:36px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+</style></head>
+<body>
+<header><a class="wordmark" href="/">foodish</a></header>
+<h1>FoodishBot</h1>
+<p>Foodish lists restaurant deals in Edmonton, Vancouver and Toronto: wing nights, happy hours and other specials. FoodishBot is the small robot that finds them by reading each restaurant's own website.</p>
+
+<h2>What it does</h2>
+<ul>
+  <li>It runs once a day, early in the morning (about 4 am Mountain time).</li>
+  <li>It reads a restaurant's home page and up to four linked pages that look like specials, deals or happy hour. It never reads more than five pages per site.</li>
+  <li>It waits between pages, and it follows each site's <code>robots.txt</code>.</li>
+  <li>It identifies itself as <code>FoodishBot/1.0</code> with a link to this page.</li>
+  <li>An AI model picks out the deals from the page text. Foodish only lists a deal if its wording and price appear on your site, and every listing links back to the page it came from.</li>
+</ul>
+<p>The list of restaurants comes from OpenStreetMap and Overture Maps. Foodish doesn't sell anything, and it doesn't take payment for listings.</p>
+
+<h2>Is your listing wrong?</h2>
+<p>Email <a href="mailto:yates@foodish.ca?subject=Foodish%20listing">yates@foodish.ca</a> with your restaurant's name and address and what needs fixing. If a deal has ended, updating your own website fixes Foodish too: the robot rereads your site the next morning.</p>
+
+<h2>Want to be removed?</h2>
+<p>Email the same address. Your restaurant will be taken off Foodish, and the robot will stop visiting your site.</p>
+<p>You can also block the robot yourself. Add these lines to your site's <code>robots.txt</code>:</p>
+<pre>User-agent: FoodishBot
+Disallow: /</pre>
+<p>Its deals come off Foodish at the next morning's run.</p>
+
+<footer><a href="/">Foodish</a> · <a href="/privacy/">Privacy</a> · <a href="mailto:yates@foodish.ca">yates@foodish.ca</a></footer>
+</body></html>

@@ -8,6 +8,8 @@ Outcomes                what it means                                         sa
   unchanged             same page text as last time, same AI instructions      reused, no AI call
   extracted             new or changed text; the AI read it                     replaced
   no_deals              readable, but nothing that looks like a deal            cleared
+  blocked               its robots.txt blocks FoodishBot, or the restaurant     cleared
+                        asked to be removed (data/removed.json)
   unreachable           couldn't load the site today                            kept (up to STALE_DAYS)
   gone                  unreachable for more than STALE_DAYS                    cleared
   deferred_budget       changed, but today's/this month's AI limit is used up   kept; retried tomorrow
@@ -22,9 +24,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 UNCHANGED, EXTRACTED, NO_DEALS = "unchanged", "extracted", "no_deals"
-UNREACHABLE, GONE = "unreachable", "gone"
+UNREACHABLE, GONE, BLOCKED = "unreachable", "gone", "blocked"
 DEFERRED_BUDGET, AI_ERROR, DEFERRED_AI_STOPPED = "deferred_budget", "ai_error", "deferred_ai_stopped"
-OUTCOMES = (UNCHANGED, EXTRACTED, NO_DEALS, UNREACHABLE, GONE, DEFERRED_BUDGET, AI_ERROR, DEFERRED_AI_STOPPED)
+OUTCOMES = (UNCHANGED, EXTRACTED, NO_DEALS, UNREACHABLE, GONE, BLOCKED, DEFERRED_BUDGET, AI_ERROR, DEFERRED_AI_STOPPED)
 RETRY_TOMORROW = (DEFERRED_BUDGET, AI_ERROR, DEFERRED_AI_STOPPED)
 
 # Actions on the saved entry
@@ -40,8 +42,12 @@ class Step:
 
 
 def next_step(*, readable: bool, fingerprint: str | None, has_deal_words: bool, entry: dict,
-              prompt_version: int, stale_before: str, budget_left: bool, ai_stopped: bool) -> Step:
-    """Decide what to do with one site. `stale_before` is the ISO date before which a site counts as gone."""
+              prompt_version: int, stale_before: str, budget_left: bool, ai_stopped: bool,
+              blocked: bool = False) -> Step:
+    """Decide what to do with one site. `stale_before` is the ISO date before which a site counts as gone.
+    `blocked`: the site said no (robots.txt) or asked to be removed; its deals go at once, not after STALE_DAYS."""
+    if blocked:
+        return Step(BLOCKED, CLEAR)
     if not readable:
         if entry and entry.get("ok_at", "9999") < stale_before:
             return Step(GONE, CLEAR)

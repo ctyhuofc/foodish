@@ -491,3 +491,8 @@ html[data-look="day"] .map .leaflet-tile-pane { filter: grayscale(1) sepia(.12) 
 /* Long names and descriptions never push the page sideways. */
 .stack-head .nm, .split-head .nm, .cut-head .nm, .lad-head .nm, .banner .nm, .stamp-wrap .nm, .lrow .nm, .srow .nm, .sheet h2 { min-width: 0; overflow-wrap: anywhere; }
 .stack .row > :last-child, .sheet .line > :last-child, .banner .txt > * { min-width: 0; flex: 1 1 auto; overflow-wrap: anywhere; }
+
+/* "Something wrong? Tell us" under a place, and the footer's robot / privacy links */
+.fix { margin: 8px 0 0; font-size: 13px; }
+.fix a, .fine a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+.fix a:hover, .fine a:hover { color: var(--text); }

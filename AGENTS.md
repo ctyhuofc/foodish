@@ -35,4 +35,5 @@ python pipeline/health.py                # summary of the latest robot run
 - Don't commit API keys. They live in GitHub secrets (`LLM_API_KEY`, …).
 - Don't hand-edit `data/deals.json`, `data/cache/*`, `site/deals/*` or `site/sitemap.xml`: the robot
   regenerates them daily. Hand-added deals go in `data/manual_deals.json`.
+  A restaurant that asks to be removed: add its domain to `data/removed.json` (all cities).
 - Don't remove fields from `data/deals.json`; the live app reads it. Adding fields is fine.
