@@ -48,9 +48,12 @@
     lookPref: store.get("look", "auto"),  // auto | day | night (the menu setting)
     lookForced: null,                      // ?look=day|night, for testing; never saved
     look: document.documentElement.dataset.look || "night",
+    histStep: null,       // view|day|category last written to the address (for the back button)
     open: new Set(),      // place blocks showing "what else is on"
     allDayAll: false,
     nowAll: false,        // show every place on now (the list starts with the first 8)
+    laterAll: false,      // show every start time later today (the list starts with the first 5)
+    schedAll: new Set(),  // other-day sections opened in full, as "day|section"
     sel: null,            // place selected on the map
     map: null, layer: null, meMarker: null, mapKey: "",
     watchId: null, lastScroll: 0,
@@ -136,6 +139,16 @@
   }
 
   // ---------- city ----------
+  // First visit, before any location permission: guess the city from the phone's time zone, so a
+  // visitor in Vancouver or Toronto doesn't open on Edmonton. Only the zone's name is read, not the time.
+  const ZONE_CITY = { "America/Vancouver": "vancouver", "America/Toronto": "toronto", "America/Montreal": "toronto",
+    "America/Nipigon": "toronto", "America/Thunder_Bay": "toronto", "America/Edmonton": "edmonton" };
+  function cityFromClock() {
+    let zone = "";
+    try { zone = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) { /* old browser */ }
+    const id = ZONE_CITY[zone] || (CITIES.find((c) => c.timezone === zone) || {}).id;
+    return cityById(id) ? id : CFG.DEFAULT_CITY;
+  }
   function nearestCity(pt) {
     return CITIES.map((c) => ({ city: c, km: km(pt, { lat: c.center[0], lng: c.center[1] }) })).sort((a, b) => a.km - b.km)[0];
   }
@@ -149,7 +162,7 @@
     $("browseLink").href = city().id === CFG.DEFAULT_CITY ? "deals/" : `${city().id}/deals/`;
     buildCityPanel();
     if (changed) {
-      state.data = null; state.byId = new Map(); state.cat = null; state.sel = null; state.open.clear(); state.allDayAll = false; state.nowAll = false;
+      state.data = null; state.byId = new Map(); state.cat = null; state.sel = null; state.open.clear(); state.allDayAll = false; state.nowAll = false; state.laterAll = false; state.schedAll.clear();
       $("updated").textContent = "";
       applyLook();
       load();
@@ -623,11 +636,14 @@
     });
     const hero = rows(groups.get(first)).map(({ p, sub }) => `<div class="lrow" id="p-${esc(p.r.id)}"><div class="txt"><p class="nm">${esc(p.r.name)}</p><p class="sub">${esc(sub)}</p></div>
       <button type="button" class="outline-btn" data-cal="${esc(p.items[0].d.id)}" data-place="${esc(p.r.id)}"><svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></svg>Add to calendar</button></div>`).join("");
-    const rest = starts.slice(1, 5).map((s) => `<div class="start-group"><span class="outline-num" aria-hidden="true">${clock(s)}</span><div class="places">
+    const cap = state.laterAll ? Infinity : 5;
+    const rest = starts.slice(1, cap).map((s) => `<div class="start-group"><span class="outline-num" aria-hidden="true">${clock(s)}</span><div class="places">
       <span class="when">${clock(s)} ${ampm(s).toUpperCase()} · IN ${leftText(s - now.mins)}</span>
-      ${rows(groups.get(s)).slice(0, 5).map(({ p, sub }) => `<div class="place" id="p-${esc(p.r.id)}"><p class="nm">${esc(p.r.name)}</p><p class="sub">${esc(sub)}</p><button type="button" class="cal" data-cal="${esc(p.items[0].d.id)}" data-place="${esc(p.r.id)}">Add to calendar</button></div>`).join("")}
+      ${rows(groups.get(s)).slice(0, cap).map(({ p, sub }) => `<div class="place" id="p-${esc(p.r.id)}"><p class="nm">${esc(p.r.name)}</p><p class="sub">${esc(sub)}</p><button type="button" class="cal" data-cal="${esc(p.items[0].d.id)}" data-place="${esc(p.r.id)}">Add to calendar</button></div>`).join("")}
       </div></div>`).join("");
-    const more = starts.length > 5 ? `<p class="hint">And ${starts.length - 5} more start times later today.</p>` : "";
+    const hidden = starts.slice(1, 5).reduce((n, s) => n + Math.max(0, rows(groups.get(s)).length - 5), 0);
+    const more = !state.laterAll && (starts.length > 5 || hidden)
+      ? `<button type="button" class="show-all" data-laterall>Show everything later today${starts.length > 5 ? ` (${starts.length - 5} more start times)` : ""}</button>` : "";
     return `<section class="later" aria-label="Later today"><p class="eyebrow">${now.mins < 720 ? "LATER TODAY" : state.look === "day" ? "SWITCHING ON LATER" : "LATER TONIGHT"}</p>
       <div class="later-hero"><p class="outline-num${clock(first).length > 4 ? " long" : ""}"><span class="t">${clock(first)}</span><span class="ap">${ampm(first).toUpperCase()}</span></p><p class="in">switches on<br>in ${leftText(inMins).toLowerCase()}</p></div>
       <div aria-hidden="true"><div class="rail" style="height:${8 + railItems.length * 18}px">${bars}<span class="needle" style="left:${pos(now.mins)}%"></span></div><div class="rail-axis">${ticks.join("")}</div></div>
@@ -672,7 +688,12 @@
       const t = s != null ? shortAP(s).toUpperCase() : e != null ? "TILL " + shortAP(e).toUpperCase() : "";
       return `<div class="srow" id="p-${esc(i.nearest.r.id)}"><span class="t">${esc(t)}</span><div class="txt"><p class="nm">${esc(i.nearest.r.name)}</p><p class="sub">${esc(i.d.title)} · ${esc(hoursText(i.d))} · ${kmShort(i.nearest.dist)} km${i.d.dine_in_only ? " · dine-in" : ""}</p></div>${i.d.price ? `<span class="p">${esc(i.d.price)}</span>` : ""}</div>`;
     };
-    const part = (title, its) => (its.length ? `<section class="group"><div class="ghead"><h2>${title}</h2><span class="meta">${its.length} ${its.length === 1 ? "deal" : "deals"}</span></div><div class="sched">${its.slice(0, 40).map(row).join("")}</div></section>` : "");
+    const part = (title, its) => {
+      if (!its.length) return "";
+      const key = `${state.day}|${title}`, all = state.schedAll.has(key);
+      const more = its.length > 40 && !all ? `<button type="button" class="show-all" data-schedall="${esc(key)}">Show all ${its.length}</button>` : "";
+      return `<section class="group"><div class="ghead"><h2>${title}</h2><span class="meta">${its.length} ${its.length === 1 ? "deal" : "deals"}</span></div><div class="sched">${(all ? its : its.slice(0, 40)).map(row).join("")}</div>${more}</section>`;
+    };
     const aft = timed.filter((i) => (DS.startOf(i.d) ?? 0) < 17 * 60), eve = timed.filter((i) => (DS.startOf(i.d) ?? 0) >= 17 * 60);
     $("listTop").innerHTML = (sel.length ? "" : `<div class="empty"><p class="big">Nothing posted for ${DAY_LONG[state.day]} within ${esc(radiusText(state.radius))}.</p><p>Try a wider distance or another day.</p></div>`)
       + part("Daytime", aft) + part("Evening", eve);
@@ -994,7 +1015,23 @@
     if (state.q.trim()) p.set("q", state.q.trim());
     if (state.lookForced) p.set("look", state.lookForced);
     const url = location.pathname + (p.toString() ? "?" + p : "") + location.hash;
-    if (url !== location.pathname + location.search + location.hash) history.replaceState(null, "", url);
+    if (url === location.pathname + location.search + location.hash) return;
+    // Switching to the map, another day or a category is a step the back button should undo;
+    // typing a search or changing the distance just updates the address.
+    const step = `${state.view}|${state.day}|${state.cat}`;
+    if (state.histStep != null && step !== state.histStep) history.pushState({ foodish: step }, "", url);
+    else history.replaceState(history.state, "", url);
+    state.histStep = step;
+  }
+  // Back / forward inside the app: put the view, day and category back the way the address says.
+  function onPopState() {
+    const p = new URLSearchParams(location.search);
+    const day = parseInt(p.get("day"), 10);
+    state.day = day >= 0 && day <= 6 && day !== nowLocal().day ? day : null;
+    state.cat = (p.get("cat") || "").trim().toLowerCase() || null;
+    state.sel = null; state.nowAll = false;
+    state.histStep = `${p.get("view") === "map" ? "map" : "list"}|${state.day}|${state.cat}`;
+    setView(p.get("view") === "map" ? "map" : "list");
   }
 
   // ---------- view ----------
@@ -1014,6 +1051,8 @@
     const lastCity = store.get("city", null);
     if (cityById(lastCity)) state.city = lastCity;
     readLinkFilters();
+    if (!cityById(lastCity) && !state.cityLocked) state.city = cityFromClock();
+    window.addEventListener("popstate", onPopState);
     $("cityName").textContent = city().name;
     setCity(state.city);
     applyLook();
@@ -1048,12 +1087,14 @@
     $("lookSeg").onclick = (e) => { const b = e.target.closest("[data-look-pick]"); if (!b) return; state.lookPref = b.dataset.lookPick; state.lookForced = null; store.set("look", state.lookPref); applyLook(); render(); };
     // Everything drawn by render() uses data-* buttons, handled here once.
     document.addEventListener("click", (e) => {
-      const t = e.target.closest("[data-open],[data-mapsel],[data-allday],[data-nowall],[data-cal],[data-closesheet],.soon [data-day]");
+      const t = e.target.closest("[data-open],[data-mapsel],[data-allday],[data-nowall],[data-laterall],[data-schedall],[data-cal],[data-closesheet],.soon [data-day]");
       if (!t) return;
       if (t.dataset.open) { const id = t.dataset.open; state.open.has(id) ? state.open.delete(id) : state.open.add(id); render(); }
       else if (t.dataset.mapsel) { state.sel = t.dataset.mapsel; if (isDesktop()) { render(); $("mapPane").scrollIntoView({ behavior: "smooth", block: "nearest" }); } else setView("map"); }
       else if ("allday" in t.dataset) { state.allDayAll = true; render(); }
       else if ("nowall" in t.dataset) { state.nowAll = true; render(); }
+      else if ("laterall" in t.dataset) { state.laterAll = true; render(); }
+      else if (t.dataset.schedall) { state.schedAll.add(t.dataset.schedall); render(); }
       else if (t.dataset.cal) addToCalendar(t.dataset.cal, t.dataset.place);
       else if ("closesheet" in t.dataset) { state.sel = null; render(); }
       else if (t.dataset.day) { const d = +t.dataset.day; state.day = d === nowLocal().day ? null : d; window.scrollTo({ top: 0, behavior: "smooth" }); render(); }
