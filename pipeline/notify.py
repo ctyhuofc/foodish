@@ -6,6 +6,7 @@ Needs: API_URL, ADMIN_TOKEN, VAPID_PRIVATE_KEY, VAPID_SUBJECT (e.g. mailto:you@f
 import json
 import math
 import os
+import re
 from pathlib import Path
 
 import requests
@@ -15,7 +16,17 @@ import cities
 import deal_state as ds  # the shared deal-timing rules (spec/deal-states.json)
 
 ROOT = Path(__file__).resolve().parent.parent
-API = (os.environ.get("API_URL") or "").rstrip("/")
+
+
+def _api_url():
+    """The alerts service address: the API_URL variable if set, else the one the app uses (site/config.js)."""
+    if os.environ.get("API_URL"):
+        return os.environ["API_URL"]
+    m = re.search(r'API_URL:\s*"([^"]*)"', (ROOT / "site" / "config.js").read_text())
+    return m.group(1) if m else ""
+
+
+API = _api_url().rstrip("/")
 AUTH = {"Authorization": f"Bearer {os.environ.get('ADMIN_TOKEN', '')}"}
 
 

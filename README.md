@@ -105,19 +105,17 @@ The app is plain files, no server needed. `.github/workflows/pages.yml` publishe
 
 Location needs **https** (all the options above provide it).
 
-### 6. Turn on push alerts (optional, ~15 min)
-1. Free account at cloudflare.com, then in a terminal:
-   ```bash
-   cd worker
-   npx wrangler login
-   npx wrangler kv namespace create SUBS
-   npx wrangler kv namespace create SUBMISSIONS     # paste both ids into wrangler.toml
-   npx wrangler secret put ADMIN_TOKEN               # make up a long random password
-   npx wrangler deploy                               # prints your Worker URL
-   npx web-push generate-vapid-keys                  # prints a public + private key
-   ```
-2. In `site/config.js`: `API_URL` = the Worker URL, `VAPID_PUBLIC_KEY` = the public key.
-3. GitHub secrets: `ADMIN_TOKEN`, `VAPID_PRIVATE_KEY`. GitHub variables: `API_URL`, `VAPID_SUBJECT` = `mailto:you@foodish.ca`.
+### 6. Turn on push alerts and deal tips (optional, ~15 min, no terminal)
+1. Free account at cloudflare.com. Open **Workers & Pages** once so Cloudflare gives the account its `workers.dev` address.
+2. Cloudflare → your profile → **API Tokens** → Create Token → template **Edit Cloudflare Workers** → Continue → Create. Copy the token. Also copy your **Account ID** (Workers & Pages page, right-hand side).
+3. GitHub → Settings → Secrets and variables → Actions → **Secrets**, add:
+   `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `ADMIN_TOKEN` (any long random password), and
+   `VAPID_PRIVATE_KEY` (the private half of a key pair from `npx web-push generate-vapid-keys`).
+4. GitHub → Actions → **Set up alerts service** → Run workflow. Its summary shows the service address.
+5. In `site/config.js`: `API_URL` = that address, `VAPID_PUBLIC_KEY` = the public half of the key pair.
+   The daily robot reads `API_URL` from there too (a GitHub variable `API_URL` overrides it).
+
+Re-run step 4 whenever `worker/worker.js` changes.
 
 **How alerts work:** the bell button and the "Leave a light on" section offer (a) "while Foodish is open, ping me when I walk near a deal that's on now" and (b) a daily ~4 pm "deals near you today" push. On iPhone, push only works after the visitor taps Share → **Add to Home Screen** (an Apple rule); the app tells them this.
 
