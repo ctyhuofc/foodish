@@ -44,8 +44,13 @@ jobs:
       - name: Check the Cloudflare token and Account ID
         run: |
           say() { echo "::error title=$1::$2"; exit 1; }
+          # Tokens made under My Profile are checked at /user; those made under Manage Account at /accounts/<id>.
           r=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify)
-          echo "Token check: $(echo "$r" | jq -c '{success, status: .result.status, errors}')"
+          if [ "$(echo "$r" | jq -r .success)" != "true" ]; then
+            r=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/tokens/verify")
+          fi
+          echo "Token check: $(echo "$r" | jq -c '{success, status: .result.status, errors}')
+          Token length: ${#CLOUDFLARE_API_TOKEN} characters (a Cloudflare token is usually 40 or more)"
           [ "$(echo "$r" | jq -r .success)" = "true" ] || \
             say "Cloudflare token not accepted" "Check the CLOUDFLARE_API_TOKEN secret is the whole token. Cloudflare said: $(echo "$r" | jq -c .errors)"
           r=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID")
