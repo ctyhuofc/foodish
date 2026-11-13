@@ -1,109 +1,155 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-look="night">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Foodish — Restaurant deals near you in Edmonton, Vancouver and Toronto</title>
   <meta name="description" content="Find today's restaurant deals near you in Edmonton, Vancouver and Toronto — wing nights, happy hours, half-price burgers and more.">
-  <meta name="theme-color" content="#d9412b">
+  <meta name="theme-color" content="#121A3A">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
+  <script>
+    // Pick the look before anything paints, so the page never flashes the wrong colours.
+    // app.js makes the real decision from the sun once it knows the city; this uses the last one.
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search).get("look");
+        var pref = JSON.parse(localStorage.getItem("foodish:look") || '"auto"');
+        var last = JSON.parse(localStorage.getItem("foodish:lastLook") || '"night"');
+        var look = q === "day" || q === "night" ? q : pref === "day" || pref === "night" ? pref : last;
+        document.documentElement.dataset.look = look === "day" ? "day" : "night";
+      } catch (e) {}
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@1,6..96,500;1,6..96,700&family=Schibsted+Grotesk:wght@400;500;700&family=Sofia+Sans+Extra+Condensed:wght@600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="top">
-    <div class="brand">
-      <span class="logo" aria-hidden="true">🍽</span>
-      <span class="wordmark">foodish</span>
-      <select id="cityPick" class="city" aria-label="City"></select>
-    </div>
-    <button id="alertsBtn" class="icon-btn" aria-label="Deal alerts" title="Deal alerts">🔔</button>
-  </header>
+  <svg class="grain" aria-hidden="true" focusable="false"><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#grain)"/></svg>
 
-  <section class="hero">
-    <h1 id="headline">Deals near you today</h1>
-    <button id="locBtn" class="loc-chip">📍 <span id="locText">Use my location</span></button>
+  <header class="top" id="top">
+    <a class="wordmark" href="./" aria-label="Foodish home">foodish</a>
+    <div class="city-wrap">
+      <button type="button" id="cityBtn" class="city-btn" aria-expanded="false" aria-controls="cityPanel"><span id="cityName">Edmonton</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+    </div>
+    <label class="search-desk">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+      <span class="sr">Search deals</span>
+      <input id="searchDesk" type="search" placeholder="Wings, tacos, a restaurant…" autocomplete="off">
+    </label>
+    <nav class="days days-desk" id="daysDesk" aria-label="Day"></nav>
+    <span class="grow"></span>
+    <button type="button" id="searchBtn" class="icon-btn phone-only" aria-label="Search" aria-expanded="false" aria-controls="searchRow">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button>
+    <button type="button" id="alertsBtn" class="icon-btn" aria-label="Deal alerts">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 8 2.5 8h-17S6 15 6 9"/><path d="M10 20.5h4"/></svg>
+      <span class="alerts-dot" id="alertsDot" hidden></span><span class="desk-only">Alerts</span></button>
+    <a href="#tell" class="desk-only top-link">Tell us a deal</a>
+  </header>
+  <div id="cityPanel" class="city-panel" hidden></div>
+  <div id="searchRow" class="search-row" hidden>
+    <label class="search-field">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+      <span class="sr">Search deals</span>
+      <input id="search" type="search" placeholder="Wings, tacos, a restaurant…" autocomplete="off">
+    </label>
+  </div>
+
+  <section class="hero" aria-labelledby="countLine">
+    <div class="hero-main">
+      <p class="kicker"><span id="kickerTime"></span> · <button type="button" id="locBtn" class="loc-btn"><svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg><span id="locText">Finding you…</span></button></p>
+      <div class="count-row" id="countLine">
+        <span class="count" id="count">–</span>
+        <span class="sun-badge desk-only" aria-hidden="true"></span>
+        <p class="count-words"><span id="countWord">lights on</span><br>within <button type="button" id="radiusBtn" class="radius-btn" aria-label="Distance, tap to change">5 km</button></p>
+      </div>
+      <div class="street-wrap phone-street" id="streetWrap">
+        <svg class="sky-arc" viewBox="0 0 358 70" preserveAspectRatio="none" aria-hidden="true"><path d="M6 66 Q 179 -40 352 66"/></svg>
+        <span class="sun" id="sun" aria-hidden="true"></span>
+        <div class="street" id="street" role="group" aria-label="Nearby places. Each lit window is a deal on now."></div>
+        <div class="street-km" id="streetKm" aria-hidden="true"></div>
+      </div>
+      <p class="subline" id="subline"></p>
+      <p class="status" id="status" role="status"></p>
+    </div>
+    <div class="timetable desk-only" id="timetable"></div>
   </section>
 
-  <nav class="days" id="days" aria-label="Day of week"></nav>
+  <nav class="days days-phone" id="days" aria-label="Day"></nav>
+  <div class="cats-row">
+    <div class="cats" id="cats" role="group" aria-label="What kind of deal"></div>
+    <div class="radius-group desk-only" id="radiusGroup" role="group" aria-label="Distance"></div>
+  </div>
 
-  <section class="controls">
-    <label class="search">
-      <span aria-hidden="true">🔎</span>
-      <input id="search" type="search" placeholder="Wings, tacos, happy hour, a restaurant…" autocomplete="off">
-    </label>
-    <div class="row">
-      <label class="toggle"><input type="checkbox" id="onNow"> <span>On now</span></label>
-      <select id="radius" aria-label="Distance">
-        <option value="2">Within 2 km</option>
-        <option value="5" selected>Within 5 km</option>
-        <option value="10">Within 10 km</option>
-        <option value="999">All of Edmonton</option>
-      </select>
-      <div class="view-switch" role="tablist">
-        <button id="listViewBtn" class="active" role="tab">List</button>
-        <button id="mapViewBtn" role="tab">Map</button>
+  <div class="cols">
+    <main class="list" id="list">
+      <div id="listTop"></div>
+      <section id="alerts" class="alerts-band" aria-labelledby="alertsTitle">
+        <svg class="lamp" width="64" height="72" viewBox="0 0 64 72" aria-hidden="true"><path d="M32 2v12"/><path class="shade" d="M14 34 20 14h24l6 20z"/><path d="M14 34h36"/><circle cx="32" cy="46" r="9"/><path d="M20 66h24"/><path d="M32 55v11"/></svg>
+        <div class="alerts-body">
+          <h2 id="alertsTitle">Leave a light on.</h2>
+          <p id="alertsLead">We'll nudge you when you're close to a deal that's on. No account, off any time.</p>
+          <div class="toggles">
+            <button type="button" class="toggle" id="nearbyWatch" aria-pressed="false"><span class="track" aria-hidden="true"><span class="thumb"></span></span>When I'm near a deal that's on</button>
+            <div id="pushBlock" hidden>
+              <button type="button" class="toggle" id="pushDaily" aria-pressed="false"><span class="track" aria-hidden="true"><span class="thumb"></span></span>A daily heads-up around 4 pm</button>
+              <label class="line-field">ONLY THESE KINDS (OPTIONAL)<input id="pushCats" placeholder="e.g. wings, burgers, happy hour"></label>
+            </div>
+            <p class="hint" id="iosHint" hidden>On iPhone: tap Share, then <b>Add to Home Screen</b>, open Foodish from your home screen, and turn alerts on there.</p>
+          </div>
+          <p class="hint" id="alertsMsg" role="status"></p>
+        </div>
+      </section>
+      <div id="listBottom"></div>
+    </main>
+    <aside class="map-pane" id="mapPane" aria-label="Map">
+      <div class="map" id="map"></div>
+      <div class="sheet" id="sheet" hidden></div>
+    </aside>
+  </div>
+
+  <footer class="foot" id="tell">
+    <div class="foot-grid">
+      <form id="submitForm" class="tell" novalidate>
+        <h2>A light we missed?</h2>
+        <div class="tell-fields">
+          <label class="line-field">RESTAURANT<input name="restaurant" required autocomplete="off"></label>
+          <label class="line-field">THE DEAL<input name="deal" required placeholder="e.g. 50¢ wings, Wednesdays after 4" autocomplete="off"></label>
+          <label class="line-field">LINK TO WHERE IT'S POSTED (OPTIONAL)<input name="url" type="url" autocomplete="off"></label>
+        </div>
+        <button type="submit" id="sendSubmit" class="lamp-btn">Tell us</button>
+        <p class="hint" id="submitMsg" role="status"></p>
+      </form>
+      <div class="settings">
+        <h2 class="caps-title">SETTINGS</h2>
+        <p class="set-label" id="lookLabel">LOOK</p>
+        <div class="seg" id="lookSeg" role="group" aria-labelledby="lookLabel">
+          <button type="button" data-look-pick="auto">Auto</button>
+          <button type="button" data-look-pick="day">Daylight</button>
+          <button type="button" data-look-pick="night">Blue Hour</button>
+        </div>
+        <p class="hint" id="lookNote"></p>
+        <button type="button" class="toggle" id="chainsToggle" aria-pressed="true"><span class="track" aria-hidden="true"><span class="thumb"></span></span>Include big chains</button>
+        <p class="links"><a href="deals/" id="browseLink">Browse every deal by day or type</a></p>
       </div>
     </div>
-    <div class="chips" id="chips"></div>
-  </section>
-
-  <main>
-    <div id="status" class="status" role="status"></div>
-    <ul id="list" class="list"></ul>
-    <div id="map" class="map" hidden></div>
-  </main>
-
-  <footer class="foot">
-    <button id="submitBtn" class="link-btn">Know a deal we're missing? Tell us →</button>
-    <p><a href="deals/" class="link-btn">Browse every deal by day or type →</a></p>
-    <p class="fine">Deals are gathered automatically from restaurants' own websites and updated daily. Always confirm with the restaurant before you go. <span id="updated"></span></p>
+    <p class="fine">A robot reads every restaurant's own website at 4 am and posts what it finds. Always confirm with the restaurant before you go. <span id="updated"></span></p>
   </footer>
 
-  <!-- Alerts dialog -->
-  <dialog id="alertsDlg">
-    <form method="dialog" class="dlg">
-      <h2>Deal alerts</h2>
-      <p>Get a heads-up when a deal is on near you.</p>
-      <label class="check"><input type="checkbox" id="nearbyWatch"> While Foodish is open, notify me when I'm close to a deal that's on now</label>
-      <div id="pushBlock">
-        <label class="check"><input type="checkbox" id="pushDaily"> Send me a daily alert (around 4 pm) for deals near my saved spot</label>
-        <label class="field">Categories (optional)
-          <input id="pushCats" placeholder="e.g. wings, burgers, happy hour">
-        </label>
-        <p class="hint" id="iosHint" hidden>On iPhone: tap Share → <b>Add to Home Screen</b>, open Foodish from your home screen, then turn on alerts here.</p>
-      </div>
-      <p class="hint" id="alertsMsg"></p>
-      <menu>
-        <button value="cancel" class="ghost">Close</button>
-        <button id="saveAlerts" value="default" class="primary">Save</button>
-      </menu>
-    </form>
-  </dialog>
-
-  <!-- Submit dialog -->
-  <dialog id="submitDlg">
-    <form method="dialog" class="dlg" id="submitForm">
-      <h2>Share a deal</h2>
-      <label class="field">Restaurant <input name="restaurant" required></label>
-      <label class="field">The deal <input name="deal" required placeholder="e.g. 50¢ wings, Wednesdays after 4 pm"></label>
-      <label class="field">Link to where it's posted (optional) <input name="url" type="url"></label>
-      <p class="hint" id="submitMsg"></p>
-      <menu>
-        <button value="cancel" class="ghost" formnovalidate>Cancel</button>
-        <button id="sendSubmit" value="default" class="primary">Send</button>
-      </menu>
-    </form>
-  </dialog>
+  <nav class="dock" aria-label="View">
+    <button type="button" id="listViewBtn" aria-pressed="true"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>LIST</button>
+    <button type="button" id="mapViewBtn" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>MAP</button>
+  </nav>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="config.js"></script>
   <script src="deal-state.js"></script>
+  <script src="sky.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

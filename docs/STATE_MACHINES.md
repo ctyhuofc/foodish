@@ -14,6 +14,7 @@ changes it, and the test that pins it down. If you're changing behaviour, change
 | 7 | Alerts | `site/app.js` `alertsState()` / `syncAlertsBadge()`; `worker/worker.js` | browser check |
 | 8 | Filters ↔ address bar | `site/app.js` `readLinkFilters()` / `writeLinkFilters()` | browser check |
 | 9 | City (which city's deals are showing) | `site/app.js` `setCity()`; list in `cities.json` | `tests/test_cities.py`, browser check |
+| 10 | Look (Daylight or Blue Hour) | `site/sky.js` `lookAt()`, applied by `site/app.js` `applyLook()` | `tests/sky.test.mjs`, browser check |
 
 Run everything: `python -m unittest discover -s tests && node --test tests/*.test.mjs`
 
@@ -108,8 +109,8 @@ AI key still showed a green tick (that happened every day from 22 Oct to 8 Nov 2
 | Data | `loading` → `ready` \| `error`; `error` → `loading` | `setLoad()` | Retry button; retries when back online or when the tab reopens; a failed refresh keeps the deals already shown; "last checked … over a day ago" when deals are 36 h+ old |
 | Location | `locating` → `precise` \| `last_known` \| `default` | `setLocation()` | The location label is derived from the state |
 | Alerts | `off` \| `on` \| `blocked` (derived, never stored twice) | `syncAlertsBadge()` | `blocked` = the visitor asked for alerts but the browser now refuses; nearby-watch stops |
-| Submit | `idle` → `sending` → `sent` \| `error` | `submitDeal()` | Send is disabled while sending |
-| Filters | in the address bar | `readLinkFilters()` / `writeLinkFilters()` | `?cat=wings&day=3&now=1&view=map&km=2&q=tacos`: shareable, and opens the app in that state |
+| Submit | `idle` → `sending` → `sent` \| `error` | `submitDeal()` | Send is disabled while sending (the form is at the bottom of the page) |
+| Filters | in the address bar | `readLinkFilters()` / `writeLinkFilters()` | `?cat=wings&day=3&now=1&view=map&km=1&q=tacos`: shareable, and opens the app in that state. `?look=day` / `?look=night` previews a look and is never saved |
 
 Debug in the browser console: `__foodish.state`, `__foodish.alertsState()`.
 
@@ -142,3 +143,20 @@ stateDiagram-v2
 - The robot treats cities independently: the run plan (machine 3) is decided per city from that city's
   own files, each city has its own website lifecycle cache (machine 2), and the health gate
   (machine 4) checks every city that was refreshed. One city failing never blocks another.
+
+## 10. Look
+
+`day` (Daylight) or `night` (Blue Hour), on `<html data-look>`. One function decides it (`wantedLook()`), one applies it (`applyLook()`).
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    night --> day: sunrise in the shown city
+    day --> night: 30 minutes before sunset
+    note right of day: Settings can fix either look; ?look= previews one without saving
+```
+
+- Sun times come from `sky.js` for the shown city's centre, on that city's clock (`deal_state` fixed offsets for Alberta and B.C.).
+- Checked when the page opens, when the city changes, when the tab comes back, and each minute, but never applied within a minute of the visitor scrolling. Colours fade over one second (off with reduced motion).
+- `index.html` sets the last look before anything draws, so the page doesn't flash the wrong colours.
+- The look never changes what a deal *is*: lit = on now, outline = later today, blue band = all day, struck = ended, in both looks.

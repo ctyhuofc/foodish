@@ -18,6 +18,7 @@ place that changes it. Change the machine, not a copy of its logic.
   hard-code a city name or a `data/...` path: take a `City`. Scripts accept city ids
   (`python pipeline/scrape.py vancouver`; none = every city). Edmonton's paths (`data/deals.json`, …)
   must never move: the live site reads them.
+- **The app's look** (Daylight / Blue Hour) → `site/sky.js` decides, `applyLook()` in `site/app.js` applies. Colours are CSS variables under `html[data-look="night"]` and `html[data-look="day"]` in `site/styles.css`; never hard-code a colour for one look only. Lit yellow means on now, everywhere.
 - **Local time** → `deal_state.now_in(city.timezone)` / `FoodishDealState.zonedNow(zone)`. Alberta is
   UTC-6 and B.C. is UTC-7 year-round; Ontario (Toronto) still changes clocks and uses normal tz data; don't use raw `ZoneInfo(...)` or `Intl` for "now".
 
