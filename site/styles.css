@@ -97,13 +97,13 @@ html[data-look="day"] .sky-arc, html[data-look="day"] .sun { display: block; }
 html[data-look="night"] .street-wrap { margin-top: 26px; }
 .street { display: flex; align-items: flex-end; gap: 5px; height: 152px; border-bottom: 2px solid var(--rule); }
 html[data-look="day"] .street { border-bottom-color: var(--ink); }
-.bldg { overflow: hidden; flex: 0 0 39px; display: grid; grid-template-columns: repeat(2, 12px); justify-content: center; align-content: start; gap: 6px 5px; padding-top: 9px; background: var(--building); text-decoration: none; transition: height .4s; }
+.bldg { overflow: hidden; flex: 1 1 0; min-width: 0; max-width: 39px; display: grid; grid-template-columns: repeat(2, 12px); justify-content: center; align-content: start; gap: 6px 5px; padding-top: 9px; background: var(--building); text-decoration: none; transition: height .4s; }
 .win { display: block; width: 12px; height: 16px; background: var(--win-dark); transition: background-color 1s; }
 .win.w-later { background: transparent; box-shadow: inset 0 0 0 1.5px var(--win-later); }
 .win.lit { background: var(--lamp); animation: lightOn .7s linear both; }
 @keyframes lightOn { 0%, 55% { background: var(--win-dark); } 62% { background: var(--lamp); } 70% { background: var(--win-dark); } 78%, 100% { background: var(--lamp); } }
 .street-km { display: flex; gap: 5px; margin-top: 6px; }
-.street-km span { flex: 0 0 39px; text-align: center; font-family: var(--f-num); font-weight: 600; font-size: 13px; letter-spacing: .06em; color: var(--muted); }
+.street-km span { flex: 1 1 0; min-width: 0; max-width: 39px; text-align: center; font-family: var(--f-num); font-weight: 600; font-size: 13px; letter-spacing: .06em; color: var(--muted); }
 .subline { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
 .status { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
 .status:empty { display: none; }
@@ -112,7 +112,7 @@ html[data-look="day"] .street { border-bottom-color: var(--ink); }
 /* ---------- days + categories ---------- */
 .days { display: flex; gap: 6px; }
 .days-phone { padding: 26px var(--gutter) 0; }
-.days button { flex: 0 0 46px; height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 0; padding: 0; background: transparent; box-shadow: inset 0 0 0 1px var(--rule); }
+.days button { flex: 1 1 0; min-width: 0; max-width: 46px; height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 0; padding: 0; background: transparent; box-shadow: inset 0 0 0 1px var(--rule); }
 .days button .l { font-size: 12px; font-weight: 700; letter-spacing: .08em; line-height: 1; }
 .days button .n { font-family: var(--f-num); font-weight: 800; font-size: 26px; line-height: 1; }
 .days button[aria-pressed="true"] { background: var(--sel-bg); color: var(--sel-fg); box-shadow: none; }

@@ -472,7 +472,7 @@
     const cap = state.nowAll ? Infinity : 8;
     for (const g of groups) {
       if (shown >= cap) break;
-      const title = g.end == null ? "Until close" : g.end % 1440 === 0 ? "Until midnight" : `Until ${clock(g.end)}${ampm(g.end) === "am" ? " am" : ""}`;
+      const title = g.end == null ? "Until close" : g.end % 1440 === 0 ? "Until midnight" : `Until ${clock(g.end)} ${ampm(g.end)}`;
       const meta = (g.left != null ? leftText(g.left) + " · " : "") + `${g.places.length} ${g.places.length === 1 ? "place" : "places"}`;
       const hot = g.left != null && g.left < 45;
       let blocks = "";
@@ -626,7 +626,7 @@
       ${rows(groups.get(s)).slice(0, 5).map(({ p, sub }) => `<div class="place" id="p-${esc(p.r.id)}"><p class="nm">${esc(p.r.name)}</p><p class="sub">${esc(sub)}</p><button type="button" class="cal" data-cal="${esc(p.items[0].d.id)}" data-place="${esc(p.r.id)}">Add to calendar</button></div>`).join("")}
       </div></div>`).join("");
     const more = starts.length > 5 ? `<p class="hint">And ${starts.length - 5} more start times later today.</p>` : "";
-    return `<section class="later" aria-label="Later today"><p class="eyebrow">${state.look === "day" ? "SWITCHING ON LATER" : "LATER TONIGHT"}</p>
+    return `<section class="later" aria-label="Later today"><p class="eyebrow">${now.mins < 720 ? "LATER TODAY" : state.look === "day" ? "SWITCHING ON LATER" : "LATER TONIGHT"}</p>
       <div class="later-hero"><p class="outline-num${clock(first).length > 4 ? " long" : ""}"><span class="t">${clock(first)}</span><span class="ap">${ampm(first).toUpperCase()}</span></p><p class="in">switches on<br>in ${leftText(inMins).toLowerCase()}</p></div>
       <div aria-hidden="true"><div class="rail" style="height:${8 + railItems.length * 18}px">${bars}<span class="needle" style="left:${pos(now.mins)}%"></span></div><div class="rail-axis">${ticks.join("")}</div></div>
       <div>${hero}</div>${rest}${more}</section>`;
@@ -793,7 +793,7 @@
     const ends = on.map((i) => endsAt(i.d, now)).filter((e) => e != null);
     const left = ends.length ? Math.min(...ends) - now.mins : null;
     const later = today && !on.length && p.items.some((i) => i.status === ST.LATER);
-    const meta = `${kmCaps(p.dist)} · ` + (today ? (on.length ? (left != null ? leftText(left) + " LEFT" : "ON UNTIL CLOSE") : later ? "STARTS " + shortAP(Math.min(...p.items.filter((i) => i.status === ST.LATER).map((i) => DS.toMins(i.d.start)))).toUpperCase() : "ALL DAY") : DAY_LONG[state.day].toUpperCase());
+    const meta = `${kmCaps(p.dist)} · ` + (today ? (on.length ? (left == null ? "ON UNTIL CLOSE" : left < 180 ? leftText(left) + " LEFT" : "UNTIL " + shortAP(left + now.mins).toUpperCase()) : later ? "STARTS " + shortAP(Math.min(...p.items.filter((i) => i.status === ST.LATER).map((i) => DS.toMins(i.d.start)))).toUpperCase() : "ALL DAY") : DAY_LONG[state.day].toUpperCase());
     const src = show.map((i) => i.d.source_url).find(Boolean) || p.r.website;
     sheet.className = "sheet" + (later ? " is-later" : left != null && left > 60 ? " glow" : "");
     sheet.innerHTML = `<span class="grab" aria-hidden="true"></span><button type="button" class="close" data-closesheet aria-label="Close"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
