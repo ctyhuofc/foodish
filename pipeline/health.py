@@ -92,7 +92,8 @@ def summary(city: cities.City) -> list[str]:
     oc = report.get("outcome_counts") or {}
     if oc:
         labels = [("unchanged", "unchanged"), ("extracted", "read by the AI"), ("no_deals", "no deals posted"),
-                  ("unreachable", "unreachable today"), ("gone", "gone (deals removed)")]
+                  ("unreachable", "unreachable today"), ("gone", "gone (deals removed)"),
+                  ("blocked", "blocked or removed by request")]
         parts = [f"{oc[k]} {label}" for k, label in labels if oc.get(k)]
         lines.append(f"- **Sites:** {', '.join(parts) or 'none'}")
         waiting = {k: oc.get(k, 0) for k in ("deferred_budget", "ai_error", "deferred_ai_stopped")}

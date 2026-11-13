@@ -59,6 +59,7 @@ does it and writes the outcome to `data/cache/report.json` (`sites.<domain>.outc
 ```mermaid
 stateDiagram-v2
     direction LR
+    [*] --> blocked: robots.txt blocks FoodishBot, or listed in data/removed.json (deals removed at once)
     [*] --> unreachable: can't load
     unreachable --> gone: still unreachable after 14 days (deals removed)
     [*] --> unchanged: same text, same AI instructions (no AI call)

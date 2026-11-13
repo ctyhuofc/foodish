@@ -20,6 +20,9 @@ window.FOODISH_CONFIG = {
       dataUrl: "https://raw.githubusercontent.com/ctyhuofc/foodish/main/data/toronto/deals.json",
     },
   ],
+  // Where corrections, removal requests and emailed deals go (also on /bot and /privacy).
+  CONTACT_EMAIL: "yates@foodish.ca",
+
   // Shown when we don't know where the visitor is and they haven't picked a city.
   DEFAULT_CITY: "edmonton",
 

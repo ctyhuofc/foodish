@@ -98,3 +98,13 @@ class CleanDeal(unittest.TestCase):
 
     def test_without_page_text_only_the_basic_checks_run(self):
         self.assertIsNotNone(scrape.clean_deal(ai(quote=None, price="$99"), "https://wingplace.ca"))
+
+
+class RemovedSites(unittest.TestCase):
+    def test_removal_list_is_valid_and_matches_by_domain(self):
+        import json
+        raw = json.loads(scrape.REMOVED.read_text())
+        self.assertIsInstance(raw["sites"], list)
+        from unittest import mock
+        with mock.patch.object(scrape, "REMOVED", mock.Mock(read_text=lambda: '{"sites": ["https://www.Example.com/menu", "joes.ca", ""]}')):
+            self.assertEqual(scrape.removed_sites(), {"example.com", "joes.ca"})

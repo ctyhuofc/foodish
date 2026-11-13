@@ -60,7 +60,7 @@ def main():
                               "url": "https://www.foodish.ca/", "tag": f"daily-{today}"})
         try:
             webpush(s["subscription"], payload, vapid_private_key=os.environ["VAPID_PRIVATE_KEY"],
-                    vapid_claims={"sub": os.environ.get("VAPID_SUBJECT", "mailto:hello@foodish.ca")}, ttl=6 * 3600)
+                    vapid_claims={"sub": os.environ.get("VAPID_SUBJECT", "mailto:yates@foodish.ca")}, ttl=6 * 3600)
             sent += 1
         except WebPushException as e:
             if e.response is not None and e.response.status_code in (404, 410):  # subscriber uninstalled / revoked

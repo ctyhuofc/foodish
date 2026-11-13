@@ -37,6 +37,11 @@ class NextStep(unittest.TestCase):
     def test_unchanged_sites_still_count_after_ai_stopped(self):
         self.assertEqual(step(fingerprint="old", ai_stopped=True).outcome, ss.UNCHANGED)
 
+    def test_blocked_or_removed_site_loses_its_deals_at_once(self):
+        self.assertEqual(step(readable=False, blocked=True), ss.Step(ss.BLOCKED, ss.CLEAR))
+        self.assertEqual(step(blocked=True).outcome, ss.BLOCKED)  # even if some text came back
+        self.assertIn(ss.BLOCKED, ss.OUTCOMES)
+
     def test_unreachable_recently_keeps_deals(self):
         self.assertEqual(step(readable=False, fingerprint=None), ss.Step(ss.UNREACHABLE, ss.KEEP))
 
@@ -50,7 +55,8 @@ class NextStep(unittest.TestCase):
     def test_every_outcome_is_reachable(self):
         seen = {step(fingerprint="old").outcome, step(has_deal_words=False).outcome, step(budget_left=False).outcome,
                 step(ai_stopped=True).outcome, step(readable=False, fingerprint=None).outcome,
-                step(entry={**SEEN, "ok_at": "2026-01-01"}, readable=False, fingerprint=None).outcome}
+                step(entry={**SEEN, "ok_at": "2026-01-01"}, readable=False, fingerprint=None).outcome,
+                step(readable=False, fingerprint=None, blocked=True).outcome}
         seen |= {ss.EXTRACTED, ss.AI_ERROR}  # set by scrape.py after the AI call
         self.assertEqual(seen, set(ss.OUTCOMES))
 

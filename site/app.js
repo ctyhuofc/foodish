@@ -531,6 +531,13 @@
     return `<div class="timebar" aria-hidden="true"><div class="bar"><div class="done" style="width:${pct.toFixed(1)}%"></div><div class="tick" style="left:${pct.toFixed(1)}%"></div></div>
       <div class="ends"><span>${clock(s)}</span><span>${clock(e)}</span></div></div>`;
   }
+  // "Something wrong?" link for a place: an email to Foodish with the listing filled in.
+  const CONTACT = CFG.CONTACT_EMAIL || "yates@foodish.ca";
+  function fixLink(r) {
+    const subject = `Foodish listing: ${r.name}${r.address ? ` (${r.address})` : ""}`;
+    const body = `Restaurant: ${r.name}\nAddress: ${r.address || ""}\nCity: ${city().name}\n\nWhat's wrong (or "please remove us"):\n`;
+    return `mailto:${CONTACT}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
   function details(p) {
     const id = p.r.id, open = state.open.has(id);
     const more = p.items.length > 1 || p.items.some((i) => i.d.description);
@@ -539,7 +546,7 @@
       const bits = [esc(i.d.title) + (i.d.price ? `, ${esc(i.d.price)}` : "") + ".", i.d.description ? esc(i.d.description) : "",
         `${esc(daysText(i.d))}, ${esc(hoursText(i.d))}.`, i.d.dine_in_only ? "Dine-in only." : "", esc(staleNote(i.d))].filter(Boolean).join(" ");
       return `<p>${bits}</p>`;
-    }).join("")}${p.items[0].branches.length > 1 ? `<p>Also at ${p.items[0].branches.length - 1} more ${p.items[0].branches.length === 2 ? "location" : "locations"} within ${esc(radiusText(state.radius))}.</p>` : ""}${p.r.address ? `<p>${esc(p.r.address)}</p>` : ""}</div>` : "";
+    }).join("")}${p.items[0].branches.length > 1 ? `<p>Also at ${p.items[0].branches.length - 1} more ${p.items[0].branches.length === 2 ? "location" : "locations"} within ${esc(radiusText(state.radius))}.</p>` : ""}${p.r.address ? `<p>${esc(p.r.address)}</p>` : ""}<p class="fix"><a href="${esc(fixLink(p.r))}">Something wrong, or own this restaurant? Tell us</a></p></div>` : "";
     return `${body}<div class="blk-foot">
       ${more ? `<button type="button" data-open="${esc(id)}" aria-expanded="${open}">${open ? "Less" : "What's included"}</button>` : "<span></span>"}
       <span class="acts"><button type="button" data-mapsel="${esc(id)}">On the map</button><a href="${directions(p.r)}" target="_blank" rel="noopener">Directions</a>${srcs[0] ? `<a href="${esc(srcs[0])}" target="_blank" rel="noopener">Their site</a>` : ""}</span></div>`;
@@ -844,7 +851,8 @@
       <h2>${esc(p.r.name)}</h2><p class="meta">${esc(meta)}</p>
       <div class="lines${show.length > 2 ? " many" : ""}">${show.map((i) => `<p class="line">${fig(i.d)}${under(i.d)}</p>`).join("")}</div>
       <p class="when">${esc(daysText(show[0].d))}, ${esc(hoursText(show[0].d))}${show[0].d.dine_in_only ? ". Dine-in only" : ""}${p.items.length > show.length ? `. ${p.items.length - show.length} more here` : ""}.</p>
-      <div class="btns"><a class="solid" href="${directions(p.r)}" target="_blank" rel="noopener">Directions</a>${src ? `<a class="ghost" href="${esc(src)}" target="_blank" rel="noopener">Their website</a>` : ""}</div>`;
+      <div class="btns"><a class="solid" href="${directions(p.r)}" target="_blank" rel="noopener">Directions</a>${src ? `<a class="ghost" href="${esc(src)}" target="_blank" rel="noopener">Their website</a>` : ""}</div>
+      <p class="fix"><a href="${esc(fixLink(p.r))}">Something wrong? Tell us</a></p>`;
     sheet.hidden = false;
   }
 
@@ -970,7 +978,7 @@
     if (!f.reportValidity()) return;
     const body = Object.fromEntries(new FormData(f).entries());
     if (!CFG.API_URL) {
-      location.href = `mailto:hello@foodish.ca?subject=${encodeURIComponent("Deal for Foodish: " + body.restaurant)}&body=${encodeURIComponent(`${body.deal}\n${body.url || ""}`)}`;
+      location.href = `mailto:${CONTACT}?subject=${encodeURIComponent("Deal for Foodish: " + body.restaurant)}&body=${encodeURIComponent(`${body.deal}\n${body.url || ""}`)}`;
       $("submitMsg").textContent = "Your email app should open with the deal filled in.";
       return;
     }

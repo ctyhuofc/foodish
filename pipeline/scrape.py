@@ -46,8 +46,18 @@ DEAL_LINK = re.compile(r"special|deal|promo|happy[-_ ]?hour|offer|feature|daily|
 DEAL_WORDS = re.compile(r"(\$\s?\d|\d\s?¢|half[- ]?price|1/2 price|happy hour|% off|bogo|buy one|two for|2 for|special|wing (night|wednesday)|kids eat free|daily deal)", re.I)
 MAX_PAGES_PER_SITE = 5
 MAX_CHARS = 14000
+REMOVED = ROOT / "data" / "removed.json"  # restaurants that asked to be taken off Foodish (shared by every city)
 STALE_DAYS = 14  # keep a site's last known deals this long if the site is temporarily down
 TODAY = dt.date.today().isoformat()
+
+
+def removed_sites() -> set[str]:
+    """Domains in data/removed.json: never fetched, and their deals are cleared on the next run."""
+    try:
+        raw = json.loads(REMOVED.read_text())
+    except (OSError, ValueError):
+        return set()
+    return {domain(u if "://" in u else "https://" + u) for u in raw.get("sites", []) if isinstance(u, str) and u.strip()}
 
 
 def domain(url):
@@ -397,9 +407,13 @@ def run_city(city, args):
     # 1) fetch all sites in parallel (free)
     texts, report = {}, {}
     places = place_words(city)
+    removed = removed_sites()
     def work(k):
         info = {"url": sites[k]["url"], "locations": len(sites[k]["branches"])}
         report[k] = info
+        if k in removed:
+            info["status"] = "removed by request"
+            return None
         text = read_site_once(sites[k]["url"], info)
         if text and not confirmed_site(_full_text.get(sites[k]["url"], text), sites[k]["branches"], places):
             info["unconfirmed"] = True  # treated as a site with no deals, so nothing wrong is published
@@ -421,6 +435,7 @@ def run_city(city, args):
             readable=text is not None, fingerprint=h, has_deal_words=bool(text and DEAL_WORDS.search(text)),
             entry=entry, prompt_version=PROMPT_VERSION, stale_before=stale_before,
             budget_left=calls < max_calls and used_this_month + calls < monthly_cap, ai_stopped=breaker.stopped,
+            blocked=report[k].get("status") in ("removed by request", "blocked by robots.txt"),
         )
         outcome = step.outcome
         if text is None:
