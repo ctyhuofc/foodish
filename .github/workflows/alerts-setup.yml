@@ -18,13 +18,15 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
+      # The two Cloudflare secrets are read here only, cleaned, and handed to later steps.
       - name: Check the secrets are there
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           missing=""
           for s in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID ADMIN_TOKEN; do
@@ -34,24 +36,43 @@ jobs:
             echo "::error title=Missing secrets::Add these in Settings → Secrets and variables → Actions:$missing"
             exit 1
           fi
+          # A space or line break copied along with a secret breaks it: strip them for the steps below.
+          for s in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+            v=$(printf '%s' "${!s}" | tr -d '[:space:]'); echo "::add-mask::$v"; echo "$s=$v" >> "$GITHUB_ENV"
+          done
+
+      - name: Check the Cloudflare token and Account ID
+        run: |
+          say() { echo "::error title=$1::$2"; exit 1; }
+          r=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify)
+          echo "Token check: $(echo "$r" | jq -c '{success, status: .result.status, errors}')"
+          [ "$(echo "$r" | jq -r .success)" = "true" ] || \
+            say "Cloudflare token not accepted" "Check the CLOUDFLARE_API_TOKEN secret is the whole token. Cloudflare said: $(echo "$r" | jq -c .errors)"
+          r=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID")
+          echo "Account check: $(echo "$r" | jq -c '{success, name: .result.name, errors}')"
+          [ "$(echo "$r" | jq -r .success)" = "true" ] || \
+            say "Account ID not accepted" "Check the CLOUDFLARE_ACCOUNT_ID secret (32 letters and numbers). Cloudflare said: $(echo "$r" | jq -c .errors)"
 
       - name: Make the storage (first run only)
         run: |
           api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces"
-          auth="Authorization: Bearer $CLOUDFLARE_API_TOKEN"
-          list=$(curl -fsS -H "$auth" "$api?per_page=100")
+          cf() {  # Cloudflare API call -> $r; stops the run with Cloudflare's own reason if it fails
+            r=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "content-type: application/json" "$@")
+            [ "$(echo "$r" | jq -r .success)" = "true" ] || { echo "::error title=Cloudflare refused::$(echo "$r" | jq -c .errors)"; exit 1; }
+          }
+          cf "$api?per_page=100"; list=$r
           for name in SUBS SUBMISSIONS; do
             title="foodish-$name"
             id=$(echo "$list" | jq -r --arg t "$title" '.result[] | select(.title == $t) | .id')
             if [ -z "$id" ]; then
-              id=$(curl -fsS -H "$auth" -H "content-type: application/json" -X POST "$api" -d "{\"title\":\"$title\"}" | jq -r .result.id)
+              cf -X POST "$api" -d "{\"title\":\"$title\"}"; id=$(echo "$r" | jq -r .result.id)
               echo "Made $title"
             else
               echo "Reusing $title"
             fi
             sed -i "s/PASTE_${name}_ID_HERE/$id/" worker/wrangler.toml
           done
-          grep -q PASTE_ worker/wrangler.toml && { echo "::error::Couldn't fill in the storage ids"; exit 1; } || true
+          if grep -q PASTE_ worker/wrangler.toml; then echo "::error::Couldn't fill in the storage ids"; exit 1; fi
 
       - name: Deploy
         working-directory: worker
@@ -61,8 +82,13 @@ jobs:
 
       - name: Check it answers
         run: |
-          sub=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" | jq -r .result.subdomain)
+          r=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain")
+          sub=$(echo "$r" | jq -r '.result.subdomain // empty')
+          if [ -z "$sub" ]; then
+            echo "::error title=No workers.dev address yet::Open Workers & Pages in the Cloudflare dashboard once (pick a subdomain if asked), then run this again. Cloudflare said: $(echo "$r" | jq -c .errors)"
+            exit 1
+          fi
           url="https://foodish-api.$sub.workers.dev"
           sleep 10
           code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $ADMIN_TOKEN" "$url/submissions")
