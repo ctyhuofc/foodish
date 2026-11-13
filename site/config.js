@@ -29,7 +29,7 @@ window.FOODISH_CONFIG = {
   // Cloudflare Worker URL for alerts + deal submissions (leave "" until set up).
   // e.g. "https://foodish-api.YOUR-SUBDOMAIN.workers.dev"
   API_URL: "https://foodish-api.foodish-ca.workers.dev",
-  // "A light we missed?" tips: "email" opens the visitor's email app addressed to CONTACT_EMAIL;
+  // "A deal we missed?" tips: "email" opens the visitor's email app addressed to CONTACT_EMAIL;
   // "service" posts them to API_URL instead (read them at API_URL/submissions with ADMIN_TOKEN).
   TIPS: "email",
 
