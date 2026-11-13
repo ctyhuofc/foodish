@@ -23,7 +23,7 @@ Run everything: `python -m unittest discover -s tests && node --test tests/*.tes
 ## 1. Deal timing
 
 The rule every screen, page and alert uses to decide whether a deal counts. **The rules are data**:
-`spec/deal-states.json` lists the states and 26 worked examples; the Python and browser versions must
+`spec/deal-states.json` lists the states and 31 worked examples; the Python and browser versions must
 both pass every one, so they can't drift. Any other app that reads `data/deals.json` (such as the
 live foodish.ca app built in Grok) should follow the same file. `deals.json` links to it under `rules`.
 
@@ -41,6 +41,7 @@ stateDiagram-v2
     on_now --> ended: end time (or midnight)
 ```
 
+- A deal with only an end time ("lunch until 4 pm") is taken to start 4 hours before it ends, no later than 11:00 (`start_of()` / `startOf()`). Before that it is `later`, not `on_now`.
 - `all_day` is **never** "on now": we don't know the restaurant's hours. (Before this change the
   repo's app showed all-day deals as "on now" at 2 am; the live Grok app already had the right rule.)
 - **Each city's clock:** deal times are in the deal's own city. Alberta has stayed on UTC-6 and British
