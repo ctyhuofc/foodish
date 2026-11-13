@@ -1,0 +1,42 @@
+name: Publish the app (GitHub Pages)
+
+# Publishes the site/ folder (the app, plus the search pages the daily robot writes) to GitHub Pages.
+# Runs when the app changes on main, after every daily update (so the search pages stay current), and by hand.
+# One-time setup: repo Settings → Pages → Build and deployment → Source: "GitHub Actions".
+# The app reads each city's deals straight from data/ on GitHub, so deals are fresh even between publishes.
+
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", ".github/workflows/pages.yml"]
+  workflow_run:
+    workflows: ["Foodish daily update"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'cancelled'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4

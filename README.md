@@ -4,8 +4,10 @@ A location-aware web app for **www.foodish.ca**. Open it on a Wednesday downtown
 
 ```
 foodish/
-├── site/                  ← the web app. Upload this folder to foodish.ca
+├── site/                  ← the web app, published free on GitHub Pages (pages.yml)
 │   ├── index.html, app.js, styles.css, config.js
+│   ├── deal-state.js      when a deal is "on" (same rules as the robot)
+│   ├── sky.js             Daylight or Blue Hour look, from the sun in each city
 │   ├── sw.js, manifest.webmanifest, icons  (installable app + notifications)
 │   └── data/deals.json    (starter data; replaced daily)
 ├── pipeline/              ← the daily robot (runs free on GitHub)
@@ -93,10 +95,13 @@ dataUrl: "https://raw.githubusercontent.com/YOUR-GITHUB-NAME/foodish/main/data/v
 dataUrl: "https://raw.githubusercontent.com/YOUR-GITHUB-NAME/foodish/main/data/toronto/deals.json",    // Toronto
 ```
 
-### 5. Put the app on foodish.ca
-The app is plain files — no server needed.
-- **If your host lets you upload files** (file manager or FTP): upload the contents of `site/` to your site's root folder. Done. (Optional: add GitHub secrets `FTP_HOST`, `FTP_USER`, `FTP_PASS` and the robot will also upload `deals.json` there daily.)
-- **If your current site builder only does drag-and-drop pages** and won't accept uploaded files: host the app free on **Cloudflare Pages** (connect it to your GitHub repo, build output folder `site`) and point `foodish.ca` / `www.foodish.ca` at it in your domain's DNS settings. Your domain stays yours.
+### 5. Put the app on foodish.ca (free, GitHub Pages)
+The app is plain files, no server needed. `.github/workflows/pages.yml` publishes the `site/` folder to **GitHub Pages** whenever the app changes and after every daily update.
+1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**. Then Actions → *Publish the app (GitHub Pages)* → **Run workflow**. The app appears at `https://YOUR-GITHUB-NAME.github.io/foodish/`.
+2. **Use your domain:** Settings → Pages → **Custom domain** → `www.foodish.ca` → Save, then tick **Enforce HTTPS** once it's offered. At the company you bought the domain from, set these DNS records (delete the old ones for the same names first):
+   - `www` → **CNAME** → `YOUR-GITHUB-NAME.github.io`
+   - `@` (the bare domain) → four **A** records: `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
+   It usually works within an hour (up to a day). Your old host keeps serving until the DNS change reaches visitors, so there's no downtime, and you can point the records back to undo it.
 
 Location needs **https** (all the options above provide it).
 
@@ -114,7 +119,7 @@ Location needs **https** (all the options above provide it).
 2. In `site/config.js`: `API_URL` = the Worker URL, `VAPID_PUBLIC_KEY` = the public key.
 3. GitHub secrets: `ADMIN_TOKEN`, `VAPID_PRIVATE_KEY`. GitHub variables: `API_URL`, `VAPID_SUBJECT` = `mailto:you@foodish.ca`.
 
-**How alerts work:** the 🔔 button offers (a) "while Foodish is open, ping me when I walk near a deal that's on now" and (b) a daily ~4 pm "deals near you today" push. On iPhone, push only works after the visitor taps Share → **Add to Home Screen** (an Apple rule); the app tells them this.
+**How alerts work:** the bell button and the "Leave a light on" section offer (a) "while Foodish is open, ping me when I walk near a deal that's on now" and (b) a daily ~4 pm "deals near you today" push. On iPhone, push only works after the visitor taps Share → **Add to Home Screen** (an Apple rule); the app tells them this.
 
 ### Reviewing submitted deals
 ```bash
@@ -140,6 +145,9 @@ GitHub's built-in scheduler can run hours late, so "daily" deals could arrive at
 3. Open the web address `deploy` printed. It should say *"Foodish trigger is set up."* The next morning, GitHub → Actions should show a run started by **workflow_dispatch** at about 4:00 am, and the 4:17 run should say it skipped because deals were just refreshed.
 
 The token can only start this repo's workflows; it can't read or change your code. If it expires or you revoke it, GitHub's own schedules keep things running (just less punctually).
+
+## The look: Blue Hour and Daylight
+The app has two looks and picks one from the sky in the city being shown: **Daylight** (stone-grey ground, navy buildings) from sunrise until 30 minutes before sunset, then **Blue Hour** (night blue) until the next sunrise. Visitors can fix one in Settings (Auto / Daylight / Blue Hour). Add `?look=day` or `?look=night` to any link to preview a look. The rule everywhere: a deal that's **on now is lit yellow**, **later today is an outline**, **all day sits on the blue band**, and **ended is crossed out**. The "on now" blocks are drawn in different ways depending on the deal (a countdown for the first place, a price chart when a place has many prices, a cut-away block for a percentage off, and so on), so the list never becomes a stack of identical cards.
 
 ## How it works inside
 Everything that moves through stages (whether a deal is on now, what happens to each website on a run, what each scheduled run does, the app's loading/location/alerts states) is written down once in [`docs/STATE_MACHINES.md`](docs/STATE_MACHINES.md), with tests. The deal-timing rules are in [`spec/deal-states.json`](spec/deal-states.json), which any app reading the deals (including the live Grok-built site) can follow. Working with an AI coding agent? Point it at [`AGENTS.md`](AGENTS.md).
