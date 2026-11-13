@@ -1,5 +1,5 @@
 // Foodish service worker: offline shell + push notifications.
-const CACHE = "foodish-v5";
+const CACHE = "foodish-v6";
 const SHELL = ["./", "index.html", "styles.css", "deal-state.js", "sky.js", "app.js", "config.js", "manifest.webmanifest", "icon.svg", "vendor/leaflet/leaflet.js", "vendor/leaflet/leaflet.css"];
 
 self.addEventListener("install", (e) => {
@@ -15,7 +15,9 @@ self.addEventListener("fetch", (e) => {
   if (req.method !== "GET") return;
   e.respondWith(
     fetch(req).then((res) => {
-      if (res.ok && new URL(req.url).origin === location.origin) {
+      // the app itself, and each city's deal file (kept so the last deals still show offline)
+      const u = new URL(req.url);
+      if (res.ok && (u.origin === location.origin || (u.hostname === "raw.githubusercontent.com" && u.pathname.endsWith("/deals.json")))) {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(req, copy));
       }
