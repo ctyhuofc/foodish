@@ -12,7 +12,7 @@ import time
 
 import requests
 
-PROMPT_VERSION = 6  # bump when the instructions change, so every site is re-read once
+PROMPT_VERSION = 7  # bump when the instructions change, so every site is re-read once
 
 PROMPT = """You extract restaurant DEALS for a deals app in {city}, {region}. Today is {today}.
 
@@ -46,6 +46,10 @@ ACCURACY RULES (very important — people will drive to the restaurant based on 
 - Only use days and times that are written in the text. If a general note says e.g. "features after 2PM",
   apply it. Don't invent times.
 - If a limited-time offer mentions a holiday, long weekend or season, set valid_until to its last day.
+- If a deal starts on a later date ("starting Nov 30", "from December 1"), set valid_from to that date.
+- Every deal needs "quote": the exact words from the text that show it is a deal, copied character for
+  character (max 160 chars), including the price or saving if there is one. If you can't quote text that
+  shows a special, a feature or a saving, it is not a deal: leave it out.
 
 Return ONLY JSON in exactly this shape:
 {{"deals": [{{
@@ -56,10 +60,12 @@ Return ONLY JSON in exactly this shape:
   "days": ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]  (only the days it runs; all 7 if every day),
   "start": "HH:MM 24h or null", "end": "HH:MM 24h or null (null = until close)",
   "categories": 1-3 lowercase tags from: wings, burgers, pizza, tacos, sushi, pasta, steak, breakfast, brunch, chicken, seafood, appetizers, dessert, drinks, happy hour, kids, family, coffee, lunch, late night, vegetarian,
+  "valid_from": "YYYY-MM-DD if it starts on a later date, else null",
   "valid_until": "YYYY-MM-DD if a limited-time end date is stated, else null",
   "dine_in_only": true/false,
   "applies_to": "all" or a list of specific location names/addresses if only some locations offer it,
-  "source_url": "the PAGE url the deal came from"
+  "source_url": "the PAGE url the deal came from",
+  "quote": "the exact words from the text this deal is based on"
 }}]}}
 
 WEBSITE TEXT:

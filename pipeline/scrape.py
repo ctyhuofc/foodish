@@ -235,26 +235,62 @@ def limited_elsewhere(d: dict, allowed: list[str]) -> bool:
     return False
 
 
-def clean_deal(d, site_url):
+def _squash(text) -> str:
+    """Lower case, letters and digits only: for checking a quote or price against the page text."""
+    return re.sub(r"[^a-z0-9%¢$]+", " ", str(text or "").lower()).strip()
+
+
+def price_on_page(price, page: str) -> bool:
+    """A price or saving the AI states must be written on the page: every number in '$4.75', '59¢' or
+    '50% off' has to appear there. Prices with no number ('BOGO', 'Free') aren't checked."""
+    nums = re.findall(r"\d+(?:[.,]\d+)?", str(price or ""))
+    return all(re.search(rf"(?<![\d.]){re.escape(n)}(?!\d|[.,]\d)", page) for n in nums)
+
+
+def quote_on_page(quote, page_squashed: str) -> bool:
+    """The AI's quote is (nearly) word for word on the page: its first 8 words, squashed, are found there."""
+    words = _squash(quote).split()
+    return bool(words) and " ".join(words[:8]) in page_squashed
+
+
+def _date(v):
+    return v if v and re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(v)) else None
+
+
+def clean_deal(d, site_url, page_text=None):
+    """Check and tidy one deal from the AI; None drops it. With page_text (what the AI read), a deal is
+    also dropped if its price or its quote isn't on the page: the AI made it up or misread it."""
     title = (d.get("title") or "").strip()
     if not title or len(title) > 90:
         return None
-    days = sorted({DAYS[x[:3].lower()] for x in (d.get("days") or []) if x and x[:3].lower() in DAYS})
+    raw_days = d.get("days")
+    if isinstance(raw_days, str):
+        raw_days = re.findall(r"[A-Za-z]+", raw_days)
+    days = sorted({DAYS[x[:3].lower()] for x in (raw_days or []) if isinstance(x, str) and x[:3].lower() in DAYS})
+    if raw_days and not days:
+        return None  # days we can't read: dropping beats showing it every day
     t = lambda v: v if isinstance(v, str) and re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", v) else None  # noqa: E731
-    vu = d.get("valid_until")
-    if vu and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(vu)):
-        vu = None
+    vu, vf = _date(d.get("valid_until")), _date(d.get("valid_from"))
     if vu and vu < TODAY:
         return None
+    if vu and vf and vf > vu:
+        vf = None
+    price = (d.get("price") or "").strip()[:12] or None
+    if page_text is not None:
+        if price and not price_on_page(price, page_text):
+            return None
+        if not quote_on_page(d.get("quote"), _squash(page_text)):
+            return None
     return {
         "title": title,
         "description": (d.get("description") or "").strip()[:240] or None,
-        "price": (d.get("price") or "").strip()[:12] or None,
+        "price": price,
         "price_unit": (d.get("price_unit") or "").strip()[:20] or None,
         "days": days,
         "start": t(d.get("start")),
         "end": t(d.get("end")),
         "categories": [c.strip().lower() for c in (d.get("categories") or []) if c][:4],
+        "valid_from": vf,
         "valid_until": vu,
         "dine_in_only": bool(d.get("dine_in_only")),
         "applies_to": d.get("applies_to") or "all",
@@ -401,8 +437,11 @@ def run_city(city, args):
                     if breaker.stopped:
                         print(f"Stopping AI calls: the same error {ss.SAME_ERROR_LIMIT} times in a row -> {msg}")
                 else:
-                    entry.update(hash=h, pv=PROMPT_VERSION, checked_at=TODAY, deals=[x for x in (clean_deal(d, sites[k]["url"]) for d in raw) if x][:6])
+                    kept = [x for x in (clean_deal(d, sites[k]["url"], text) for d in raw) if x]
+                    entry.update(hash=h, pv=PROMPT_VERSION, checked_at=TODAY, deals=kept[:6])
                     report[k]["result"] = f"{len(entry['deals'])} deals"
+                    if len(kept) < len(raw):  # price or quote not on the page, unreadable days, ...
+                        report[k]["dropped"] = len(raw) - len(kept)
                     cache[k] = entry
                     changed += 1
                     outcome = ss.EXTRACTED
@@ -423,7 +462,9 @@ def run_city(city, args):
     city.report.write_text(json.dumps(
         {"date": TODAY, "city": city.id, "ai_calls": calls, "ai_stopped": ai_stopped, "status_counts": dict(status),
          "outcome_counts": {o: outcomes.get(o, 0) for o in ss.OUTCOMES}, "sites": report}, indent=1, ensure_ascii=False))
-    print(f"AI calls this run: {calls} · sites with new content: {changed} · unreachable: {failed}")
+    dropped = sum(v.get("dropped", 0) for v in report.values())
+    print(f"AI calls this run: {calls} · sites with new content: {changed} · unreachable: {failed}"
+          f" · AI deals dropped by checks (price or quote not on the page, unreadable days): {dropped}")
 
     # 3) build the published file
     by_id = {r["id"]: r for r in restaurants}

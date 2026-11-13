@@ -47,3 +47,52 @@ class NamesOnPage(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+PAGE = """### PAGE: https://wingplace.ca/specials
+Wing Wednesday: 59¢ wings all day, dine-in only
+Happy Hour 3-6 pm daily. $5.75 pints and half-price apps
+Festive menu starting November 30"""
+
+
+def ai(**kw):
+    base = {"title": "Wing night", "price": "59¢", "days": ["Wed"], "quote": "Wing Wednesday: 59¢ wings all day"}
+    return {**base, **kw}
+
+
+class CleanDeal(unittest.TestCase):
+    def keep(self, d):
+        return scrape.clean_deal(d, "https://wingplace.ca", PAGE)
+
+    def test_a_deal_quoted_from_the_page_is_kept(self):
+        self.assertIsNotNone(self.keep(ai()))
+        self.assertIsNotNone(self.keep(ai(title="Happy hour pints", price="$5.75", days=["Mon"], quote="Happy Hour 3-6 pm daily. $5.75 pints")))
+
+    def test_a_price_not_on_the_page_is_dropped(self):
+        self.assertIsNone(self.keep(ai(price="49¢")))
+        self.assertIsNone(self.keep(ai(price="$5", quote="Happy Hour 3-6 pm daily")))  # 5 is only inside 5.75
+
+    def test_prices_without_numbers_are_not_checked(self):
+        self.assertIsNotNone(self.keep(ai(price="Half-price", quote="half-price apps")))
+
+    def test_a_quote_not_on_the_page_is_dropped(self):
+        self.assertIsNone(self.keep(ai(quote="Wing Wednesday 59¢ wings with any drink purchase only")))
+        self.assertIsNone(self.keep(ai(quote=None)))
+        self.assertIsNone(self.keep(ai(quote="")))
+
+    def test_quote_spacing_and_case_do_not_matter(self):
+        self.assertIsNotNone(self.keep(ai(quote="wing  WEDNESDAY 59¢ wings")))
+
+    def test_unreadable_days_drop_the_deal_instead_of_meaning_every_day(self):
+        self.assertIsNone(self.keep(ai(days=["Game days"])))
+        self.assertIsNone(self.keep(ai(days="whenever the Oilers play")))
+        self.assertEqual(self.keep(ai(days="Mon-Fri"))["days"], [1, 5])  # a range we can't expand reads its ends
+        self.assertEqual(self.keep(ai(days=[]))["days"], [])  # none given: every day, as before
+
+    def test_start_date_is_kept_so_the_deal_waits_until_then(self):
+        d = self.keep(ai(title="Festive menu", price=None, quote="Festive menu starting November 30", valid_from="2099-11-30"))
+        self.assertEqual(d["valid_from"], "2099-11-30")
+        self.assertIsNone(self.keep(ai(valid_from="next week"))["valid_from"])
+
+    def test_without_page_text_only_the_basic_checks_run(self):
+        self.assertIsNotNone(scrape.clean_deal(ai(quote=None, price="$99"), "https://wingplace.ca"))
