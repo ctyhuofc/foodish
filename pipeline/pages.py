@@ -130,6 +130,10 @@ h2{font-size:18px;margin:26px 0 6px}footer{color:var(--muted);font-size:13px;mar
 """
 
 
+# Visit counter (GoatCounter: free, no cookies). Same one as site/index.html; stats at ctyh.goatcounter.com.
+COUNTER = '<script data-goatcounter="https://ctyh.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>'
+
+
 def page(title: str, desc: str, path: str, body: str, updated: str, city: cities.City) -> str:
     url = f"{SITE_URL}/{path}"
     return f"""<!doctype html>
@@ -139,7 +143,7 @@ def page(title: str, desc: str, path: str, body: str, updated: str, city: cities
 <link rel="canonical" href="{esc(url)}">
 <meta property="og:title" content="{esc(title)}"><meta property="og:description" content="{esc(desc)}"><meta property="og:url" content="{esc(url)}">
 <link rel="icon" href="/icon.svg" type="image/svg+xml"><meta name="theme-color" content="#d9412b">
-<style>{CSS}</style></head>
+<style>{CSS}</style>{COUNTER}</head>
 <body><header><a class="wordmark" href="/">foodish</a><span class="city">{city.name}</span></header>
 {body}
 <footer>Deals are gathered from restaurants' own websites and checked daily. Always confirm with the restaurant before you go. Updated {esc(updated)}.</footer>
