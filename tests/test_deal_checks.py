@@ -86,7 +86,9 @@ class CleanDeal(unittest.TestCase):
     def test_unreadable_days_drop_the_deal_instead_of_meaning_every_day(self):
         self.assertIsNone(self.keep(ai(days=["Game days"])))
         self.assertIsNone(self.keep(ai(days="whenever the Oilers play")))
-        self.assertEqual(self.keep(ai(days="Mon-Fri"))["days"], [1, 5])  # a range we can't expand reads its ends
+        self.assertEqual(self.keep(ai(days="Mon-Fri"))["days"], [1, 2, 3, 4, 5])
+        self.assertEqual(self.keep(ai(days=["Fri-Sun"]))["days"], [0, 5, 6])
+        self.assertEqual(self.keep(ai(days="Tuesdays and Thursdays"))["days"], [2, 4])
         self.assertEqual(self.keep(ai(days=[]))["days"], [])  # none given: every day, as before
 
     def test_start_date_is_kept_so_the_deal_waits_until_then(self):

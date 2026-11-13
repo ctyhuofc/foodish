@@ -253,6 +253,20 @@ def quote_on_page(quote, page_squashed: str) -> bool:
     return bool(words) and " ".join(words[:8]) in page_squashed
 
 
+def parse_days(raw) -> list[int]:
+    """["Mon","Wed"], "Mon-Fri", ["Fri-Sun"] or "Tuesdays and Thursdays" -> day numbers (Sun=0).
+    Words that aren't days are ignored; an empty result means nothing could be read."""
+    items = [raw] if isinstance(raw, str) else [x for x in (raw or []) if isinstance(x, str)]
+    out = set()
+    for item in items:
+        for a, b in re.findall(r"([A-Za-z]{3,})\s*(?:-|–|to|through)\s*([A-Za-z]{3,})", item):
+            if a[:3].lower() in DAYS and b[:3].lower() in DAYS:
+                i, j = DAYS[a[:3].lower()], DAYS[b[:3].lower()]
+                out.update((i + n) % 7 for n in range((j - i) % 7 + 1))
+        out.update(DAYS[w[:3].lower()] for w in re.findall(r"[A-Za-z]{3,}", item) if w[:3].lower() in DAYS)
+    return sorted(out)
+
+
 def _date(v):
     return v if v and re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(v)) else None
 
@@ -264,9 +278,7 @@ def clean_deal(d, site_url, page_text=None):
     if not title or len(title) > 90:
         return None
     raw_days = d.get("days")
-    if isinstance(raw_days, str):
-        raw_days = re.findall(r"[A-Za-z]+", raw_days)
-    days = sorted({DAYS[x[:3].lower()] for x in (raw_days or []) if isinstance(x, str) and x[:3].lower() in DAYS})
+    days = parse_days(raw_days)
     if raw_days and not days:
         return None  # days we can't read: dropping beats showing it every day
     t = lambda v: v if isinstance(v, str) and re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", v) else None  # noqa: E731
