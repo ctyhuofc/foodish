@@ -1,5 +1,5 @@
 // Foodish service worker: offline shell + push notifications.
-const CACHE = "foodish-v6";
+const CACHE = "foodish-v7";
 const SHELL = ["./", "index.html", "styles.css", "deal-state.js", "sky.js", "app.js", "config.js", "manifest.webmanifest", "icon.svg", "vendor/leaflet/leaflet.js", "vendor/leaflet/leaflet.css"];
 
 self.addEventListener("install", (e) => {
@@ -13,8 +13,11 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
+  // The app's own files skip the browser's 10-minute reuse window (GitHub Pages' max-age=600) and ask
+  // the server whether they changed, so an update shows on the next open instead of up to 10 min later.
+  const own = new URL(req.url).origin === location.origin;
   e.respondWith(
-    fetch(req).then((res) => {
+    fetch(own ? new Request(req, { cache: "no-cache" }) : req).then((res) => {
       // the app itself, and each city's deal file (kept so the last deals still show offline)
       const u = new URL(req.url);
       if (res.ok && (u.origin === location.origin || (u.hostname === "raw.githubusercontent.com" && u.pathname.endsWith("/deals.json")))) {
