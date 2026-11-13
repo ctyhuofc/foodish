@@ -346,6 +346,10 @@
   }
 
   // ---------- render ----------
+  // First-screen layout trial: ?layout=a|b|c (phone only; see styles.css "first-screen layouts").
+  const LAYOUT = (new URLSearchParams(location.search).get("layout") || "").toLowerCase();
+  if (/^[abc]$/.test(LAYOUT)) document.documentElement.dataset.layout = LAYOUT;
+  const STREET_SCALE = { a: 0.5, c: 0.6 };
   function render() {
     buildDays();
     writeLinkFilters();
@@ -388,11 +392,12 @@
     // the street: 8 nearby places, those with something on now (then later today) first, drawn nearest first
     const score = (p) => (p.items.some((i) => inCat(i) && (!today || i.status === ST.ON_NOW)) ? 0 : p.items.some((i) => inCat(i) && i.status === ST.LATER) ? 1 : 2);
     const places = byPlace(all).sort((a, b) => score(a) - score(b) || a.dist - b.dist).slice(0, 8).sort((a, b) => a.dist - b.dist);
+    const f = STREET_SCALE[LAYOUT] || 1;  // first-screen layouts with a shorter street
     $("street").innerHTML = places.map((p, i) => {
       const its = p.items.slice().sort((a, b) => RANK[a.status] - RANK[b.status]).slice(0, 12);
       const rows = Math.ceil(its.length / 2);
-      const h = Math.min(150, Math.max(70, 54 + its.length * 16, 9 + rows * 22 + 6));
-      const slots = Math.max(2, Math.floor((h - 9) / 22) * 2);
+      const h = Math.round(f * Math.min(150, Math.max(70, 54 + its.length * 16, 9 + rows * 22 + 6)));
+      const slots = Math.max(2, Math.floor((h - 9 * f) / (22 * f)) * 2);
       let lit = 0;
       const wins = [];
       for (let k = 0; k < slots; k++) {
@@ -466,7 +471,7 @@
     const what = state.cat ? `${esc(state.cat)} deals` : "deals";
     const big = sel.length ? `No ${what} on right now within ${esc(radiusText(state.radius))}.` : `Nothing posted for today within ${esc(radiusText(state.radius))}.`;
     const hint = later.length ? "See what switches on later, below." : allDay.length ? "The all-day deals below run whenever the restaurant is open." : "Try a wider distance, another day, or clear the search.";
-    return `<div class="empty"><p class="big">${big}</p><p>${hint}</p></div>`;
+    return `<div class="empty${later.length ? " has-later" : ""}"><p class="big">${big}</p><p>${hint}</p></div>`;
   }
 
   function onNowGroups(on, now) {
@@ -653,7 +658,7 @@
       ? `<button type="button" class="show-all" data-laterall>Show everything later today${starts.length > 5 ? ` (${starts.length - 5} more start times)` : ""}</button>` : "";
     return `<section class="later" aria-label="Later today"><p class="eyebrow">${now.mins < 720 ? "LATER TODAY" : state.look === "day" ? "SWITCHING ON LATER" : "LATER TONIGHT"}</p>
       <div class="later-hero"><p class="outline-num${clock(first).length > 4 ? " long" : ""}"><span class="t">${clock(first)}</span><span class="ap">${ampm(first).toUpperCase()}</span></p><p class="in">switches on<br>in ${leftText(inMins).toLowerCase()}</p></div>
-      <div aria-hidden="true"><div class="rail" style="height:${8 + railItems.length * 18}px">${bars}<span class="needle" style="left:${pos(now.mins)}%"></span></div><div class="rail-axis">${ticks.join("")}</div></div>
+      <div class="rail-wrap" aria-hidden="true"><div class="rail" style="height:${8 + railItems.length * 18}px">${bars}<span class="needle" style="left:${pos(now.mins)}%"></span></div><div class="rail-axis">${ticks.join("")}</div></div>
       <div>${hero}</div>${rest}${more}</section>`;
   }
 

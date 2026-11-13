@@ -496,3 +496,46 @@ html[data-look="day"] .map .leaflet-tile-pane { filter: grayscale(1) sepia(.12) 
 .fix { margin: 8px 0 0; font-size: 13px; }
 .fix a, .fine a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
 .fix a:hover, .fine a:hover { color: var(--text); }
+
+/* ---------- first-screen layouts (trial, ?layout=a|b|c): a real deal on the first phone screen ---------- */
+@media (max-width: 1023px) {
+  html[data-layout] .hero { padding-top: 8px; }
+  html[data-layout] .subline { display: none; }
+  html[data-layout] .days-phone { padding-top: 14px; }
+  html[data-layout] .days button { height: 46px; }
+  html[data-layout] .days button .n { font-size: 21px; }
+  html[data-layout] .cats-row { margin-top: 6px; }
+  html[data-layout] .cats button { font-size: 18px; min-height: 40px; }
+  html[data-layout] .empty { margin-top: 14px; padding-top: 12px; }
+  html[data-layout] .empty .big { font-size: 19px; }
+  /* mornings: when deals switch on later, skip the "nothing on" note and lead with the first places */
+  html[data-layout] .empty.has-later { display: none; }
+  html[data-layout] .later { margin-top: 18px; display: flex; flex-direction: column; }
+  html[data-layout] .later > * { order: 1; }
+  html[data-layout] .later > .rail-wrap { order: 2; margin-top: 18px; }
+  html[data-layout] .later-hero .outline-num .t, html[data-layout] .later-hero .outline-num.long .t { font-size: 64px; }
+  html[data-layout] .later-hero .outline-num .ap { font-size: 20px; }
+
+  /* A: shorter street */
+  html[data-layout="a"] .count { font-size: 88px; }
+  html[data-layout="a"] .count-words { font-size: 18px; }
+  html[data-layout="a"] .street-wrap { margin-top: 12px; }
+  html[data-layout="a"] .sky-arc, html[data-layout="a"] .sun { display: none; }
+
+  /* B: no street on the phone, deals straight away */
+  html[data-layout="b"] .street-wrap { display: none; }
+  html[data-layout="b"] .count { font-size: 72px; }
+  html[data-layout="b"] .count-words { font-size: 18px; }
+
+  /* C: count and street side by side */
+  html[data-layout="c"] .hero-main { display: grid; grid-template-columns: auto 1fr; column-gap: 16px; align-items: end; }
+  html[data-layout="c"] .kicker, html[data-layout="c"] .status { grid-column: 1 / -1; }
+  html[data-layout="c"] .count-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+  html[data-layout="c"] .count { font-size: 76px; }
+  html[data-layout="c"] .count-words { font-size: 16px; }
+  html[data-layout="c"] .street-wrap { margin-top: 0; }
+  html[data-layout="c"] .sky-arc, html[data-layout="c"] .sun, html[data-layout="c"] .street-km { display: none; }
+  html[data-layout="c"] .street { gap: 3px; }
+  html[data-layout="c"] .bldg { grid-template-columns: repeat(2, 7px); gap: 4px 3px; padding-top: 5px; }
+  html[data-layout="c"] .win { width: 7px; height: 9px; }
+}
