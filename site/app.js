@@ -376,11 +376,11 @@
     let n, word;
     if (today) {
       n = sel.filter((i) => i.status === ST.ON_NOW).length;
-      word = n === 1 ? "discount on now" : "discounts on now";
+      word = n === 1 ? "deal on now" : "deals on now";
       $("kickerTime").textContent = `${DAY_LONG[now.day]} · ${clockAP(now.mins)}`;
     } else {
       n = sel.length;
-      word = `${n === 1 ? "discount" : "discounts"} on ${DAY_LONG[state.day]}`;
+      word = `${n === 1 ? "deal" : "deals"} on ${DAY_LONG[state.day]}`;
       $("kickerTime").textContent = `${DAY_LONG[state.day]} ${dateForDay(state.day).getUTCDate()}`;
     }
     $("count").textContent = String(n);
