@@ -1,6 +1,6 @@
 // Foodish service worker: offline shell + push notifications.
-const CACHE = "foodish-v4";
-const SHELL = ["./", "index.html", "styles.css", "deal-state.js", "sky.js", "app.js", "config.js", "manifest.webmanifest", "icon.svg"];
+const CACHE = "foodish-v5";
+const SHELL = ["./", "index.html", "styles.css", "deal-state.js", "sky.js", "app.js", "config.js", "manifest.webmanifest", "icon.svg", "vendor/leaflet/leaflet.js", "vendor/leaflet/leaflet.css"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
