@@ -346,10 +346,6 @@
   }
 
   // ---------- render ----------
-  // First-screen layout trial: ?layout=a|b|c (phone only; see styles.css "first-screen layouts").
-  const LAYOUT = (new URLSearchParams(location.search).get("layout") || "").toLowerCase();
-  if (/^[abc]$/.test(LAYOUT)) document.documentElement.dataset.layout = LAYOUT;
-  const STREET_SCALE = { a: 0.5, c: 0.6 };
   function render() {
     buildDays();
     writeLinkFilters();
@@ -392,7 +388,7 @@
     // the street: 8 nearby places, those with something on now (then later today) first, drawn nearest first
     const score = (p) => (p.items.some((i) => inCat(i) && (!today || i.status === ST.ON_NOW)) ? 0 : p.items.some((i) => inCat(i) && i.status === ST.LATER) ? 1 : 2);
     const places = byPlace(all).sort((a, b) => score(a) - score(b) || a.dist - b.dist).slice(0, 8).sort((a, b) => a.dist - b.dist);
-    const f = STREET_SCALE[LAYOUT] || 1;  // first-screen layouts with a shorter street
+    const f = 0.6;  // the phone's street sits beside the count (styles.css "phone first screen"), so it's 60% height
     $("street").innerHTML = places.map((p, i) => {
       const its = p.items.slice().sort((a, b) => RANK[a.status] - RANK[b.status]).slice(0, 12);
       const rows = Math.ceil(its.length / 2);
