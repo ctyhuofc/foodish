@@ -12,7 +12,7 @@ import time
 
 import requests
 
-PROMPT_VERSION = 5  # bump when the instructions change, so every site is re-read once
+PROMPT_VERSION = 6  # bump when the instructions change, so every site is re-read once
 
 PROMPT = """You extract restaurant DEALS for a deals app in {city}, {region}. Today is {today}.
 
@@ -32,6 +32,10 @@ the text presents it as a special, a daily/weekly feature, or a limited-time off
 This app is for diners in the {city} area. If the text limits a deal to other provinces, other cities, or
 named locations outside the {city} area, leave it out (e.g. "at our Brampton or Milton locations" is not a
 Toronto deal). Deals with no stated place are fine.
+Leave out offers for the United States or other countries (US-only promos, prices in US dollars, US app deals):
+only deals a diner can use in Canada count.
+Leave out deals that depend on an event rather than the day of the week, such as game-day or "during the
+Oilers game" specials, because the app would show them every day.
 Return at most 6 deals per restaurant: the ones a diner would most want to know about.
 If there are no deals, return {{"deals": []}}.
 
@@ -108,19 +112,35 @@ def _call_openai_compatible(prompt):
     return r.json()["choices"][0]["message"]["content"]
 
 
+def parse_reply(out):
+    """The deals list from the AI's reply. An empty list only when the AI really said {"deals": []}.
+    A reply we can't read (cut off, not JSON, wrong shape) raises LLMError, so the site's saved deals
+    are kept and it is retried tomorrow, instead of being saved as "no deals"."""
+    m = re.search(r"\{.*\}", out or "", re.S)
+    try:
+        data = json.loads(m.group(0)) if m else None
+    except json.JSONDecodeError:
+        data = None
+    deals = data.get("deals") if isinstance(data, dict) else None
+    if not isinstance(deals, list):
+        raise LLMError(f"unreadable AI reply: {(out or '').strip()[:80]!r}")
+    return [d for d in deals if isinstance(d, dict)]
+
+
 def extract_deals(name, url, text, city="Edmonton", region="Alberta"):
     prompt = PROMPT.format(today=dt.date.today().isoformat(), name=name, url=url, text=text, city=city, region=region)
     call = _call_openai_compatible if os.environ.get("LLM_PROVIDER", "anthropic") != "anthropic" else _call_anthropic
+    unreadable = None
     for attempt in range(3):
         try:
-            out = call(prompt)
-            m = re.search(r"\{.*\}", out, re.S)
-            return json.loads(m.group(0)).get("deals", []) if m else []
+            return parse_reply(call(prompt))
         except LLMError as e:
-            if getattr(e, "status", 0) in (429, 500, 502, 503, 529):
+            status = getattr(e, "status", 0)
+            if status in (429, 500, 502, 503, 529):
                 time.sleep(10 * (attempt + 1))
                 continue
+            if not status and unreadable is None:  # unreadable reply: ask once more
+                unreadable = e
+                continue
             raise
-        except json.JSONDecodeError:
-            return []
-    return []
+    raise unreadable or LLMError("AI busy: gave up after 3 tries")

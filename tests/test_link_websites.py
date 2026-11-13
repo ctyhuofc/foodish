@@ -80,3 +80,40 @@ class KeepMissing(unittest.TestCase):
         self.assertEqual([(r["id"], r.get("missing_since")) for r in out], [("osm-n3", None), ("osm-n1", "2026-11-11")])
         back = keep_missing([{"id": "osm-n1", "name": "A&W"}], city, today="2026-11-18")
         self.assertEqual([r.get("missing_since") for r in back if r["id"] == "osm-n1"], [None])
+
+
+class BranchesMustAgree(unittest.TestCase):
+    """One odd branch must not hand its website to the whole chain (Toronto Starbucks -> macs.ca)."""
+
+    def test_odd_first_branch_does_not_win(self):
+        rows = [place("Starbucks", "http://www.macs.ca"),
+                place("Starbucks", "https://www.starbucks.ca/store-locator/store/1/a"),
+                place("Starbucks", "https://www.starbucks.ca/store-locator/store/2/b"),
+                place("Starbucks")]
+        link_websites(rows, {})
+        self.assertEqual(rows[3]["website"], "https://www.starbucks.ca")
+
+    def test_branches_that_disagree_get_no_website(self):
+        rows = [place("Joe's Grill", "https://joesgrill.ca"), place("Joe's Grill", "https://joes-grill-calgary.com"),
+                place("Joe's Grill")]
+        self.assertEqual(link_websites(rows, {}), 0)
+        self.assertIsNone(rows[2]["website"])
+
+    def test_disagreement_falls_back_to_the_chain_list(self):
+        rows = [place("Wendy's", "https://a.example.com"), place("Wendy's", "https://b.example.com"), place("Wendy's")]
+        link_websites(rows, {name_key("Wendy's"): "https://www.wendys.com/en-ca"})
+        self.assertEqual(rows[2]["website"], "https://www.wendys.com/en-ca")
+
+    def test_the_page_most_branches_list_is_shared(self):
+        rows = [place("Kinton Ramen", "https://kintonramen.com/menu"), place("Kinton Ramen", "https://kintonramen.com"),
+                place("Kinton Ramen", "https://kintonramen.com"), place("Kinton Ramen")]
+        link_websites(rows, {})
+        self.assertEqual(rows[3]["website"], "https://kintonramen.com")
+
+    def test_shared_guide_and_menu_sites_are_not_restaurant_sites(self):
+        from discover import norm_site
+        for u in ["https://www.timeout.com/toronto/a", "https://www.blogto.com/restaurants/a", "https://zomi.menu/a"]:
+            self.assertIsNone(norm_site(u), u)
+
+    def test_wendys_points_at_the_canadian_site(self):
+        self.assertIn("/en-ca", load_brand_sites()[name_key("Wendy's")])

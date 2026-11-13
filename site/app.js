@@ -278,7 +278,8 @@
   function results() {
     if (!state.data || !state.me) return [];
     const now = nowLocal();
-    const at = state.day == null ? now : { date: now.date, day: state.day, mins: null };
+    // another day's tab is checked against that day's date, so a deal ending Nov 14 isn't on Tuesday the 17th
+    const at = state.day == null ? now : { date: isoForDay(state.day), day: state.day, mins: null };
     const q = state.q.trim().toLowerCase();
     const out = [];
     for (const d of state.data.deals) {
@@ -311,6 +312,7 @@
   function comingUp(limit = 6) {
     if (!state.data || !state.me) return [];
     const now = nowLocal(), base = state.day == null ? now.day : state.day;
+    const baseDate = state.day == null ? now.date : isoForDay(state.day);
     const seen = new Map(), hits = [];
     for (const d of state.data.deals) {
       if (state.cat && !(d.categories || []).includes(state.cat)) continue;
@@ -319,7 +321,7 @@
       if (!r || (!state.chains && isChain(r.r.name))) continue;
       for (let i = 1; i < 7; i++) {
         const day = (base + i) % 7;
-        const st = DS.dealState(d, { date: now.date, day, mins: null });
+        const st = DS.dealState(d, { date: addDays(baseDate, i), day, mins: null });
         if (st === ST.SCHEDULED || st === ST.ALL_DAY) {
           const n = seen.get(r.r.id) || 0;
           if (n < 2) { hits.push({ i, day, d, r: r.r, dist: r.dist }); seen.set(r.r.id, n + 1); }
@@ -729,6 +731,8 @@
     const base = new Date(now.date + "T12:00:00Z");
     return new Date(base.getTime() + (((d - now.day) + 7) % 7) * 864e5);
   }
+  const addDays = (iso, n) => new Date(Date.parse(iso + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+  const isoForDay = (d) => dateForDay(d).toISOString().slice(0, 10); // "2026-11-17" for the coming Tuesday
   function buildDays() {
     const { day: today } = nowLocal();
     const html = [];
@@ -742,8 +746,27 @@
   }
 
   // ---------- map ----------
+  // The map library (Leaflet, in vendor/) is only fetched when a map is first shown, so a slow
+  // connection can never hold up the deals list.
+  let leaflet = null;
+  function loadLeaflet() {
+    if (leaflet) return leaflet;
+    leaflet = new Promise((resolve, reject) => {
+      const css = document.createElement("link");
+      css.rel = "stylesheet"; css.href = "vendor/leaflet/leaflet.css";
+      document.head.insertBefore(css, document.querySelector('link[href="styles.css"]')); // ours still win
+      const js = document.createElement("script");
+      js.src = "vendor/leaflet/leaflet.js"; js.async = true;
+      js.onload = () => resolve(); js.onerror = () => { leaflet = null; reject(new Error("map library didn't load")); };
+      document.head.appendChild(js);
+    });
+    return leaflet;
+  }
   function renderMap(all, today, now) {
-    if (!window.L) { $("map").innerHTML = '<p class="map-note">The map couldn\'t load. Check your connection and reload.</p>'; return; }
+    if (!window.L) {
+      loadLeaflet().then(render, () => { $("map").innerHTML = '<p class="map-note">The map couldn\'t load. Check your connection and reload.</p>'; });
+      return;
+    }
     if (!state.me) return;
     if (!state.map) {
       state.map = L.map("map", { zoomControl: true, attributionControl: true }).setView([state.me.lat, state.me.lng], 14);

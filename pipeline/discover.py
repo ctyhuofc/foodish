@@ -6,6 +6,7 @@ others: data/<city>/restaurants.json). The area searched is the city's "bbox" in
 Usage:  python pipeline/discover.py              (every city)
         python pipeline/discover.py vancouver    (one city)
 """
+import collections
 import json
 import os
 import unicodedata
@@ -46,6 +47,8 @@ NOT_A_RESTAURANT_SITE = {
     "facebook", "instagram", "linktr", "tiktok", "twitter", "x", "youtube", "linkedin", "foursquare",
     "doordash", "skipthedishes", "ubereats", "grubhub", "fantuan", "ritual", "yelp", "tripadvisor",
     "pagesjaunes", "yellowpages", "google", "goo", "opentable", "zomato", "allmenus", "menupages", "mapquest",
+    # shared listing / guide / menu-hosting sites that many unrelated places link to
+    "timeout", "blogto", "zomi",
 }
 
 
@@ -109,16 +112,39 @@ def load_brand_sites() -> dict:
     return {name_key(k): v for k, v in raw.items() if not k.startswith("_")}
 
 
+def _host(url: str) -> str:
+    return urlparse(url).netloc.lower().removeprefix("www.")
+
+
+def shared_site(urls: list[str]) -> str | None:
+    """The one website a chain's branches agree on, or None if they don't.
+    Counts by domain, so one odd branch (a Starbucks inside a Mac's that lists macs.ca) can't win:
+    the domain must be listed by more than half of the branches that list one. Shares the page most
+    of them list, or the domain's home page when each branch lists its own store page."""
+    hosts = collections.Counter(_host(u) for u in urls)
+    host, n = hosts.most_common(1)[0]
+    if n * 2 <= len(urls):
+        return None  # branches disagree: better no website than the wrong restaurant's
+    on_host = collections.Counter(u for u in urls if _host(u) == host)
+    url, count = min(on_host.items(), key=lambda kv: (-kv[1], len(kv[0])))
+    if count == 1 and len(on_host) > 1:
+        p = urlparse(url)
+        return f"{p.scheme}://{p.netloc}"
+    return url
+
+
 def link_websites(rows: list[dict], brand_sites: dict) -> int:
     """Give branches with no website one they can share. Only fills gaps: a listed website is never replaced.
-      1. another branch in this city with the same brand tag or the same (non-generic) name has one
+      1. other branches in this city with the same brand tag or the same (non-generic) name agree on one
+         (see shared_site; if they disagree, the gap is left)
       2. the chain is in brand_sites.json
     Returns how many places got a website."""
-    known = {}
+    listed = collections.defaultdict(list)
     for r in rows:
         if r.get("website"):
             for k in {name_key(r.get("brand")), name_key(r["name"])} - {""}:
-                known.setdefault(k, r["website"])
+                listed[k].append(r["website"])
+    known = {k: shared_site(urls) for k, urls in listed.items()}
     filled = 0
     for r in rows:
         if r.get("website"):
