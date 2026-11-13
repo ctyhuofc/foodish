@@ -404,7 +404,7 @@
     const placesCount = byPlace(all).length;
     if (today) {
       const later = all.filter((i) => i.status === ST.LATER);
-      const first = later.reduce((m, i) => Math.min(m, DS.toMins(i.d.start) ?? 1e9), 1e9);
+      const first = later.reduce((m, i) => Math.min(m, DS.startOf(i.d) ?? 1e9), 1e9);
       $("subline").textContent = all.length
         ? `${all.length} ${all.length === 1 ? "deal" : "deals"} at ${placesCount} ${placesCount === 1 ? "place" : "places"} today.` +
           (later.length ? ` ${later.length} more switch on from ${shortAP(first)}.` : "")
@@ -472,7 +472,7 @@
     const cap = state.nowAll ? Infinity : 8;
     for (const g of groups) {
       if (shown >= cap) break;
-      const title = g.end == null ? "Until close" : g.end % 1440 === 0 ? "Until midnight" : `Until ${clock(g.end)}${ampm(g.end) === "am" ? " am" : ""}`;
+      const title = g.end == null ? "Until close" : g.end % 1440 === 0 ? "Until midnight" : `Until ${clock(g.end)} ${ampm(g.end)}`;
       const meta = (g.left != null ? leftText(g.left) + " · " : "") + `${g.places.length} ${g.places.length === 1 ? "place" : "places"}`;
       const hot = g.left != null && g.left < 45;
       let blocks = "";
@@ -508,7 +508,7 @@
   const glowCls = (p) => (p.left == null || p.left > 60 ? " glow" : "");
   const emberDot = (p) => (p.left != null && p.left < 45 ? '<span class="ember" aria-hidden="true"></span>' : "");
   function timebar(p, now) {
-    const its = p.items.map((i) => ({ s: DS.toMins(i.d.start), e: endsAt(i.d, now) })).filter((x) => x.s != null && x.e != null);
+    const its = p.items.map((i) => ({ s: DS.startOf(i.d), e: endsAt(i.d, now) })).filter((x) => x.s != null && x.e != null);
     if (!its.length) return "";
     const s = Math.min(...its.map((x) => x.s)), e = p.end ?? Math.max(...its.map((x) => x.e));
     const startAt = s > now.mins ? s - 1440 : s; // started before midnight
@@ -595,7 +595,7 @@
   function laterSection(later, now) {
     const groups = new Map();
     for (const it of later) {
-      const s = DS.toMins(it.d.start);
+      const s = DS.startOf(it.d);
       if (!groups.has(s)) groups.set(s, []);
       groups.get(s).push(it);
     }
@@ -606,8 +606,8 @@
     const span = to - from, pos = (m) => Math.min(100, Math.max(0, ((m - from) / span) * 100));
     const railItems = byPlace(later).slice(0, 8);
     const bars = railItems.map((p, k) => {
-      const s = Math.min(...p.items.map((i) => DS.toMins(i.d.start)));
-      const ends = p.items.map((i) => { const st = DS.toMins(i.d.start), e = DS.toMins(i.d.end); return e == null ? to : e <= st ? e + 1440 : e; });
+      const s = Math.min(...p.items.map((i) => DS.startOf(i.d)));
+      const ends = p.items.map((i) => { const st = DS.startOf(i.d), e = DS.toMins(i.d.end); return e == null ? to : e <= st ? e + 1440 : e; });
       const e = Math.max(...ends);
       return `<span class="r" style="left:${pos(s)}%;width:${Math.max(1, pos(e) - pos(s))}%;top:${4 + k * 18}px"></span>`;
     }).join("");
@@ -626,7 +626,7 @@
       ${rows(groups.get(s)).slice(0, 5).map(({ p, sub }) => `<div class="place" id="p-${esc(p.r.id)}"><p class="nm">${esc(p.r.name)}</p><p class="sub">${esc(sub)}</p><button type="button" class="cal" data-cal="${esc(p.items[0].d.id)}" data-place="${esc(p.r.id)}">Add to calendar</button></div>`).join("")}
       </div></div>`).join("");
     const more = starts.length > 5 ? `<p class="hint">And ${starts.length - 5} more start times later today.</p>` : "";
-    return `<section class="later" aria-label="Later today"><p class="eyebrow">${state.look === "day" ? "SWITCHING ON LATER" : "LATER TONIGHT"}</p>
+    return `<section class="later" aria-label="Later today"><p class="eyebrow">${now.mins < 720 ? "LATER TODAY" : state.look === "day" ? "SWITCHING ON LATER" : "LATER TONIGHT"}</p>
       <div class="later-hero"><p class="outline-num${clock(first).length > 4 ? " long" : ""}"><span class="t">${clock(first)}</span><span class="ap">${ampm(first).toUpperCase()}</span></p><p class="in">switches on<br>in ${leftText(inMins).toLowerCase()}</p></div>
       <div aria-hidden="true"><div class="rail" style="height:${8 + railItems.length * 18}px">${bars}<span class="needle" style="left:${pos(now.mins)}%"></span></div><div class="rail-axis">${ticks.join("")}</div></div>
       <div>${hero}</div>${rest}${more}</section>`;
@@ -663,7 +663,7 @@
   // ----- another day: a schedule, not countdowns -----
   function renderOtherDay(all) {
     const sel = all.filter(inCat);
-    const timed = sel.filter((i) => i.status === ST.SCHEDULED).sort((a, b) => (DS.toMins(a.d.start) ?? -1) - (DS.toMins(b.d.start) ?? -1) || a.nearest.dist - b.nearest.dist);
+    const timed = sel.filter((i) => i.status === ST.SCHEDULED).sort((a, b) => (DS.startOf(a.d) ?? -1) - (DS.startOf(b.d) ?? -1) || a.nearest.dist - b.nearest.dist);
     const untimed = sel.filter((i) => i.status === ST.ALL_DAY);
     const row = (i) => {
       const s = DS.toMins(i.d.start), e = DS.toMins(i.d.end);
@@ -671,7 +671,7 @@
       return `<div class="srow" id="p-${esc(i.nearest.r.id)}"><span class="t">${esc(t)}</span><div class="txt"><p class="nm">${esc(i.nearest.r.name)}</p><p class="sub">${esc(i.d.title)} · ${esc(hoursText(i.d))} · ${kmShort(i.nearest.dist)} km${i.d.dine_in_only ? " · dine-in" : ""}</p></div>${i.d.price ? `<span class="p">${esc(i.d.price)}</span>` : ""}</div>`;
     };
     const part = (title, its) => (its.length ? `<section class="group"><div class="ghead"><h2>${title}</h2><span class="meta">${its.length} ${its.length === 1 ? "deal" : "deals"}</span></div><div class="sched">${its.slice(0, 40).map(row).join("")}</div></section>` : "");
-    const aft = timed.filter((i) => (DS.toMins(i.d.start) ?? 0) < 17 * 60), eve = timed.filter((i) => (DS.toMins(i.d.start) ?? 0) >= 17 * 60);
+    const aft = timed.filter((i) => (DS.startOf(i.d) ?? 0) < 17 * 60), eve = timed.filter((i) => (DS.startOf(i.d) ?? 0) >= 17 * 60);
     $("listTop").innerHTML = (sel.length ? "" : `<div class="empty"><p class="big">Nothing posted for ${DAY_LONG[state.day]} within ${esc(radiusText(state.radius))}.</p><p>Try a wider distance or another day.</p></div>`)
       + part("Daytime", aft) + part("Evening", eve);
     $("listBottom").innerHTML = (untimed.length ? allDaySection(untimed) : "") + (sel.length ? "" : comingUpSection());
@@ -689,7 +689,7 @@
     const span = to - from, pos = (m) => Math.min(100, Math.max(0, ((m - from) / span) * 100));
     const places = byPlace(sel).map((p) => {
       const on = p.items.some((i) => i.status === ST.ON_NOW);
-      const s = Math.min(...p.items.map((i) => DS.toMins(i.d.start) ?? from));
+      const s = Math.min(...p.items.map((i) => DS.startOf(i.d) ?? from));
       return { ...p, on, s };
     }).sort((a, b) => (b.on - a.on) || a.s - b.s || a.dist - b.dist).slice(0, 10);
     if (!places.length) { el.innerHTML = `<p class="tt-empty">${today ? "Nothing on now or later today" : "Nothing timed on this day"} within ${esc(radiusText(state.radius))}.</p>`; return; }
@@ -697,7 +697,7 @@
     const rows = places.map((p) => {
       const spans = new Map();
       for (const i of p.items) {
-        const s = DS.toMins(i.d.start) ?? 0, e0 = DS.toMins(i.d.end);
+        const s = DS.startOf(i.d) ?? 0, e0 = DS.toMins(i.d.end);
         const e = e0 == null ? to : e0 <= s ? e0 + 1440 : e0;
         const key = s + "-" + e;
         if (!spans.has(key)) spans.set(key, { s, e, items: [], open: e0 == null, on: i.status === ST.ON_NOW });
@@ -768,7 +768,7 @@
       const kind = !today ? "now" : onN ? "now" : later.length ? "later" : p.items.some((i) => i.status === ST.ALL_DAY) ? "all" : "off";
       const isSel = state.sel === p.r.id;
       const size = kind === "now" ? (isSel ? 38 : 30) : kind === "later" ? (isSel ? 30 : 24) : kind === "all" ? 12 : 9;
-      const glyph = kind === "now" ? String(today ? onN : p.items.length) : kind === "later" ? String(((Math.floor(Math.min(...later.map((i) => DS.toMins(i.d.start))) / 60) + 11) % 12) + 1) : "";
+      const glyph = kind === "now" ? String(today ? onN : p.items.length) : kind === "later" ? String(((Math.floor(Math.min(...later.map((i) => DS.startOf(i.d))) / 60) + 11) % 12) + 1) : "";
       const icon = L.divIcon({ className: `mk mk-${kind}${isSel ? " mk-sel" : ""}`, html: glyph, iconSize: [size, size] });
       const label = `${p.r.name}, ${kmShort(p.dist)} km: ${kind === "now" ? `${glyph} ${today ? "on now" : "deals"}` : kind === "later" ? "starts later" : kind === "all" ? "all-day deals" : "ended"}`;
       const m = L.marker([p.r.lat, p.r.lng], { icon, title: label, alt: label, keyboard: kind === "now" || kind === "later", zIndexOffset: isSel ? 1000 : kind === "now" ? 500 : kind === "later" ? 200 : 0 }).addTo(state.layer);
@@ -793,7 +793,7 @@
     const ends = on.map((i) => endsAt(i.d, now)).filter((e) => e != null);
     const left = ends.length ? Math.min(...ends) - now.mins : null;
     const later = today && !on.length && p.items.some((i) => i.status === ST.LATER);
-    const meta = `${kmCaps(p.dist)} · ` + (today ? (on.length ? (left != null ? leftText(left) + " LEFT" : "ON UNTIL CLOSE") : later ? "STARTS " + shortAP(Math.min(...p.items.filter((i) => i.status === ST.LATER).map((i) => DS.toMins(i.d.start)))).toUpperCase() : "ALL DAY") : DAY_LONG[state.day].toUpperCase());
+    const meta = `${kmCaps(p.dist)} · ` + (today ? (on.length ? (left == null ? "ON UNTIL CLOSE" : left < 180 ? leftText(left) + " LEFT" : "UNTIL " + shortAP(left + now.mins).toUpperCase()) : later ? "STARTS " + shortAP(Math.min(...p.items.filter((i) => i.status === ST.LATER).map((i) => DS.startOf(i.d)))).toUpperCase() : "ALL DAY") : DAY_LONG[state.day].toUpperCase());
     const src = show.map((i) => i.d.source_url).find(Boolean) || p.r.website;
     sheet.className = "sheet" + (later ? " is-later" : left != null && left > 60 ? " glow" : "");
     sheet.innerHTML = `<span class="grab" aria-hidden="true"></span><button type="button" class="close" data-closesheet aria-label="Close"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
@@ -808,7 +808,7 @@
   function addToCalendar(dealId, placeId) {
     const d = state.data.deals.find((x) => x.id === dealId), r = state.byId.get(placeId);
     if (!d || !r) return;
-    const now = nowLocal(), s = DS.toMins(d.start), e0 = DS.toMins(d.end);
+    const now = nowLocal(), s = DS.startOf(d), e0 = DS.toMins(d.end);
     const e = e0 == null ? s + 120 : e0 <= s ? e0 + 1440 : e0;
     const off = utcOffsetMins();
     const y = +now.date.slice(0, 4), mo = +now.date.slice(5, 7) - 1, da = +now.date.slice(8, 10);

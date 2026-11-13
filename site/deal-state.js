@@ -76,6 +76,16 @@
     return true;
   }
 
+  // A deal with an end but no start ("lunch until 4 pm") starts this long before its end, but no later than
+  // 11:00 (and no earlier than midnight). We don't know opening hours; "from midnight" lit lunch deals at 6 am.
+  const ASSUMED_LEAD = 4 * 60, LATEST_ASSUMED_START = 11 * 60;
+  // When the deal starts (minutes after midnight): its start time, or the assumed start for an end-only deal.
+  function startOf(deal) {
+    const start = toMins(deal.start), end = toMins(deal.end);
+    if (start == null && end != null) return Math.max(0, Math.min(LATEST_ASSUMED_START, end - ASSUMED_LEAD));
+    return start;
+  }
+
   function dealState(deal, at) {
     if (deal.valid_until && deal.valid_until < at.date) return S.EXPIRED;
     if (deal.valid_from && deal.valid_from > at.date) return S.UPCOMING;
@@ -86,12 +96,12 @@
     if (overnight && days.includes((at.day + 6) % 7) && at.mins < end) return S.ON_NOW; // yesterday's late deal
     if (!days.includes(at.day)) return S.NOT_TODAY;
     if (start == null && end == null) return S.ALL_DAY;
-    const winStart = start != null ? start : 0;
+    const winStart = startOf(deal) ?? 0;
     const winEnd = overnight || end == null ? MIDNIGHT : end;
     if (at.mins < winStart) return S.LATER;
     if (at.mins < winEnd) return S.ON_NOW;
     return S.ENDED;
   }
 
-  return { STATES: S, dealState, zonedNow, zoneFor, momentFromLocal, toMins, daysOf, runsOn, isLive };
+  return { STATES: S, dealState, startOf, zonedNow, zoneFor, momentFromLocal, toMins, daysOf, runsOn, isLive };
 });

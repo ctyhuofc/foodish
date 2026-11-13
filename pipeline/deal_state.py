@@ -118,6 +118,20 @@ def is_live(deal: dict, date: str) -> bool:
     return True
 
 
+# A deal with an end but no start ("lunch until 4 pm") starts this long before its end, but no later than
+# 11:00 (and no earlier than midnight). We don't know opening hours; "from midnight" lit lunch deals at 6 am.
+ASSUMED_LEAD = 4 * 60
+LATEST_ASSUMED_START = 11 * 60
+
+
+def start_of(deal: dict) -> int | None:
+    """When the deal starts, in minutes after midnight: its start time, or the assumed start for an end-only deal."""
+    start, end = to_mins(deal.get("start")), to_mins(deal.get("end"))
+    if start is None and end is not None:
+        return max(0, min(LATEST_ASSUMED_START, end - ASSUMED_LEAD))
+    return start
+
+
 def deal_state(deal: dict, at: Moment) -> str:
     if deal.get("valid_until") and deal["valid_until"] < at.date:
         return EXPIRED
@@ -137,7 +151,7 @@ def deal_state(deal: dict, at: Moment) -> str:
         return NOT_TODAY
     if start is None and end is None:
         return ALL_DAY
-    window_start = start if start is not None else 0
+    window_start = start_of(deal) or 0
     window_end = MIDNIGHT if overnight or end is None else end
     if at.mins < window_start:
         return LATER
