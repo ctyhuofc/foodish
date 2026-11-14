@@ -161,4 +161,4 @@ stateDiagram-v2
 - Sun times come from `sky.js` for the shown city's centre, on that city's clock (`deal_state` fixed offsets for Alberta and B.C.).
 - Checked when the page opens, when the city changes, when the tab comes back, and each minute, but never applied within a minute of the visitor scrolling. Colours fade over one second (off with reduced motion).
 - `index.html` sets the last look before anything draws, so the page doesn't flash the wrong colours.
-- The look never changes what a deal *is*: lit = on now, outline = later today, blue band = all day, struck = ended, in both looks.
+- The look never changes what a deal *is*: lit = on now, outline = later today, blue band = all day, in both looks. Deals that have ended aren't shown.

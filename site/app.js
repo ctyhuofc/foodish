@@ -1,6 +1,6 @@
 /* Foodish — front-end app ("Blue Hour" design). No build step: plain JS, works on any static host.
  * The rule everywhere: a deal that is on right now is lit (yellow); later today is an outline; all day sits on
- * the blue band; ended is crossed out. Deal timing comes only from deal-state.js; the look (Daylight or
+ * the blue band; deals that have ended aren't shown. Deal timing comes only from deal-state.js; the look (Daylight or
  * Blue Hour) only from sky.js. State machines are documented in docs/STATE_MACHINES.md. */
 (() => {
   "use strict";
@@ -284,7 +284,8 @@
   }
 
   // ---------- compute ----------
-  const RANK = { [ST.ON_NOW]: 0, [ST.LATER]: 1, [ST.ALL_DAY]: 2, [ST.SCHEDULED]: 1, [ST.ENDED]: 3 };
+  // Deals that have ended today are left out on purpose: a visitor can't do anything with them.
+  const RANK = { [ST.ON_NOW]: 0, [ST.LATER]: 1, [ST.ALL_DAY]: 2, [ST.SCHEDULED]: 1 };
   const inCat = (it) => !state.cat || (it.d.categories || []).includes(state.cat);
   // Every deal relevant to the chosen day within the radius (category not applied: the street and the
   // category counts need all of them). Search and the chains switch apply everywhere.
@@ -422,9 +423,9 @@
       const later = all.filter((i) => i.status === ST.LATER);
       const first = later.reduce((m, i) => Math.min(m, DS.startOf(i.d) ?? 1e9), 1e9);
       $("subline").textContent = all.length
-        ? `${all.length} ${all.length === 1 ? "deal" : "deals"} at ${placesCount} ${placesCount === 1 ? "place" : "places"} today.` +
+        ? `${all.length} ${all.length === 1 ? "deal" : "deals"} left today at ${placesCount} ${placesCount === 1 ? "place" : "places"}.` +
           (later.length ? ` ${later.length} more switch on from ${shortAP(first)}.` : "")
-        : `Nothing posted for today within ${radiusText(state.radius)}.`;
+        : `Nothing left today within ${radiusText(state.radius)}.`;
     } else {
       $("subline").textContent = `${placesCount} ${placesCount === 1 ? "place has" : "places have"} something on ${DAY_LONG[state.day]}.`;
     }
@@ -451,7 +452,6 @@
     const on = sel.filter((i) => i.status === ST.ON_NOW);
     const later = sel.filter((i) => i.status === ST.LATER);
     const allDay = sel.filter((i) => i.status === ST.ALL_DAY);
-    const ended = sel.filter((i) => i.status === ST.ENDED);
     let top = "";
     if (!on.length) top += emptyNow(sel, later, allDay);
     if (on.length) top += onNowGroups(on, now);
@@ -459,13 +459,12 @@
     $("listTop").innerHTML = top;
     let bottom = "";
     if (allDay.length && !state.onNow) bottom += allDaySection(allDay);
-    if (ended.length && !state.onNow) bottom += endedSection(ended);
     if (!sel.length) bottom += comingUpSection();
     $("listBottom").innerHTML = bottom;
   }
   function emptyNow(sel, later, allDay) {
     const what = state.cat ? `${esc(state.cat)} deals` : "deals";
-    const big = sel.length ? `No ${what} on right now within ${esc(radiusText(state.radius))}.` : `Nothing posted for today within ${esc(radiusText(state.radius))}.`;
+    const big = sel.length ? `No ${what} on right now within ${esc(radiusText(state.radius))}.` : `Nothing left today within ${esc(radiusText(state.radius))}.`;
     const hint = later.length ? "See what switches on later, below." : allDay.length ? "The all-day deals below run whenever the restaurant is open." : "Try a wider distance, another day, or clear the search.";
     return `<div class="empty${later.length ? " has-later" : ""}"><p class="big">${big}</p><p>${hint}</p></div>`;
   }
@@ -590,11 +589,6 @@
     const shown = state.allDayAll ? rows : rows.slice(0, 6);
     return `<section class="allday" aria-label="All day"><div class="ghead2"><h2>ALL DAY</h2><span>${rows.length} ${rows.length === 1 ? "deal" : "deals"}, no clock to watch</span></div>
       <div class="rows">${shown.join("")}</div>${rows.length > 6 && !state.allDayAll ? `<button type="button" class="show-all" data-allday>Show all ${rows.length}</button>` : ""}</section>`;
-  }
-  function endedSection(items) {
-    const txt = items.sort((a, b) => (DS.toMins(b.d.end) ?? 0) - (DS.toMins(a.d.end) ?? 0))
-      .map((i) => `${i.nearest.r.name} ${i.d.title.charAt(0).toLowerCase() + i.d.title.slice(1)}${i.d.price ? " " + i.d.price : ""}, ${clock(DS.toMins(i.d.end))}`).join(" · ");
-    return `<section class="ended" aria-label="Ended today"><p class="title">ENDED TODAY</p><p class="lst"><span class="sr">Ended today: </span>${esc(txt)}</p></section>`;
   }
   function comingUpSection() {
     const hits = comingUp();
@@ -734,12 +728,12 @@
     for (const p of places) {
       const onN = p.items.filter((i) => i.status === ST.ON_NOW).length;
       const later = p.items.filter((i) => i.status === ST.LATER);
-      const kind = !today ? "now" : onN ? "now" : later.length ? "later" : p.items.some((i) => i.status === ST.ALL_DAY) ? "all" : "off";
+      const kind = !today ? "now" : onN ? "now" : later.length ? "later" : "all";
       const isSel = state.sel === p.r.id;
-      const size = kind === "now" ? (isSel ? 38 : 30) : kind === "later" ? (isSel ? 30 : 24) : kind === "all" ? 12 : 9;
+      const size = kind === "now" ? (isSel ? 38 : 30) : kind === "later" ? (isSel ? 30 : 24) : 12;
       const glyph = kind === "now" ? String(today ? onN : p.items.length) : kind === "later" ? String(((Math.floor(Math.min(...later.map((i) => DS.startOf(i.d))) / 60) + 11) % 12) + 1) : "";
       const icon = L.divIcon({ className: `mk mk-${kind}${isSel ? " mk-sel" : ""}`, html: glyph, iconSize: [size, size] });
-      const label = `${p.r.name}, ${kmShort(p.dist)} km: ${kind === "now" ? `${glyph} ${today ? "on now" : "deals"}` : kind === "later" ? "starts later" : kind === "all" ? "all-day deals" : "ended"}`;
+      const label = `${p.r.name}, ${kmShort(p.dist)} km: ${kind === "now" ? `${glyph} ${today ? "on now" : "deals"}` : kind === "later" ? "starts later" : "all-day deals"}`;
       const m = L.marker([p.r.lat, p.r.lng], { icon, title: label, alt: label, keyboard: kind === "now" || kind === "later", zIndexOffset: isSel ? 1000 : kind === "now" ? 500 : kind === "later" ? 200 : 0 }).addTo(state.layer);
       m.on("click", (e) => { L.DomEvent.stopPropagation(e); state.sel = p.r.id; render(); });
       if (kind === "now" || kind === "later") bounds.push([p.r.lat, p.r.lng]);
