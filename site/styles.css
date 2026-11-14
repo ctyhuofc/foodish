@@ -1,5 +1,5 @@
 /* Foodish · "Blue Hour" design. Two looks, switched by <html data-look="night|day"> (see sky.js / app.js).
-   Lit (yellow) = on now · outlined = later today · blue band = all day · struck through = ended.
+   Lit (yellow) = on now · outlined = later today · blue band = all day · deals that have ended aren't shown.
    Rules: square corners, no shadows or gradients, no emoji. */
 
 :root {
@@ -242,10 +242,6 @@ html[data-look="day"] .lamp .shade { fill: var(--lamp); }
 .show-more { margin: 16px var(--gutter) 0; min-height: 48px; padding: 0 18px; border: 1.5px solid var(--text); background: transparent; font-weight: 700; font-size: 15px; }
 .allday .show-all { margin-top: 16px; min-height: 48px; padding: 0 18px; border: 1.5px solid currentColor; background: transparent; font-weight: 700; font-size: 15px; }
 
-/* ---------- ended ---------- */
-.ended { padding: 26px var(--gutter) 22px; background: var(--ended-bg); }
-.ended .title { margin: 0; font-family: var(--f-num); font-weight: 800; font-size: 20px; letter-spacing: .1em; color: var(--off); }
-.ended .lst { margin: 8px 0 0; font-size: 15px; line-height: 1.7; color: var(--off); text-decoration: line-through; text-decoration-thickness: 1px; }
 
 /* ---------- another day / coming up ---------- */
 .sched { margin: 16px var(--gutter) 0; }
@@ -302,7 +298,6 @@ html[data-look="day"] .map .leaflet-tile-pane { filter: grayscale(1) sepia(.12) 
 .mk-glow { background: var(--glow); }
 .mk-later { background: var(--ground); color: var(--text); box-shadow: inset 0 0 0 1.5px var(--text); font-size: 14px; }
 .mk-all { background: #7C8BD0; }
-.mk-off { background: var(--off); }
 .mk-sel { box-shadow: 0 0 0 2px var(--ink), 0 0 0 4px var(--text); z-index: 1000 !important; }
 .mk-later.mk-sel { box-shadow: inset 0 0 0 2px var(--text), 0 0 0 2px var(--ink); }
 .me-dot { border-radius: 50%; background: var(--text); box-shadow: 0 0 0 3px var(--ground); }
@@ -370,7 +365,7 @@ html[data-look="day"] .map .leaflet-tile-pane { filter: grayscale(1) sepia(.12) 
   .sheet .lines.many .line .num { font-size: 28px; }
   .group:first-child { margin-top: 0; }
   .later { padding: 0; }
-  .allday, .ended { padding: 22px; margin-top: 8px; }
+  .allday { padding: 22px; margin-top: 8px; }
   .allday { margin-top: 32px; }
   .allday .rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); column-gap: 28px; border-top: 0; }
   .allday .arow { border-top: 1px solid var(--allday-rule); border-bottom: 0; }
