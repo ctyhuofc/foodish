@@ -24,12 +24,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  publish:
+  # Two jobs on purpose. When the upload and the publish run back-to-back in one job, GitHub sometimes
+  # can't see the just-uploaded site yet ("No artifacts named github-pages were found", see
+  # github.com/actions/deploy-pages/issues/451). A separate publish job starts seconds later.
+  # The bundle is named per attempt so "Re-run" doesn't trip over the first attempt's bundle.
+  build:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'cancelled'
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,5 +39,16 @@ jobs:
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site
+          name: github-pages-${{ github.run_attempt }}
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - id: deploy
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
