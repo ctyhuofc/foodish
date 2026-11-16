@@ -11,6 +11,13 @@ def place(name, website=None, brand=None):
     return {"id": name + str(id(object())), "name": name, "brand": brand, "website": website}
 
 
+class PlaceName(unittest.TestCase):
+    def test_two_spellings_joined_by_a_semicolon_keep_the_first(self):
+        from discover import place_name
+        self.assertEqual(place_name("The Canadian Brew House;The Canadian Brewhouse"), "The Canadian Brew House")
+        self.assertEqual(place_name("Joey Bentall One"), "Joey Bentall One")
+
+
 class LinkWebsites(unittest.TestCase):
     def test_same_name_branch_in_the_city_shares_its_site(self):
         rows = [place("Kinton Ramen", "https://kintonramen.com"), place("Kinton Ramen")]

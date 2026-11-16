@@ -71,6 +71,12 @@ def norm_site(url):
     return f"{p.scheme}://{p.netloc.lower()}{p.path.rstrip('/') or ''}"
 
 
+def place_name(name: str) -> str:
+    """OpenStreetMap sometimes lists two spellings joined by ";" ("The Canadian Brew House;The Canadian Brewhouse"):
+    keep the first."""
+    return name.split(";")[0].strip() or name
+
+
 def address(t):
     num, street = t.get("addr:housenumber"), t.get("addr:street")
     if num and street:
@@ -254,7 +260,7 @@ def discover(city: cities.City) -> None:
         site = norm_site(t.get("website") or t.get("contact:website") or t.get("brand:website"))
         rows.append({
             "id": f"osm-{e['type'][0]}{e['id']}",
-            "name": t["name"],
+            "name": place_name(t["name"]),
             "brand": brand,
             "lat": round(lat, 6),
             "lng": round(lng, 6),

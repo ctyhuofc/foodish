@@ -281,9 +281,10 @@ def _date(v):
     return v if v and re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(v)) else None
 
 
-def clean_deal(d, site_url, page_text=None):
+def clean_deal(d, site_url, page_text=None, today=None):
     """Check and tidy one deal from the AI; None drops it. With page_text (what the AI read), a deal is
-    also dropped if its price or its quote isn't on the page: the AI made it up or misread it."""
+    also dropped if its price or its quote isn't on the page: the AI made it up or misread it.
+    `today` is the date on the city's clock (default: the runner's date)."""
     title = (d.get("title") or "").strip()
     if not title or len(title) > 90:
         return None
@@ -293,7 +294,7 @@ def clean_deal(d, site_url, page_text=None):
         return None  # days we can't read: dropping beats showing it every day
     t = lambda v: v if isinstance(v, str) and re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", v) else None  # noqa: E731
     vu, vf = _date(d.get("valid_until")), _date(d.get("valid_from"))
-    if vu and vu < TODAY:
+    if vu and vu < (today or TODAY):
         return None
     if vu and vf and vf > vu:
         vf = None
@@ -338,10 +339,10 @@ def place_words(city) -> list[str]:
     return sorted(w for w in words if w not in ("The City", "City", "Plus"))
 
 
-def clean_or_drop(d, site_url, page_text=None):
+def clean_or_drop(d, site_url, page_text=None, today=None):
     """clean_deal(), but a deal it can't read (e.g. a number where text belongs) is dropped, not a crash."""
     try:
-        return clean_deal(d, site_url, page_text)
+        return clean_deal(d, site_url, page_text, today)
     except Exception:  # noqa: BLE001
         return None
 
@@ -397,6 +398,9 @@ def run_city(city, args):
     monthly_cap = int(os.environ.get("MONTHLY_LLM_CALLS", "12000"))  # all cities together, per month
 
     restaurants = json.loads(city.restaurants.read_text())
+    # "Has this deal's last day passed?" uses the city's own date: the runner is on UTC, which is already
+    # tomorrow on an evening run (after 6 pm in Edmonton).
+    city_today = ds.now_in(city.timezone).date
     cache = json.loads(city.cache.read_text()) if city.cache.exists() else {}
     month = TODAY[:7]
     usage = cache.setdefault("_usage", {})
@@ -476,7 +480,7 @@ def run_city(city, args):
                     if breaker.stopped:
                         print(f"Stopping AI calls: the same error {ss.SAME_ERROR_LIMIT} times in a row -> {msg}")
                 else:
-                    kept = [x for x in (clean_or_drop(d, sites[k]["url"], text) for d in raw) if x]
+                    kept = [x for x in (clean_or_drop(d, sites[k]["url"], text, city_today) for d in raw) if x]
                     entry.update(hash=h, pv=PROMPT_VERSION, checked_at=TODAY, deals=kept[:6])
                     report[k]["result"] = f"{len(entry['deals'])} deals"
                     if len(kept) < len(raw):  # price or quote not on the page, unreadable days, ...
@@ -510,7 +514,7 @@ def run_city(city, args):
     deals, used, dropped_elsewhere = [], set(), 0
     for k, info in sites.items():
         for i, d in enumerate(cache.get(k, {}).get("deals", [])):
-            if not ds.is_live(d, TODAY):
+            if not ds.is_live(d, city_today):
                 continue  # its valid_until has passed since the AI read it
             if limited_elsewhere(d, places):
                 dropped_elsewhere += 1
@@ -523,7 +527,7 @@ def run_city(city, args):
 
     if city.manual_deals.exists():
         for m in json.loads(city.manual_deals.read_text()):
-            if m.get("valid_until") and m["valid_until"] < TODAY:
+            if m.get("valid_until") and m["valid_until"] < city_today:
                 continue
             ids = m.get("restaurant_ids") or [
                 r["id"] for r in restaurants

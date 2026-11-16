@@ -32,7 +32,7 @@
   const cityById = (id) => CITIES.find((c) => c.id === id);
   // Big chains, for the "Include big chains" switch (matched against restaurant names).
   const CHAINS = ["domino", "papa john", "panago", "pizza 73", "pizza hut", "little caesar", "boston pizza", "earls",
-    "carl s jr", "east side mario", "freshii", "wok box", "chuck e", "blaze pizza", "smashburger", "mcdonald", "a w ",
+    "carl s jr", "east side mario", "freshii", "wok box", "chuck e", "blaze pizza", "smashburger", "mcdonald", "a and w", // isChain turns "&" into "and": "A&W" is matched as "a and w"
     "wendy", "burger king", "subway", "kfc", "popeyes", "starbucks", "tim horton", "booster juice", "dairy queen",
     "denny", "ihop", "applebee", "montana s", "kelseys", "swiss chalet", "harvey s", "taco bell", "five guys", "mary brown",
     "the keg", "cactus club", "joey", "moxie", "white spot", "milestones", "chipotle", "osmow", "mucho burrito", "quesada"];
@@ -269,9 +269,14 @@
     if (!("geolocation" in navigator)) { setFallbackLocation("Location isn't available on this device."); return; }
     if (state.loc === LOC.LOCATING) return; // already asking
     setLocation(LOC.LOCATING);
+    // Some browsers let the "allow location?" question be closed without an answer and then never call back
+    // (their timeout only starts once allowed). Fall back after 20 s; a position that arrives later still counts.
+    let settled = false;
+    const fail = () => { if (settled) return; settled = true; setFallbackLocation(quiet ? null : `Location is off, so this is ${city().label}. Tap the place name to try again.`); };
+    const timer = setTimeout(fail, 20000);
     navigator.geolocation.getCurrentPosition(
-      (p) => applyPosition({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      () => setFallbackLocation(quiet ? null : `Location is off, so this is ${city().label}. Tap the place name to try again.`),
+      (p) => { settled = true; clearTimeout(timer); applyPosition({ lat: p.coords.latitude, lng: p.coords.longitude }); },
+      () => { clearTimeout(timer); fail(); },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 }
     );
   }
@@ -569,7 +574,8 @@
   function emptyNow(sel, later, allDay) {
     const what = state.cat ? `${esc(state.cat)} deals` : "deals";
     const big = sel.length ? `No ${what} on right now within ${esc(radiusText(state.radius))}.` : `Nothing left today within ${esc(radiusText(state.radius))}.`;
-    const hint = later.length ? "See what switches on later, below." : allDay.length ? "The all-day deals below run whenever the restaurant is open." : "Try a wider distance, another day, or clear the search.";
+    const hint = state.onNow && (later.length || allDay.length) ? "Tap Show everything below to see what's on later today."
+      : later.length ? "See what switches on later, below." : allDay.length ? "The all-day deals below run whenever the restaurant is open." : "Try a wider distance, another day, or clear the search.";
     return `<div class="empty${later.length ? " has-later" : ""}"><p class="big">${big}</p><p>${hint}</p></div>`;
   }
 
@@ -732,7 +738,13 @@
     const sel = all.filter(inCat).filter((i) => today ? i.status === ST.ON_NOW || i.status === ST.LATER : i.status === ST.SCHEDULED);
     const day = state.look === "day";
     let from = day ? 600 : 960, to = day ? 1320 : 1440;
-    if (today && now.mins < from) { from = Math.floor(now.mins / 60) * 60; to = from + (day ? 720 : 480); }
+    if (today && now.mins < from) {
+      // Early morning: start the window now if something is on, else at the first deal that starts later
+      // (after midnight the next deals are usually lunch, so "now + 8 h" would squash them into slivers).
+      const starts = sel.filter((i) => i.status === ST.LATER).map((i) => DS.startOf(i.d)).filter((s) => s != null);
+      const anchor = sel.some((i) => i.status === ST.ON_NOW) || !starts.length ? now.mins : Math.min(...starts);
+      from = Math.floor(anchor / 60) * 60; to = from + (day ? 720 : 480);
+    }
     if (today && now.mins > to) { from = Math.floor(now.mins / 60) * 60 - 120; to = from + 480; }
     const span = to - from, pos = (m) => Math.min(100, Math.max(0, ((m - from) / span) * 100));
     const places = byPlace(sel).map((p) => {
@@ -767,7 +779,7 @@
     for (let t = from; t <= to; t += 120) ticks.push(`<span style="left:${pos(t)}%">${t === from || t === to ? shortAP(t).toUpperCase() : clock(t).replace(":00", "")}</span>`);
     const sun = sunToday();
     const sunset = today && sun && sun.set > from && sun.set < to ? `<div class="sunset" style="left:${pos(sun.set)}%"></div><span class="sunset-flag" style="left:calc(${pos(sun.set)}% + 6px)">SUNSET ${clock(sun.set)}</span>` : "";
-    const needle = today ? `<div class="needle" style="left:${pos(now.mins)}%"></div><span class="flag" style="left:calc(${pos(now.mins)}% + 6px)">${clock(now.mins)} NOW</span>` : "";
+    const needle = today && now.mins >= from ? `<div class="needle" style="left:${pos(now.mins)}%"></div><span class="flag" style="left:calc(${pos(now.mins)}% + 6px)">${clock(now.mins)} NOW</span>` : "";
     el.innerHTML = `<div class="tt-rows" role="img" aria-label="Timetable of ${places.length} places from ${shortAP(from)} to ${shortAP(to)}">${rows}<div class="tt-marks" aria-hidden="true">${needle}${sunset}</div></div><div class="tt-axis" aria-hidden="true">${ticks.join("")}</div>`;
   }
 
@@ -933,8 +945,9 @@
     let sub = await reg.pushManager.getSubscription();
     if (on) {
       if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(CFG.VAPID_PUBLIC_KEY) });
-      await fetch(CFG.API_URL + "/subscribe", { method: "POST", headers: { "content-type": "application/json" },
+      const res = await fetch(CFG.API_URL + "/subscribe", { method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ subscription: sub, lat: +spot.lat.toFixed(3), lng: +spot.lng.toFixed(3), radius_km: Math.min(state.radius, 25), categories: cats }) });
+      if (!res.ok) throw new Error(`alerts service said ${res.status}`); // refused: the switch must not show "on"
     } else if (sub) {
       await fetch(CFG.API_URL + "/unsubscribe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) });
       await sub.unsubscribe();
@@ -1080,7 +1093,8 @@
     const f = AS.parseLink(location.search, linkRules());
     applyingLink = true;
     try {
-      if (f.city && f.city !== state.city) { setCity(f.city, { locked: true }); relocate(); }
+      const cityId = f.city || CFG.DEFAULT_CITY; // no city= in the address means the default city
+      if (cityId !== state.city) { setCity(cityId, { locked: !!f.city }); relocate(); }
       state.cat = f.cat;
       state.day = AS.normalizeDay(f.day, nowLocal().day);
       state.onNow = f.onNow;
