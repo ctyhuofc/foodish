@@ -29,9 +29,9 @@ Run everything: `python -m unittest discover -s tests && node --test tests/*.tes
 ## 1. Deal timing
 
 The rule every screen, page and alert uses to decide whether a deal counts. **The rules are data**:
-`spec/deal-states.json` lists the states and 31 worked examples; the Python and browser versions must
-both pass every one, so they can't drift. Any other app that reads `data/deals.json` (such as the
-live foodish.ca app built in Grok) should follow the same file. `deals.json` links to it under `rules`.
+`spec/deal-states.json` lists the states and 33 worked examples; the Python and browser versions must
+both pass every one, so they can't drift. Any other app that reads `data/deals.json` (such as a
+partner app) should follow the same file. `deals.json` links to it under `rules`.
 
 ```mermaid
 stateDiagram-v2
@@ -49,7 +49,8 @@ stateDiagram-v2
 
 - A deal with only an end time ("lunch until 4 pm") is taken to start 4 hours before it ends, no later than 11:00 (`start_of()` / `startOf()`). Before that it is `later`, not `on_now`.
 - `all_day` is **never** "on now": we don't know the restaurant's hours. (Before this change the
-  repo's app showed all-day deals as "on now" at 2 am; the live Grok app already had the right rule.)
+  app showed all-day deals as "on now" at 2 am.) On a picked day with no time, a deal with no times is also
+  `all_day`, so it lands under "All day", not as a blank-time "Daytime" row.
 - **Each city's clock:** deal times are in the deal's own city. Alberta has stayed on UTC-6 and British
   Columbia on UTC-7 year-round since 2026. Many devices' time-zone data still expect a November clock
   change, which would put every "on now" an hour off, so both versions use the fixed offsets

@@ -93,6 +93,35 @@ class BranchesMustAgree(unittest.TestCase):
         link_websites(rows, {})
         self.assertEqual(rows[3]["website"], "https://www.starbucks.ca")
 
+    def test_odd_branch_gets_the_chain_site(self):
+        rows = [place("Starbucks", "http://www.macs.ca")] + [
+            place("Starbucks", f"https://www.starbucks.ca/store-locator/store/{i}/a") for i in range(3)]
+        self.assertEqual(link_websites(rows, {}), 1)
+        self.assertEqual(rows[0]["website"], "https://www.starbucks.ca")
+
+    def test_franchise_own_site_with_the_name_is_kept(self):
+        rows = [place("Boston Pizza", "https://bostonpizza-whyte.ca")] + [
+            place("Boston Pizza", "https://bostonpizza.com") for _ in range(3)]
+        link_websites(rows, {})
+        self.assertEqual(rows[0]["website"], "https://bostonpizza-whyte.ca")
+
+    def test_chain_own_other_domain_is_kept(self):
+        rows = [place("Blenz Coffee", "http://www.blenz.ca")] + [place("Blenz Coffee", "https://blenz.com") for _ in range(3)]
+        link_websites(rows, {})
+        self.assertEqual(rows[0]["website"], "http://www.blenz.ca")
+
+    def test_site_named_after_its_own_brand_is_kept(self):
+        rows = [place("Rolltation", "https://rolltation.com", brand="South St. Burger")] + [
+            place("South St. Burger", "https://southstburger.com") for _ in range(3)]
+        link_websites(rows, {})
+        self.assertEqual(rows[0]["website"], "https://rolltation.com")
+
+    def test_odd_site_is_kept_when_few_branches_agree(self):
+        rows = [place("Joe's Grill", "https://somewhere-else.ca"), place("Joe's Grill", "https://joesgrill.ca"),
+                place("Joe's Grill", "https://joesgrill.ca")]
+        link_websites(rows, {})
+        self.assertEqual(rows[0]["website"], "https://somewhere-else.ca")
+
     def test_branches_that_disagree_get_no_website(self):
         rows = [place("Joe's Grill", "https://joesgrill.ca"), place("Joe's Grill", "https://joes-grill-calgary.com"),
                 place("Joe's Grill")]

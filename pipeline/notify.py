@@ -48,7 +48,7 @@ def main():
         by_id.update({r["id"]: r for r in data["restaurants"]})
         now = ds.now_in(city.timezone)  # "today" on that city's own clock
         # deals that run today and are within their valid dates (same rules as the app)
-        todays += [d for d in data["deals"] if ds.deal_state(d, ds.Moment(now.date, now.day)) == ds.SCHEDULED]
+        todays += [d for d in data["deals"] if ds.deal_state(d, ds.Moment(now.date, now.day)) in (ds.SCHEDULED, ds.ALL_DAY)]
     today = ds.now_in().date
 
     subs = requests.get(f"{API}/subscriptions", headers=AUTH, timeout=30).json()

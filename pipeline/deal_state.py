@@ -6,17 +6,17 @@ spec/deal-states.json, so they can't drift apart.
 
     from deal_state import deal_state, now_in
     deal_state(deal, now_in(city.timezone))   # -> "on_now", "later", "all_day", "ended", ...
-    deal_state(deal, Moment("2026-11-13", 5)) # a future day with no time -> "scheduled" / "not_today"
+    deal_state(deal, Moment("2026-11-13", 5)) # a future day with no time -> "scheduled" / "all_day" / "not_today"
 
 States (also listed in spec/deal-states.json):
   expired      valid_until is before today
   upcoming     valid_from is after today
   not_today    doesn't run on this day
-  all_day      runs today with no start/end time (never shown as "on now": opening hours unknown)
+  all_day      runs that day with no start/end time (never shown as "on now": opening hours unknown)
   later        runs today, starts later
   on_now       its window is open (including the after-midnight tail of yesterday's late deal)
   ended        ran earlier today and is over
-  scheduled    runs on that day, when no time of day is given
+  scheduled    runs on that day at a set time, when no time of day is given
 """
 from __future__ import annotations
 
@@ -31,7 +31,6 @@ MIDNIGHT = 24 * 60
 EXPIRED, UPCOMING, NOT_TODAY = "expired", "upcoming", "not_today"
 ALL_DAY, LATER, ON_NOW, ENDED, SCHEDULED = "all_day", "later", "on_now", "ended", "scheduled"
 STATES = (EXPIRED, UPCOMING, NOT_TODAY, ALL_DAY, LATER, ON_NOW, ENDED, SCHEDULED)
-VISIBLE = (ON_NOW, LATER, ALL_DAY, ENDED, SCHEDULED)  # states worth showing someone
 
 _HHMM = re.compile(r"([01]?\d|2[0-3]):([0-5]\d)")
 
@@ -73,11 +72,7 @@ def now_in(zone: str = DEFAULT_ZONE, now: dt.datetime | None = None) -> Moment:
     return Moment(t.date().isoformat(), (t.weekday() + 1) % 7, t.hour * 60 + t.minute)
 
 
-# Edmonton shortcuts (the original names; still used where only Edmonton is involved)
-def edmonton_time(now: dt.datetime | None = None) -> dt.datetime:
-    return local_time("America/Edmonton", now)
-
-
+# Edmonton shortcut (used by the clock tests)
 def edmonton_now(now: dt.datetime | None = None) -> Moment:
     return now_in("America/Edmonton", now)
 
@@ -143,7 +138,9 @@ def deal_state(deal: dict, at: Moment) -> str:
     overnight = start is not None and end is not None and end <= start
 
     if at.mins is None:
-        return SCHEDULED if at.day in days else NOT_TODAY
+        if at.day not in days:
+            return NOT_TODAY
+        return ALL_DAY if start is None and end is None else SCHEDULED
     # after midnight: yesterday's late deal may still be running
     if overnight and (at.day + 6) % 7 in days and at.mins < end:
         return ON_NOW
