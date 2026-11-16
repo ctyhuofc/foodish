@@ -2,10 +2,10 @@ name = "foodish-cron"
 main = "worker.js"
 compatibility_date = "2026-10-01"
 
-# Cloudflare cron times are UTC. 10:00 UTC = 4:00 am Edmonton, all year
-# (Alberta stays on UTC-6 since 1 Nov 2026).
+# Cloudflare cron times are UTC (Alberta stays on UTC-6 since 1 Nov 2026). Each one is listed in TASKS in worker.js.
+#   10:00 UTC = 4:00 am Edmonton: refresh deals      21:45 UTC = 3:45 pm Edmonton: send daily alerts
 [triggers]
-crons = ["0 10 * * *"]
+crons = ["0 10 * * *", "45 21 * * *"]
 
 [vars]
 GITHUB_REPO = "ctyhuofc/foodish"
