@@ -99,6 +99,11 @@ class CleanDeal(unittest.TestCase):
     def test_without_page_text_only_the_basic_checks_run(self):
         self.assertIsNotNone(scrape.clean_deal(ai(quote=None, price="$99"), "https://wingplace.ca"))
 
+    def test_a_number_where_text_belongs_drops_that_deal_not_the_city(self):
+        raw = [ai(price=5), ai(title=123), ai()]
+        kept = [x for x in (scrape.clean_or_drop(d, "https://wingplace.ca", PAGE) for d in raw) if x]
+        self.assertEqual([d["title"] for d in kept], ["Wing night"])
+
 
 class RemovedSites(unittest.TestCase):
     def test_removal_list_is_valid_and_matches_by_domain(self):

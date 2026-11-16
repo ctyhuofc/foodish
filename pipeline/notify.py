@@ -1,5 +1,6 @@
 """Step 3 (daily, ~3:45 pm Edmonton / 2:45 pm Vancouver / 4:45 or 5:45 pm Toronto): send each alert subscriber a push for today's
 deals near them. Deals from every city are considered; "near" is the subscriber's own radius.
+Only deals still on or still to come today (on that city's clock) count: one that already ended is left out.
 
 Needs: API_URL, ADMIN_TOKEN, VAPID_PRIVATE_KEY, VAPID_SUBJECT (e.g. mailto:you@foodish.ca)
 """
@@ -36,6 +37,11 @@ def km(a_lat, a_lng, b_lat, b_lng):
     return 2 * 6371 * math.asin(math.sqrt(h))
 
 
+def still_to_come(deals, now):
+    """The deals that are on now, start later today, or run all day, at the city's moment `now`."""
+    return [d for d in deals if ds.deal_state(d, now) in (ds.ON_NOW, ds.LATER, ds.ALL_DAY)]
+
+
 def main():
     if not API or not os.environ.get("VAPID_PRIVATE_KEY"):
         print("Push alerts aren't set up yet (README step 6) — skipping.")
@@ -46,9 +52,9 @@ def main():
             continue
         data = json.loads(city.deals.read_text())
         by_id.update({r["id"]: r for r in data["restaurants"]})
-        now = ds.now_in(city.timezone)  # "today" on that city's own clock
-        # deals that run today and are within their valid dates (same rules as the app)
-        todays += [d for d in data["deals"] if ds.deal_state(d, ds.Moment(now.date, now.day)) in (ds.SCHEDULED, ds.ALL_DAY)]
+        now = ds.now_in(city.timezone)  # the time on that city's own clock
+        # deals still on or still to come today, within their valid dates (same rules as the app)
+        todays += still_to_come(data["deals"], now)
     today = ds.now_in().date
 
     subs = requests.get(f"{API}/subscriptions", headers=AUTH, timeout=30).json()

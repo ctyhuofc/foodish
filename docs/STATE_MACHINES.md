@@ -85,7 +85,8 @@ Before the outcome, each site gets a read status (`sites.<domain>.status` in the
 `site_state.py`; `scrape.py` and `health.py` use them, never the words.
 
 "Retried tomorrow" works because a site's text fingerprint is only saved after the AI has read it.
-Deferred and failed sites keep their old deals. Cached deals whose `valid_until` has passed are now
+Deferred and failed sites keep their old deals. A website or an AI deal the robot can't make sense of is
+skipped for the day (the site counts as unreachable, the deal is dropped); it doesn't stop the city. Cached deals whose `valid_until` has passed are now
 dropped when publishing; they used to linger until the website changed.
 
 ## 3. Run plan
@@ -129,7 +130,7 @@ AI key still showed a green tick (that happened every day from 22 Oct to 8 Nov 2
 | On now only | `?now=1` hides later and all-day deals | `state.onNow` | A "Showing only what's on now. Show everything" button turns it off |
 | Panels | `null` \| `city` \| `search` | `setPanel()` | One open at a time. Escape closes it and returns to its button; a click elsewhere closes the city picker. The search row opens when a search is in the address |
 | Map card | a place selected \| none \| dismissed | `state.sel`, `state.selDismissed` | Desktop opens the card for the first place on now, unless the visitor closed it (close button or a click on the map). Choosing a place, or changing city, category, day or distance, lets it open again |
-| List expanders | "Details" and "Show more" choices | `resetList()` | Reset together on a new city, category or day, and on back/forward |
+| List expanders | "Details" and "Show more" choices | `resetList()` | Reset together on a new city, category or day, and on back/forward (not on an in-page jump such as a street building). Tapping a building whose row isn't shown yet opens the shortened lists first |
 | Daily-alert sign-up | switch on + browser signed up \| switch on + sign-up lost | `reconcilePush()` on opening | If the browser lost its sign-up (site data cleared, expired) while alerts are allowed, it signs up again quietly; if that fails nothing is shown and the next open tries again |
 
 Debug in the browser console: `__foodish.state`, `__foodish.alertsState()`, `__foodish.statusLine({...})`, `__foodish.setPanel("city")`.

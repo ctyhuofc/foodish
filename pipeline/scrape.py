@@ -338,6 +338,14 @@ def place_words(city) -> list[str]:
     return sorted(w for w in words if w not in ("The City", "City", "Plus"))
 
 
+def clean_or_drop(d, site_url, page_text=None):
+    """clean_deal(), but a deal it can't read (e.g. a number where text belongs) is dropped, not a crash."""
+    try:
+        return clean_deal(d, site_url, page_text)
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def confirmed_site(text: str, branches: list[dict], places: list[str]) -> bool:
     """A website taken from Overture Maps (not from the restaurant's own OpenStreetMap entry) is only used
     if its pages mention the city, an area it covers, or a branch's street. This stops a name match from
@@ -414,11 +422,15 @@ def run_city(city, args):
         if k in removed:
             info["status"] = ss.READ_REMOVED
             return None
-        text = read_site_once(sites[k]["url"], info)
-        if text and not confirmed_site(_full_text.get(sites[k]["url"], text), sites[k]["branches"], places):
-            info["unconfirmed"] = True  # treated as a site with no deals, so nothing wrong is published
-            return ""
-        return text
+        try:
+            text = read_site_once(sites[k]["url"], info)
+            if text and not confirmed_site(_full_text.get(sites[k]["url"], text), sites[k]["branches"], places):
+                info["unconfirmed"] = True  # treated as a site with no deals, so nothing wrong is published
+                return ""
+            return text
+        except Exception as e:  # noqa: BLE001  one odd website (e.g. a broken link) is unreadable today, not a city-wide stop
+            info["status"] = f"error: {type(e).__name__}"
+            return None
     with cf.ThreadPoolExecutor(args.workers) as ex:
         for k, text in zip(keys, ex.map(work, keys)):
             texts[k] = text
@@ -464,7 +476,7 @@ def run_city(city, args):
                     if breaker.stopped:
                         print(f"Stopping AI calls: the same error {ss.SAME_ERROR_LIMIT} times in a row -> {msg}")
                 else:
-                    kept = [x for x in (clean_deal(d, sites[k]["url"], text) for d in raw) if x]
+                    kept = [x for x in (clean_or_drop(d, sites[k]["url"], text) for d in raw) if x]
                     entry.update(hash=h, pv=PROMPT_VERSION, checked_at=TODAY, deals=kept[:6])
                     report[k]["result"] = f"{len(entry['deals'])} deals"
                     if len(kept) < len(raw):  # price or quote not on the page, unreadable days, ...

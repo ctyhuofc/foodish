@@ -389,14 +389,15 @@
         .map((r) => ({ r, dist: km(state.me, r) })).filter((x) => x.dist <= state.radius).sort((a, b) => a.dist - b.dist);
       if (!branches.length) continue;
       if (!state.chains && branches.every((b) => isChain(b.r.name))) continue;
-      if (q) {
-        const hay = `${d.title} ${d.description || ""} ${(d.categories || []).join(" ")} ${branches.map((b) => b.r.name).join(" ")}`.toLowerCase();
-        if (!hay.includes(q)) continue;
-      }
+      if (q && !matchesSearch(d, branches.map((b) => b.r.name), q)) continue;
       out.push({ d, status, nearest: branches[0], branches });
     }
     out.sort((a, b) => RANK[a.status] - RANK[b.status] || a.nearest.dist - b.nearest.dist);
     return out;
+  }
+  // The search test: the lowercased query appears in the deal's title, description, categories or place names.
+  function matchesSearch(d, names, q) {
+    return `${d.title} ${d.description || ""} ${(d.categories || []).join(" ")} ${names.join(" ")}`.toLowerCase().includes(q);
   }
   // Group deals by the place they're nearest at.
   function byPlace(items) {
@@ -413,12 +414,15 @@
     if (!state.data || !state.me) return [];
     const now = nowLocal(), base = state.day == null ? now.day : state.day;
     const baseDate = state.day == null ? now.date : isoForDay(state.day);
+    const q = state.q.trim().toLowerCase();
     const seen = new Map(), hits = [];
     for (const d of state.data.deals) {
       if (state.cat && !(d.categories || []).includes(state.cat)) continue;
-      const r = (d.restaurant_ids || []).map((id) => state.byId.get(id)).filter(Boolean)
-        .map((x) => ({ r: x, dist: km(state.me, x) })).filter((x) => x.dist <= state.radius).sort((a, b) => a.dist - b.dist)[0];
+      const branches = (d.restaurant_ids || []).map((id) => state.byId.get(id)).filter(Boolean)
+        .map((x) => ({ r: x, dist: km(state.me, x) })).filter((x) => x.dist <= state.radius).sort((a, b) => a.dist - b.dist);
+      const r = branches[0];
       if (!r || (!state.chains && isChain(r.r.name))) continue;
+      if (q && !matchesSearch(d, branches.map((b) => b.r.name), q)) continue;
       for (let i = 1; i < 7; i++) {
         const day = (base + i) % 7;
         const st = DS.dealState(d, { date: addDays(baseDate, i), day, mins: null });
@@ -1053,6 +1057,7 @@
     if (f.q) state.q = f.q;
     if (f.look) state.lookForced = f.look;
   }
+  let linkSearch = null; // location.search as last synced here (onPopState ignores pops that didn't change it)
   function writeLinkFilters() {
     if (applyingLink) return;
     const qs = AS.buildLink({ city: state.city, cityLocked: state.cityLocked, cat: state.cat, day: state.day, onNow: state.onNow,
@@ -1062,14 +1067,16 @@
     // typing a search or changing the distance just updates the address. The step is remembered even when
     // the address is already right (the page as opened), so the first switch is a step too.
     const step = AS.historyStep(state);
-    if (url === location.pathname + location.search + location.hash) { state.histStep = step; return; }
+    if (url === location.pathname + location.search + location.hash) { state.histStep = step; linkSearch = location.search; return; }
     if (state.histStep != null && step !== state.histStep) history.pushState({ foodish: step }, "", url);
     else history.replaceState(history.state, "", url);
     state.histStep = step;
+    linkSearch = location.search;
   }
   // Back / forward inside the app: put everything back the way the address says (city, category, day,
   // on-now-only, search, distance, view).
   function onPopState() {
+    if (location.search === linkSearch) return; // an in-page jump (#p-…, #tell) fires popstate too: no filter changed
     const f = AS.parseLink(location.search, linkRules());
     applyingLink = true;
     try {
@@ -1165,6 +1172,13 @@
     $("lookSeg").onclick = (e) => { const b = e.target.closest("[data-look-pick]"); if (!b) return; state.lookPref = b.dataset.lookPick; state.lookForced = null; store.set("look", state.lookPref); applyLook(); render(); };
     // Everything drawn by render() uses data-* buttons, handled here once.
     document.addEventListener("click", (e) => {
+      // A street building links to its row (#p-…): open the capped lists first if that row isn't drawn yet.
+      const b = e.target.closest(".bldg");
+      if (b && !document.getElementById(b.getAttribute("href").slice(1))) {
+        state.nowAll = state.laterAll = state.allDayAll = true;
+        if (state.day != null) { state.schedAll.add(`${state.day}|Daytime`); state.schedAll.add(`${state.day}|Evening`); }
+        render();
+      }
       const t = e.target.closest("[data-open],[data-mapsel],[data-allday],[data-nowall],[data-laterall],[data-schedall],[data-cal],[data-closesheet],[data-shownow],.soon [data-day]");
       if (!t) return;
       if (t.dataset.open) { const id = t.dataset.open; state.open.has(id) ? state.open.delete(id) : state.open.add(id); render(); }
