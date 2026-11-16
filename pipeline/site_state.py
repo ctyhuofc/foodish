@@ -34,6 +34,13 @@ KEEP, REUSE, CLEAR, CALL_AI = "keep", "reuse", "clear", "call_ai"
 
 SAME_ERROR_LIMIT = 3  # stop calling the AI after this many identical errors in a row
 
+# Whether a site could be read today ("status" in report.json, before the outcome above is decided).
+# Other statuses are free-text errors ("error 404", "timeout", ...). These values are in old reports: don't change them.
+READ_OK = "ok"
+READ_REMOVED = "removed by request"        # listed in data/removed.json
+READ_ROBOTS = "blocked by robots.txt"
+BLOCKED_READS = (READ_REMOVED, READ_ROBOTS)  # -> outcome BLOCKED, deals cleared at once
+
 
 @dataclass(frozen=True)
 class Step:

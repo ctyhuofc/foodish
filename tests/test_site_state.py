@@ -76,5 +76,17 @@ class Breaker(unittest.TestCase):
         self.assertFalse(b.stopped)
 
 
+class ReadStatus(unittest.TestCase):
+    def test_values_match_old_reports(self):
+        """report.json files and health.py read these exact words."""
+        self.assertEqual((ss.READ_OK, ss.READ_REMOVED, ss.READ_ROBOTS), ("ok", "removed by request", "blocked by robots.txt"))
+        self.assertEqual(set(ss.BLOCKED_READS), {"removed by request", "blocked by robots.txt"})
+        self.assertNotIn(ss.READ_OK, ss.BLOCKED_READS)
+
+    def test_a_blocked_read_clears_the_deals(self):
+        for status in ss.BLOCKED_READS:
+            self.assertEqual(step(blocked=status in ss.BLOCKED_READS), ss.Step(ss.BLOCKED, ss.CLEAR))
+
+
 if __name__ == "__main__":
     unittest.main()

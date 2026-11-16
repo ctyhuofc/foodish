@@ -84,7 +84,7 @@ def allowed(url):
 
 def get(url):
     if not allowed(url):
-        REASONS[url] = "blocked by robots.txt"
+        REASONS[url] = ss.READ_ROBOTS
         return None
     try:
         r = requests.get(url, headers=HEADERS, timeout=20, allow_redirects=True)
@@ -180,7 +180,7 @@ def read_site(site, info):
     if not home:
         info["status"] = REASONS.get(site, "unknown error")
         return None
-    info["status"] = "ok"
+    info["status"] = ss.READ_OK
     info["home_chars"] = len(visible_text(home))
     pages = [(site, visible_text(home))]
     _full_text[site] = pages[0][1][:200_000]
@@ -412,7 +412,7 @@ def run_city(city, args):
         info = {"url": sites[k]["url"], "locations": len(sites[k]["branches"])}
         report[k] = info
         if k in removed:
-            info["status"] = "removed by request"
+            info["status"] = ss.READ_REMOVED
             return None
         text = read_site_once(sites[k]["url"], info)
         if text and not confirmed_site(_full_text.get(sites[k]["url"], text), sites[k]["branches"], places):
@@ -435,7 +435,7 @@ def run_city(city, args):
             readable=text is not None, fingerprint=h, has_deal_words=bool(text and DEAL_WORDS.search(text)),
             entry=entry, prompt_version=PROMPT_VERSION, stale_before=stale_before,
             budget_left=calls < max_calls and used_this_month + calls < monthly_cap, ai_stopped=breaker.stopped,
-            blocked=report[k].get("status") in ("removed by request", "blocked by robots.txt"),
+            blocked=report[k].get("status") in ss.BLOCKED_READS,
         )
         outcome = step.outcome
         if text is None:
@@ -481,7 +481,7 @@ def run_city(city, args):
     # diagnostics report: why each site did or didn't produce deals
     status = collections.Counter(v.get("status", "?") for v in report.values())
     print("Site status:", ", ".join(f"{n}× {s}" for s, n in status.most_common()))
-    results = collections.Counter(v.get("result", "unchanged/skipped") for v in report.values() if v.get("status") == "ok")
+    results = collections.Counter(v.get("result", "unchanged/skipped") for v in report.values() if v.get("status") == ss.READ_OK)
     print("Readable sites:", ", ".join(f"{n}× {s}" for s, n in results.most_common(8)))
     outcomes = collections.Counter(v.get("outcome") for v in report.values())
     print("Outcomes:", ", ".join(f"{n}× {o}" for o, n in outcomes.most_common()))

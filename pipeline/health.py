@@ -22,6 +22,7 @@ from pathlib import Path
 
 import cities
 import deal_state as ds  # each city's clock (fixed offsets since Nov 2026)
+import site_state as ss  # names of the site-read statuses in report.json
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -81,7 +82,7 @@ def summary(city: cities.City) -> list[str]:
     sites = report.get("sites", {})
     status = report.get("status_counts", {})
     total = sum(status.values()) or 1
-    ok = status.get("ok", 0)
+    ok = status.get(ss.READ_OK, 0)
 
     lines.append(f"## Foodish daily check · {city.name} · {report.get('date', 'no run yet')}")
     lines.append("")
@@ -110,13 +111,13 @@ def summary(city: cities.City) -> list[str]:
             pass
 
     # Biggest losses: unreadable sites ranked by how many of the city's locations they cover
-    failing = sorted(((v.get("locations", 0), k, v.get("status")) for k, v in sites.items() if v.get("status") != "ok"), reverse=True)
+    failing = sorted(((v.get("locations", 0), k, v.get("status")) for k, v in sites.items() if v.get("status") != ss.READ_OK), reverse=True)
     if failing:
         lines += ["", "### Chains we couldn't read (most locations first)", "", "| Site | Locations | Problem |", "| --- | --- | --- |"]
         lines += [f"| {k} | {n} | {s} |" for n, k, s in failing[:10]]
 
     # Readable sites whose pages show no text: they need RENDER_JS=1 (JavaScript-only sites)
-    js_only = sorted(((v.get("locations", 0), k) for k, v in sites.items() if v.get("status") == "ok" and v.get("js_page") and not v.get("deal_chars")), reverse=True)
+    js_only = sorted(((v.get("locations", 0), k) for k, v in sites.items() if v.get("status") == ss.READ_OK and v.get("js_page") and not v.get("deal_chars")), reverse=True)
     if js_only:
         lines += ["", f"**JavaScript-only sites with no readable text:** {', '.join(f'{k} ({n})' for n, k in js_only[:8])}. "
                       "The browser step reads these unless the GitHub variable `RENDER_JS` is `0`; if this list stays long, the browser couldn't render them either."]
