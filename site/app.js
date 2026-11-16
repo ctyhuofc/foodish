@@ -167,8 +167,8 @@
   const fi = (k, size = 22) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">${FOOD[k] || FOOD.plate}</svg>`;
   const CAT_ICON = { drinks: "beer", "happy hour": "cheers", pizza: "pizza", lunch: "sandwich", appetizers: "fries", family: "family", pasta: "pasta", wings: "wings", seafood: "fish", burgers: "burger", "late night": "moon", chicken: "wings", tacos: "taco", breakfast: "egg", steak: "steak", dessert: "cake", brunch: "egg", kids: "kids", vegetarian: "leaf", coffee: "coffee", sushi: "sushi", "early bird": "sun", combo: "plate" };
   // The deal's own words win, food before drink (a burger & pint is a burger, a cocktail a cocktail); then its most specific kind.
-  const WORD_ICON = [[/wing/i, "wings"], [/burger/i, "burger"], [/pizza/i, "pizza"], [/taco/i, "taco"], [/pasta|spaghetti|linguine/i, "pasta"], [/steak/i, "steak"], [/sushi|roll/i, "sushi"], [/oyster|shrimp|mussel|fish/i, "fish"], [/nacho|fries|appet|app\b/i, "fries"], [/coffee|latte/i, "coffee"], [/dessert|cake|pie/i, "cake"],
-    [/cocktail|martini|margarita|caesar/i, "cocktail"], [/wine|prosecco|sangria/i, "wine"], [/highball|whisk|rye|shot|spirit|tequila/i, "whisky"], [/pint|beer|draft|draught|lager|ipa|jug|pitcher|bottle|tall ?can/i, "beer"]];
+  const WORD_ICON = [[/wing/i, "wings"], [/burger/i, "burger"], [/pizza/i, "pizza"], [/taco/i, "taco"], [/pasta|spaghetti|linguine/i, "pasta"], [/steak/i, "steak"], [/sushi|roll/i, "sushi"], [/oyster|shrimp|mussel|fish/i, "fish"], [/nacho|fries|appet|app\b|bites/i, "fries"], [/coffee|latte/i, "coffee"], [/dessert|cake|pie/i, "cake"],
+    [/cocktail|martini|margarita|caesar/i, "cocktail"], [/wine|prosecco|sangria/i, "wine"], [/highball|whisk|rye|shot|spirit|tequila/i, "whisky"], [/pint|beer|draft|draught|lager|ipa|jug|pitcher|bottle|tall ?can|sleeve/i, "beer"]];
   const GENERIC = new Set(["happy hour", "drinks", "lunch", "family", "late night", "kids", "early bird", "combo", "deals"]);
   const emo = (d) => {
     const text = `${d.price_unit || ""} ${d.title || ""}`;
@@ -179,6 +179,14 @@
   };
   ICON.more = '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
   ICON.map = '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>';
+  // What a price buys, in a few words: the unit when it says something ("pints", "6 oz wine"),
+  // else the deal's name ("$5 late night favourites", "20% off happy hour").
+  const VAGUE_UNIT = new Set(["each", "select items", "drinks", "deals", "items", "per person"]);
+  const lowerFirst = (t) => (/^[A-Z][a-z]/.test(t) ? t[0].toLowerCase() + t.slice(1) : t);
+  const forWhat = (d) => {
+    if (!d.price) return d.title;
+    return d.price_unit && !VAGUE_UNIT.has(d.price_unit.toLowerCase()) ? d.price_unit : lowerFirst(d.title || "");
+  };
   const directions = (r) => `https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`;
   function staleNote(d) {
     if (!d.verified_at) return "";
@@ -575,10 +583,12 @@
   // Every place on now gets the same plain row, nearest first within each end time: the list is for
   // comparing quickly, not for promoting one restaurant over another.
   function placeRow(p) {
-    const deals = p.items.slice(0, 3).map((i) => `<span class="dl"><span class="e" aria-hidden="true">${emo(i.d)}</span>${esc(i.d.price || i.d.title)}</span>`).join("")
-      + (p.items.length > 3 ? `<span class="dl">+${p.items.length - 3}</span>` : "");
+    // One deal per line: picture, price, then what it buys ("$5.50 pints"), so a first-time visitor
+    // can tell what's on without opening anything.
+    const deals = p.items.slice(0, 3).map((i) => `<span class="dl"><span class="e" aria-hidden="true">${emo(i.d)}</span>${i.d.price ? `<b>${esc(i.d.price)}</b> ` : ""}${esc(forWhat(i.d))}</span>`).join("")
+      + (p.items.length > 3 ? `<span class="dl more-n">+${p.items.length - 3} more</span>` : "");
     return `<article class="nrow" id="p-${esc(p.r.id)}"><div class="nrow-main"><div class="txt"><h3 class="nm">${esc(p.r.name)}</h3>
-      <p class="deals">${deals}</p></div><span class="km">${ICON.pin}${esc(kmShort(p.dist))} km</span></div>${details(p)}</article>`;
+      <p class="deals" data-open="${esc(p.r.id)}">${deals}</p></div><span class="km">${ICON.pin}${esc(kmShort(p.dist))} km</span></div>${details(p)}</article>`;
   }
 
   function laterSection(later, now) {

@@ -467,8 +467,10 @@ html[data-look="day"] .map .leaflet-tile-pane { filter: grayscale(1) sepia(.12) 
 .cats button.pic .w { margin-top: 4px; font-size: 10px; font-weight: 700; line-height: 1; }
 .cats button.pic sup { position: absolute; top: 3px; right: 5px; margin: 0; font-family: var(--f-num); font-weight: 800; }
 .cats button.pic[aria-pressed="true"] { box-shadow: none; }
-.nrow .deals { display: flex; flex-wrap: wrap; gap: 4px 14px; }
-.nrow .deals .dl { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; }
+.nrow .deals { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.nrow .deals .dl { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+.nrow .deals .dl b { font-weight: 800; }
+.nrow .deals .more-n { color: var(--muted); padding-left: 28px; }
 .nrow .deals .e { display: flex; color: var(--muted, currentColor); }
 .km { display: inline-flex; align-items: center; gap: 3px; }
 .km svg { width: 15px; height: 15px; }
@@ -488,3 +490,4 @@ html[data-look="day"] .map .leaflet-tile-pane { filter: grayscale(1) sepia(.12) 
 .radius-group button:not(:first-child):not(:last-child), .seg button:not(:first-child):not(:last-child) { border-radius: 0; }
 .sheet { border-radius: 20px 20px 0 0; }
 .days button, .cats button.pic { border-radius: var(--radius); }
+.nrow .deals[data-open] { cursor: pointer; }
