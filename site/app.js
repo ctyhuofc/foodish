@@ -7,6 +7,7 @@
   const CFG = window.FOODISH_CONFIG;
   const DS = window.FoodishDealState;
   const SKY = window.FoodishSky;
+  const AS = window.FoodishAppState;   // the app's page-free rules (address bar, status line, alerts, form)
   const ST = DS.STATES;
   const DAY_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const $ = (id) => document.getElementById(id);
@@ -27,6 +28,7 @@
   const RADII = [1, 2, 5, 10, 999];
   const CITIES = CFG.CITIES;
   const NEAR_KM = 100;
+  const MOVED_KM = 0.15;               // the nearby-watch redraws the list after a move this big
   const cityById = (id) => CITIES.find((c) => c.id === id);
   // Big chains, for the "Include big chains" switch (matched against restaurant names).
   const CHAINS = ["domino", "papa john", "panago", "pizza 73", "pizza hut", "little caesar", "boston pizza", "earls",
@@ -38,7 +40,11 @@
   const state = {
     city: CFG.DEFAULT_CITY, cityLocked: false, gps: null,
     load: LOAD.LOADING, data: null, byId: new Map(),
+    loadSeq: 0,           // each load() gets a number; only the newest one may show its result
+    loadError: null,      // why the last load failed (shown only while there are no deals to show)
+    stale: false,         // the deals file is over a day old
     loc: null, me: null,
+    locNote: null,        // a note about the visitor's location ("Location is off, so…"), for the status line
     day: null,            // 0-6, null = today
     onNow: false,         // ?now=1: only what's on right now
     radius: store.get("radius", 5),
@@ -55,6 +61,10 @@
     laterAll: false,      // show every start time later today (the list starts with the first 5)
     schedAll: new Set(),  // other-day sections opened in full, as "day|section"
     sel: null,            // place selected on the map
+    selDismissed: false,  // the visitor closed the map card: don't pick a place for them again until something changes
+    panel: null,          // the open drop-down: null | "city" | "search"
+    submit: AS.SUBMIT.IDLE, // the "A deal we missed?" form
+    alertsBusy: false,    // an alerts change is being set up (a second tap waits for it)
     map: null, layer: null, meMarker: null, mapKey: "",
     watchId: null, lastScroll: 0,
   };
@@ -219,7 +229,8 @@
     $("browseLink").href = city().id === CFG.DEFAULT_CITY ? "deals/" : `${city().id}/deals/`;
     buildCityPanel();
     if (changed) {
-      state.data = null; state.byId = new Map(); state.cat = null; state.sel = null; state.open.clear(); state.allDayAll = false; state.nowAll = false; state.laterAll = false; state.schedAll.clear();
+      state.data = null; state.byId = new Map(); state.cat = null; state.sel = null; state.selDismissed = false; resetList();
+      state.stale = false; state.loadError = null;
       $("updated").textContent = "";
       applyLook();
       load();
@@ -231,8 +242,11 @@
   }
 
   // ---------- location ----------
+  // The location note lasts until the next locate or a precise fix; a fallback without a note clears it,
+  // so a note never names a city that is no longer shown.
   function setLocation(loc, coords, note) {
     state.loc = loc;
+    state.locNote = loc === LOC.LOCATING || loc === LOC.PRECISE ? null : note || null;
     if (loc === LOC.PRECISE) {
       state.me = { lat: coords.lat, lng: coords.lng, label: "Near you" };
       store.set("lastLoc", { lat: coords.lat, lng: coords.lng });
@@ -241,7 +255,7 @@
     $("locText").textContent = loc === LOC.LOCATING ? "Finding you…" : state.me.label;
     $("locBtn").title = loc === LOC.PRECISE ? "Showing deals near you" : note || "Tap to use my location";
     $("locBtn").setAttribute("aria-label", loc === LOC.PRECISE ? "Near you. Tap to update your location" : `${state.me ? state.me.label : ""}. ${note || "Tap to use my location"}`);
-    if (note) $("status").textContent = note;
+    renderStatus();
     if (loc !== LOC.LOCATING) render();
   }
   function applyPosition(coords) {
@@ -253,6 +267,7 @@
   }
   function locate({ quiet = false } = {}) {
     if (!("geolocation" in navigator)) { setFallbackLocation("Location isn't available on this device."); return; }
+    if (state.loc === LOC.LOCATING) return; // already asking
     setLocation(LOC.LOCATING);
     navigator.geolocation.getCurrentPosition(
       (p) => applyPosition({ lat: p.coords.latitude, lng: p.coords.longitude }),
@@ -300,39 +315,53 @@
   // ---------- data ----------
   function setLoad(next, detail) {
     state.load = next;
-    const status = $("status");
-    if (next === LOAD.LOADING && !state.data) { status.textContent = "Loading today's deals…"; $("count").textContent = "–"; }
-    if (next === LOAD.ERROR && !state.data) {
-      status.innerHTML = `Couldn't load deals right now (${esc(detail)}). <button type="button" class="link-btn" id="retryLoad">Try again</button>`;
-      $("retryLoad").onclick = () => load();
-    }
+    if (next === LOAD.LOADING && !state.data) $("count").textContent = "–";
+    if (next === LOAD.ERROR) state.loadError = detail;
     if (next === LOAD.READY) {
-      status.textContent = "";
+      state.loadError = null; state.stale = false;
       const g = state.data.generated_at ? new Date(state.data.generated_at) : null;
       if (g && !isNaN(g)) {
         const ageH = (Date.now() - g.getTime()) / 36e5;
         const when = g.toLocaleString("en-CA", { timeZone: DS.zoneFor(city().timezone, g), dateStyle: "medium", timeStyle: "short" });
         $("updated").textContent = ageH > STALE_AFTER_H ? `Deals last checked ${when.replace(/\.$/, "")}, over a day ago, so some may have changed.` : `Last updated ${when.replace(/\.$/, "")}.`;
-        if (ageH > STALE_AFTER_H) status.textContent = "These deals were last checked over a day ago.";
+        state.stale = ageH > STALE_AFTER_H;
       }
-      render();
+    }
+    renderStatus();
+    if (next === LOAD.READY || !state.data) render(); // nothing to show yet: clear the last city's deals
+  }
+  // The status line under the count has one writer. Which message wins is decided in app-state.js.
+  let statusKey = "";
+  function renderStatus() {
+    const s = AS.statusLine({ load: state.load, hasData: !!state.data, errorDetail: state.loadError, stale: state.stale, locNote: state.locNote });
+    const key = `${s.kind}|${s.text}`;
+    if (key === statusKey) return; // unchanged: don't make screen readers repeat it
+    statusKey = key;
+    const el = $("status");
+    el.textContent = s.text;
+    if (s.retry) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "link-btn"; b.id = "retryLoad"; b.textContent = "Try again";
+      b.onclick = () => load();
+      el.append(" ", b);
     }
   }
   async function load() {
     if (state.load === LOAD.LOADING && state.data) return;
-    const forCity = state.city;
+    const forCity = state.city, seq = ++state.loadSeq;
+    const stillWanted = () => seq === state.loadSeq && forCity === state.city; // a newer load or another city wins
     setLoad(LOAD.LOADING);
     try {
       const res = await fetch(city().dataUrl, { cache: "no-cache" });
-      if (forCity !== state.city) return;
+      if (!stillWanted()) return;
       if (res.status === 404) throw new Error(`${city().name} deals aren't ready yet`);
       if (!res.ok) throw new Error(`error ${res.status}`);
       const data = await res.json();
-      if (forCity !== state.city) return;
+      if (!stillWanted()) return;
       if (!Array.isArray(data.deals) || !Array.isArray(data.restaurants)) throw new Error("unexpected file");
       state.data = data;
     } catch (e) {
-      if (forCity !== state.city) return;
+      if (!stillWanted()) return;
       setLoad(LOAD.ERROR, navigator.onLine === false ? "you're offline" : e.message || "network error");
       return;
     }
@@ -405,6 +434,10 @@
 
   // ---------- render ----------
   function render() {
+    // A chosen day that has become today (the app was left open past midnight, or the city's clock differs)
+    // is the live today view again. Not a back-button step: the address is just updated.
+    const day = AS.normalizeDay(state.day, nowLocal().day);
+    if (day !== state.day) { state.day = day; if (state.histStep != null) state.histStep = AS.historyStep(state); }
     buildDays();
     writeLinkFilters();
     renderRadius();
@@ -421,8 +454,15 @@
   }
   const isDesktop = () => matchMedia("(min-width: 1024px)").matches;
 
+  // Nothing to show yet (loading, failed, or no location): never leave another city's deals on screen.
   function renderHeroEmpty() {
     $("kickerTime").textContent = `${DAY_LONG[nowLocal().day]} · ${clockAP(nowLocal().mins)}`;
+    if (!state.data) {
+      $("count").textContent = "–";
+      for (const id of ["listTop", "listBottom", "street", "streetKm", "cats", "timetable", "subline"]) $(id).innerHTML = "";
+      $("sheet").hidden = true;
+      if (state.layer) state.layer.clearLayers();
+    }
   }
   function renderRadius() {
     $("radiusBtn").textContent = radiusText(state.radius);
@@ -514,6 +554,8 @@
     if (!on.length) top += emptyNow(sel, later, allDay);
     if (on.length) top += onNowGroups(on, now);
     if (later.length && !state.onNow) top += laterSection(later, now);
+    // ?now=1 hides later and all-day deals; say so, and offer the way out.
+    if (state.onNow) top += `<button type="button" class="show-all" data-shownow>Showing only what's on now. Show everything</button>`;
     $("listTop").innerHTML = top;
     let bottom = "";
     if (allDay.length && !state.onNow) bottom += allDaySection(allDay);
@@ -769,10 +811,11 @@
     }
     if (!state.me) return;
     if (!state.map) {
+      const note = $("map").querySelector(".map-note"); if (note) note.remove(); // an earlier "couldn't load"
       state.map = L.map("map", { zoomControl: true, attributionControl: true }).setView([state.me.lat, state.me.lng], 14);
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(state.map);
       state.layer = L.layerGroup().addTo(state.map);
-      state.map.on("click", () => { if (state.sel) { state.sel = null; render(); } });
+      state.map.on("click", () => { if (state.sel) { state.sel = null; state.selDismissed = true; render(); } });
     }
     state.layer.clearLayers();
     if (state.meMarker) state.meMarker.remove();
@@ -780,7 +823,8 @@
     if (state.radius < 999) L.circle([state.me.lat, state.me.lng], { radius: state.radius * 1000, color: state.look === "day" ? "#4B5580" : "#8E9AC9", weight: 1.25, dashArray: "4 6", fill: false, interactive: false }).addTo(state.layer);
     const sel = all.filter(inCat);
     const places = byPlace(sel);
-    if (isDesktop() && !state.sel) {
+    // Desktop opens the card for the first place on now, unless the visitor closed it.
+    if (isDesktop() && !state.sel && !state.selDismissed) {
       const firstOn = places.find((p) => p.items.some((i) => i.status === ST.ON_NOW));
       if (firstOn) state.sel = firstOn.r.id;
     }
@@ -795,7 +839,7 @@
       const icon = L.divIcon({ className: `mk mk-${kind}${isSel ? " mk-sel" : ""}`, html: glyph, iconSize: [size, size] });
       const label = `${p.r.name}, ${kmShort(p.dist)} km: ${kind === "now" ? `${glyph} ${today ? "on now" : "deals"}` : kind === "later" ? "starts later" : "all-day deals"}`;
       const m = L.marker([p.r.lat, p.r.lng], { icon, title: label, alt: label, keyboard: kind === "now" || kind === "later", zIndexOffset: isSel ? 1000 : kind === "now" ? 500 : kind === "later" ? 200 : 0 }).addTo(state.layer);
-      m.on("click", (e) => { L.DomEvent.stopPropagation(e); state.sel = p.r.id; render(); });
+      m.on("click", (e) => { L.DomEvent.stopPropagation(e); state.sel = p.r.id; state.selDismissed = false; render(); });
       if (kind === "now" || kind === "later") bounds.push([p.r.lat, p.r.lng]);
     }
     const key = `${state.city}|${state.radius}|${state.me.lat.toFixed(3)},${state.me.lng.toFixed(3)}|${state.cat}|${state.day}`;
@@ -855,10 +899,8 @@
   const pushSupported = "serviceWorker" in navigator && "PushManager" in window && CFG.API_URL && CFG.VAPID_PUBLIC_KEY;
   // Alerts state, derived: "on" only if the visitor asked for alerts AND the browser still allows notifications.
   function alertsState() {
-    const wanted = store.get("nearbyWatch", false) || store.get("pushDaily", false);
-    const perm = "Notification" in window ? Notification.permission : "unsupported";
-    if (!wanted) return "off";
-    return perm === "granted" ? "on" : "blocked";
+    return AS.alertsState({ wanted: store.get("nearbyWatch", false) || store.get("pushDaily", false),
+      permission: "Notification" in window ? Notification.permission : "unsupported" });
   }
   function syncAlertsBadge() {
     const st = alertsState();
@@ -873,40 +915,62 @@
     $("pushBlock").hidden = !(pushSupported || (isIOS && !isStandalone && CFG.VAPID_PUBLIC_KEY));
     $("iosHint").hidden = !(isIOS && !isStandalone && CFG.VAPID_PUBLIC_KEY);
     $("pushDaily").disabled = isIOS && !isStandalone;
-    if (st === "blocked" && !$("alertsMsg").textContent) $("alertsMsg").textContent = "Notifications are blocked for this site. You can allow them in your browser settings.";
+    const msg = AS.alertsMessage(st, $("alertsMsg").textContent); // the "blocked" note comes and goes with the browser setting
+    if (msg !== $("alertsMsg").textContent) $("alertsMsg").textContent = msg;
   }
   async function registerSW() {
     if (!("serviceWorker" in navigator)) return null;
     try { return await navigator.serviceWorker.register("sw.js"); } catch { return null; }
   }
+  // The daily heads-up, network side: sign this browser up with the alerts service (or take it off).
+  // Throws if anything fails; the caller decides whether to say so.
+  async function pushSubscription(on, spot, cats) {
+    const reg = await registerSW(); await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (on) {
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(CFG.VAPID_PUBLIC_KEY) });
+      await fetch(CFG.API_URL + "/subscribe", { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ subscription: sub, lat: +spot.lat.toFixed(3), lng: +spot.lng.toFixed(3), radius_km: Math.min(state.radius, 25), categories: cats }) });
+    } else if (sub) {
+      await fetch(CFG.API_URL + "/unsubscribe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) });
+      await sub.unsubscribe();
+    }
+  }
+  const pushCatsList = () => $("pushCats").value.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
   async function setAlerts(change) {
+    if (state.alertsBusy) return; // a double tap doesn't start a second sign-up
+    state.alertsBusy = true;
+    try { await changeAlerts(change); } finally { state.alertsBusy = false; }
+  }
+  async function changeAlerts(change) {
     const msg = $("alertsMsg");
     msg.textContent = "";
     const want = { nearbyWatch: store.get("nearbyWatch", false), pushDaily: store.get("pushDaily", false), ...change };
     if ((want.nearbyWatch || want.pushDaily) && "Notification" in window && Notification.permission !== "granted") {
       const p = await Notification.requestPermission();
-      if (p !== "granted") { msg.textContent = "Notifications are blocked for this site. You can allow them in your browser settings."; syncAlertsUI(); return; }
+      if (p !== "granted") { msg.textContent = AS.BLOCKED_TEXT; syncAlertsUI(); return; }
     }
     if (!("Notification" in window) && (want.nearbyWatch || want.pushDaily)) { msg.textContent = "This browser can't show notifications."; return; }
-    const cats = $("pushCats").value.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const cats = pushCatsList();
     store.set("nearbyWatch", want.nearbyWatch); store.set("pushDaily", want.pushDaily); store.set("pushCats", cats.join(", "));
     want.nearbyWatch ? startWatch() : stopWatch();
     if (pushSupported && "pushDaily" in change) {
-      try {
-        const reg = await registerSW(); await navigator.serviceWorker.ready;
-        let sub = await reg.pushManager.getSubscription();
-        if (want.pushDaily) {
-          if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(CFG.VAPID_PUBLIC_KEY) });
-          const spot = state.me || cityCentre();
-          await fetch(CFG.API_URL + "/subscribe", { method: "POST", headers: { "content-type": "application/json" },
-            body: JSON.stringify({ subscription: sub, lat: +spot.lat.toFixed(3), lng: +spot.lng.toFixed(3), radius_km: Math.min(state.radius, 25), categories: cats }) });
-        } else if (sub) {
-          await fetch(CFG.API_URL + "/unsubscribe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) });
-          await sub.unsubscribe();
-        }
-      } catch { msg.textContent = "Couldn't set up daily alerts right now. Please try again later."; store.set("pushDaily", false); }
+      try { await pushSubscription(want.pushDaily, state.me || cityCentre(), cats); }
+      catch { msg.textContent = "Couldn't set up daily alerts right now. Please try again later."; store.set("pushDaily", false); }
     }
     syncAlertsBadge(); syncAlertsUI();
+  }
+  // On opening: the daily heads-up is switched on here, but the browser may have lost its sign-up (site data
+  // cleared, sign-up expired). Quietly sign up again; permission is already granted, so nothing is asked.
+  // If it fails, say nothing and leave the switch on: the next open tries again.
+  async function reconcilePush() {
+    if (!pushSupported || alertsState() !== "on" || !store.get("pushDaily", false) || state.alertsBusy) return;
+    state.alertsBusy = true;
+    try {
+      const reg = (await navigator.serviceWorker.getRegistration()) || (await registerSW());
+      if (reg && (await reg.pushManager.getSubscription())) return;
+      await pushSubscription(true, state.me || store.get("lastLoc", null) || cityCentre(), pushCatsList());
+    } catch { /* quiet */ } finally { state.alertsBusy = false; }
   }
   function b64ToU8(b64) {
     const pad = "=".repeat((4 - (b64.length % 4)) % 4);
@@ -915,11 +979,13 @@
   }
   function startWatch() {
     if (state.watchId != null || !("geolocation" in navigator)) return;
+    // Every fix goes through applyPosition (so the label, the city and the list stay right), but only when it
+    // changes something: the first precise fix, or a move of more than MOVED_KM. Small wobbles just update gps.
     state.watchId = navigator.geolocation.watchPosition((p) => {
-      state.gps = { lat: p.coords.latitude, lng: p.coords.longitude };
-      if (km(state.gps, cityCentre()) > NEAR_KM) return;
-      state.me = { ...state.gps, label: "Near you" };
-      checkNearby();
+      const c = { lat: p.coords.latitude, lng: p.coords.longitude }, prev = state.gps;
+      const matters = state.loc === LOC.PRECISE ? km(c, state.me) > MOVED_KM : !(state.loc === LOC.AWAY && prev && km(c, prev) <= MOVED_KM);
+      if (matters) applyPosition(c); else state.gps = c;
+      if (state.loc === LOC.PRECISE) checkNearby(); // far from the shown city: no "deal nearby" alerts
     }, () => {}, { enableHighAccuracy: false, maximumAge: 60000 });
   }
   function stopWatch() { if (state.watchId != null) navigator.geolocation.clearWatch(state.watchId); state.watchId = null; }
@@ -951,68 +1017,91 @@
     const body = Object.fromEntries(new FormData(f).entries());
     if (CFG.TIPS !== "service" || !CFG.API_URL) {
       location.href = `mailto:${CONTACT}?subject=${encodeURIComponent("Deal for Foodish: " + body.restaurant)}&body=${encodeURIComponent(`${body.deal}\n${body.url || ""}`)}`;
-      $("submitMsg").textContent = "Your email app should open with the deal filled in.";
+      setSubmit(AS.SUBMIT.EMAIL);
       return;
     }
-    const btn = $("sendSubmit");
-    if (btn.disabled) return;
-    btn.disabled = true; $("submitMsg").textContent = "Sending…";
+    if (state.submit === AS.SUBMIT.SENDING) return;
+    setSubmit(AS.SUBMIT.SENDING);
     try {
       const r = await fetch(CFG.API_URL + "/submit", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       if (!r.ok) throw 0;
-      $("submitMsg").textContent = "Thanks! We'll check it and add it soon.";
+      setSubmit(AS.SUBMIT.SENT);
       f.reset();
-    } catch { $("submitMsg").textContent = "Couldn't send that. Please try again."; }
-    finally { btn.disabled = false; }
+    } catch { setSubmit(AS.SUBMIT.ERROR); }
+  }
+  // idle → sending → sent | error (or email, when tips go by email). Send is off only while sending.
+  function setSubmit(next) {
+    state.submit = next;
+    const v = AS.submitView(next);
+    $("sendSubmit").disabled = v.disabled;
+    $("submitMsg").textContent = v.text;
   }
 
   // ---------- address bar ----------
   //   /?city=vancouver  /?cat=wings  /?day=3 (0 = Sunday)  /?now=1  /?view=map  /?km=2  /?q=tacos  /?look=day (testing)
+  // One reader (AS.parseLink) and one writer (AS.buildLink), both in app-state.js, used on opening and on back/forward.
+  const linkRules = (today) => ({ cityIds: CITIES.map((c) => c.id), radii: RADII, today });
+  let applyingLink = false; // while back/forward puts the filters back, don't write the address
   function readLinkFilters() {
-    const p = new URLSearchParams(location.search);
-    const linkCity = (p.get("city") || "").trim().toLowerCase();
-    if (cityById(linkCity)) { state.city = linkCity; state.cityLocked = true; }
-    const cat = (p.get("cat") || "").trim().toLowerCase();
-    if (cat) state.cat = cat;
-    const day = parseInt(p.get("day"), 10);
-    if (day >= 0 && day <= 6) state.day = day === nowLocal().day ? null : day;
-    if (p.get("now") === "1") state.onNow = true;
-    if (p.get("view") === "map") state.view = "map";
-    const radius = parseFloat(p.get("km"));
-    if (RADII.includes(radius)) state.radius = radius;
-    if (p.get("q")) state.q = p.get("q");
-    const look = p.get("look");
-    if (look === "day" || look === "night") state.lookForced = look;
+    const f = AS.parseLink(location.search, linkRules());
+    if (f.city) { state.city = f.city; state.cityLocked = true; }
+    if (f.cat) state.cat = f.cat;
+    state.day = AS.normalizeDay(f.day, nowLocal().day);
+    if (f.onNow) state.onNow = true;
+    state.view = f.view;
+    if (f.radius != null) state.radius = f.radius;
+    if (f.q) state.q = f.q;
+    if (f.look) state.lookForced = f.look;
   }
   function writeLinkFilters() {
-    const p = new URLSearchParams();
-    if (state.cityLocked || state.city !== CFG.DEFAULT_CITY) p.set("city", state.city);
-    if (state.cat) p.set("cat", state.cat);
-    if (state.day != null) p.set("day", state.day);
-    if (state.onNow) p.set("now", "1");
-    if (state.view === "map") p.set("view", "map");
-    if (state.radius !== store.get("radius", 5)) p.set("km", state.radius);
-    if (state.q.trim()) p.set("q", state.q.trim());
-    if (state.lookForced) p.set("look", state.lookForced);
-    const url = location.pathname + (p.toString() ? "?" + p : "") + location.hash;
-    if (url === location.pathname + location.search + location.hash) return;
+    if (applyingLink) return;
+    const qs = AS.buildLink({ city: state.city, cityLocked: state.cityLocked, cat: state.cat, day: state.day, onNow: state.onNow,
+      view: state.view, radius: state.radius, q: state.q, look: state.lookForced }, { defaultCity: CFG.DEFAULT_CITY, savedRadius: store.get("radius", 5) });
+    const url = location.pathname + (qs ? "?" + qs : "") + location.hash;
     // Switching to the map, another day or a category is a step the back button should undo;
-    // typing a search or changing the distance just updates the address.
-    const step = `${state.view}|${state.day}|${state.cat}`;
+    // typing a search or changing the distance just updates the address. The step is remembered even when
+    // the address is already right (the page as opened), so the first switch is a step too.
+    const step = AS.historyStep(state);
+    if (url === location.pathname + location.search + location.hash) { state.histStep = step; return; }
     if (state.histStep != null && step !== state.histStep) history.pushState({ foodish: step }, "", url);
     else history.replaceState(history.state, "", url);
     state.histStep = step;
   }
-  // Back / forward inside the app: put the view, day and category back the way the address says.
+  // Back / forward inside the app: put everything back the way the address says (city, category, day,
+  // on-now-only, search, distance, view).
   function onPopState() {
-    const p = new URLSearchParams(location.search);
-    const day = parseInt(p.get("day"), 10);
-    state.day = day >= 0 && day <= 6 && day !== nowLocal().day ? day : null;
-    state.cat = (p.get("cat") || "").trim().toLowerCase() || null;
-    state.sel = null; state.nowAll = false;
-    state.histStep = `${p.get("view") === "map" ? "map" : "list"}|${state.day}|${state.cat}`;
-    setView(p.get("view") === "map" ? "map" : "list");
+    const f = AS.parseLink(location.search, linkRules());
+    applyingLink = true;
+    try {
+      if (f.city && f.city !== state.city) { setCity(f.city, { locked: true }); relocate(); }
+      state.cat = f.cat;
+      state.day = AS.normalizeDay(f.day, nowLocal().day);
+      state.onNow = f.onNow;
+      state.q = f.q; $("search").value = state.q; $("searchDesk").value = state.q;
+      if (state.q.trim() && state.panel !== "search") setPanel("search");
+      const radius = f.radius ?? store.get("radius", 5); // no km in the address = the visitor's saved distance
+      if (radius !== state.radius) { state.radius = radius; state.mapKey = ""; }
+      state.sel = null; state.selDismissed = false; resetList();
+      state.histStep = AS.historyStep({ view: f.view, day: state.day, cat: state.cat });
+    } finally { applyingLink = false; }
+    setView(f.view);
   }
+
+  // ---------- list expanders ----------
+  // "Show more" / "Details" choices belong to one list: a new city, category or day (or back/forward) starts fresh.
+  function resetList() {
+    state.open.clear(); state.allDayAll = false; state.nowAll = false; state.laterAll = false; state.schedAll.clear();
+  }
+
+  // ---------- panels (city picker, phone search row) ----------
+  // At most one is open. Escape closes it and returns to its button; a click elsewhere closes the city picker.
+  function setPanel(next) {
+    state.panel = next;
+    $("cityPanel").hidden = next !== "city"; $("cityBtn").setAttribute("aria-expanded", String(next === "city"));
+    $("searchRow").hidden = next !== "search"; $("searchBtn").setAttribute("aria-expanded", String(next === "search"));
+  }
+  // Closing the city picker brings back the search row if a search is typed, so it's clear why the list is filtered.
+  const closeCityPanel = () => setPanel(state.q.trim() ? "search" : null);
 
   // ---------- view ----------
   function setView(v) {
@@ -1038,25 +1127,32 @@
     setCity(state.city);
     applyLook();
     $("search").value = state.q; $("searchDesk").value = state.q;
-    if (state.q) $("searchRow").hidden = false;
+    if (state.q) setPanel("search");
     $("chainsToggle").setAttribute("aria-pressed", String(state.chains));
     $("pushCats").value = store.get("pushCats", "");
 
-    $("cityBtn").onclick = () => { const open = $("cityPanel").hidden; $("cityPanel").hidden = !open; $("cityBtn").setAttribute("aria-expanded", String(open)); };
+    $("cityBtn").onclick = () => (state.panel === "city" ? closeCityPanel() : setPanel("city"));
     $("cityPanel").onclick = (e) => {
       const b = e.target.closest("[data-city]"); if (!b) return;
-      $("cityPanel").hidden = true; $("cityBtn").setAttribute("aria-expanded", "false");
+      closeCityPanel();
       setCity(b.dataset.city, { locked: true }); relocate();
     };
-    $("searchBtn").onclick = () => { const open = $("searchRow").hidden; $("searchRow").hidden = !open; $("searchBtn").setAttribute("aria-expanded", String(open)); if (open) $("search").focus(); };
+    $("searchBtn").onclick = () => { setPanel(state.panel === "search" ? null : "search"); if (state.panel === "search") $("search").focus(); };
+    document.addEventListener("click", (e) => { if (state.panel === "city" && !e.target.closest("#cityPanel, #cityBtn")) closeCityPanel(); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape" || !state.panel) return;
+      const btn = state.panel === "city" ? $("cityBtn") : $("searchBtn");
+      if (state.panel === "city") closeCityPanel(); else setPanel(null);
+      btn.focus();
+    });
     const onSearch = (e) => { state.q = e.target.value; ($("search") === e.target ? $("searchDesk") : $("search")).value = state.q; render(); };
     $("search").oninput = onSearch; $("searchDesk").oninput = onSearch;
     $("locBtn").onclick = () => locate();
-    $("radiusSel").onchange = (e) => { state.radius = +e.target.value; store.set("radius", state.radius); state.mapKey = ""; render(); };
+    $("radiusSel").onchange = (e) => { state.radius = +e.target.value; store.set("radius", state.radius); state.mapKey = ""; state.selDismissed = false; render(); };
     $("ctlBar").querySelector(".seg-view").onclick = (e) => { const b = e.target.closest("[data-view]"); if (b) setView(b.dataset.view); };
-    $("radiusGroup").onclick = (e) => { const b = e.target.closest("[data-radius]"); if (!b) return; state.radius = +b.dataset.radius; store.set("radius", state.radius); state.mapKey = ""; render(); };
-    $("cats").onclick = (e) => { const b = e.target.closest("[data-cat]"); if (!b) return; state.cat = b.dataset.cat || null; state.sel = null; state.nowAll = false; render(); };
-    const onDay = (e) => { const b = e.target.closest("[data-day]"); if (!b) return; const d = +b.dataset.day; state.day = d === nowLocal().day ? null : d; state.sel = null; render(); };
+    $("radiusGroup").onclick = (e) => { const b = e.target.closest("[data-radius]"); if (!b) return; state.radius = +b.dataset.radius; store.set("radius", state.radius); state.mapKey = ""; state.selDismissed = false; render(); };
+    $("cats").onclick = (e) => { const b = e.target.closest("[data-cat]"); if (!b) return; state.cat = b.dataset.cat || null; state.sel = null; state.selDismissed = false; resetList(); render(); };
+    const onDay = (e) => { const b = e.target.closest("[data-day]"); if (!b) return; state.day = AS.normalizeDay(+b.dataset.day, nowLocal().day); state.sel = null; state.selDismissed = false; resetList(); render(); };
     $("days").onclick = onDay; $("daysDesk").onclick = onDay;
     $("listViewBtn").onclick = () => setView("list");
     $("mapViewBtn").onclick = () => setView("map");
@@ -1069,24 +1165,25 @@
     $("lookSeg").onclick = (e) => { const b = e.target.closest("[data-look-pick]"); if (!b) return; state.lookPref = b.dataset.lookPick; state.lookForced = null; store.set("look", state.lookPref); applyLook(); render(); };
     // Everything drawn by render() uses data-* buttons, handled here once.
     document.addEventListener("click", (e) => {
-      const t = e.target.closest("[data-open],[data-mapsel],[data-allday],[data-nowall],[data-laterall],[data-schedall],[data-cal],[data-closesheet],.soon [data-day]");
+      const t = e.target.closest("[data-open],[data-mapsel],[data-allday],[data-nowall],[data-laterall],[data-schedall],[data-cal],[data-closesheet],[data-shownow],.soon [data-day]");
       if (!t) return;
       if (t.dataset.open) { const id = t.dataset.open; state.open.has(id) ? state.open.delete(id) : state.open.add(id); render(); }
-      else if (t.dataset.mapsel) { state.sel = t.dataset.mapsel; if (isDesktop()) { render(); $("mapPane").scrollIntoView({ behavior: "smooth", block: "nearest" }); } else setView("map"); }
+      else if (t.dataset.mapsel) { state.sel = t.dataset.mapsel; state.selDismissed = false; if (isDesktop()) { render(); $("mapPane").scrollIntoView({ behavior: "smooth", block: "nearest" }); } else setView("map"); }
       else if ("allday" in t.dataset) { state.allDayAll = true; render(); }
       else if ("nowall" in t.dataset) { state.nowAll = true; render(); }
       else if ("laterall" in t.dataset) { state.laterAll = true; render(); }
       else if (t.dataset.schedall) { state.schedAll.add(t.dataset.schedall); render(); }
       else if (t.dataset.cal) addToCalendar(t.dataset.cal, t.dataset.place);
-      else if ("closesheet" in t.dataset) { state.sel = null; render(); }
-      else if (t.dataset.day) { const d = +t.dataset.day; state.day = d === nowLocal().day ? null : d; window.scrollTo({ top: 0, behavior: "smooth" }); render(); }
+      else if ("closesheet" in t.dataset) { state.sel = null; state.selDismissed = true; render(); }
+      else if ("shownow" in t.dataset) { state.onNow = false; render(); }
+      else if (t.dataset.day) { state.day = AS.normalizeDay(+t.dataset.day, nowLocal().day); state.sel = null; state.selDismissed = false; resetList(); window.scrollTo({ top: 0, behavior: "smooth" }); render(); }
     });
     window.addEventListener("scroll", () => { state.lastScroll = Date.now(); }, { passive: true });
     matchMedia("(min-width: 1024px)").addEventListener("change", () => { state.mapKey = ""; render(); });
 
     if (store.get("nearbyWatch", false)) startWatch();
     syncAlertsBadge();
-    registerSW();
+    registerSW().then(reconcilePush);
     window.addEventListener("online", () => { if (state.load === LOAD.ERROR) load(); });
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState !== "visible") return;
@@ -1107,6 +1204,7 @@
       render();
     }, 60 * 1000);
   }
-  window.__foodish = { dealState: DS.dealState, km, state, LOAD, LOC, alertsState, setCity, nearestCity, wantedLook, isChain, priceValue };
+  window.__foodish = { dealState: DS.dealState, km, state, LOAD, LOC, alertsState, setCity, nearestCity, wantedLook, isChain, priceValue,
+    setPanel, statusLine: AS.statusLine, renderStatus, resetList, setSubmit, reconcilePush };
   init();
 })();
