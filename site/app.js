@@ -130,6 +130,55 @@
   const descLine = (d) => { const s = String(d.description || "").trim(); return s.length > 90 ? s.slice(0, 88).replace(/\s+\S*$/, "") + "…" : s; };
   const under = (d) => (d.price ? `<span class="unit">${esc(what(d))}</span>` : descLine(d) ? `<span class="desc-s">${esc(descLine(d))}</span>` : "");
   const fig = (d, extra = "") => { const f = figure(d); return `<span class="num${f.word ? " word" : ""}${extra}">${esc(f.text)}</span>`; };
+  // Small line icons for the place actions (stroked by the shared svg rule in styles.css).
+  const ICON = {
+    pin: '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+    go: '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 21 3l-8 18-2-8z"/></svg>',
+    web: '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18"/></svg>',
+  };
+  // A small line drawing for each kind of deal, drawn like the other icons: readable in any language.
+  const FOOD = {
+    beer: '<path d="M5 8h10v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><path d="M15 11h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2"/><path d="M5 8c0-2 1.5-3 3-3 .8-1.3 2.2-2 3.5-1.5C13 3.2 15 4.5 15 6.5V8"/><path d="M8.5 11v7M11.5 11v7"/>',
+    cocktail: '<path d="M4 4h16l-8 9z"/><path d="M12 13v7M8 20h8"/><circle cx="14.5" cy="6.5" r="1"/>',
+    wine: '<path d="M8 3h8v5a4 4 0 0 1-8 0z"/><path d="M12 12v8M8 20h8"/>',
+    whisky: '<path d="M6 6h12l-1.5 13a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1z"/><path d="M6.5 11h11"/><path d="M10 13h3v3h-3z"/>',
+    cheers: '<path d="M4 5h5v3a2.5 2.5 0 0 1-5 0z"/><path d="M6.5 10.5V18M4.5 18h4"/><path d="M15 5h5v3a2.5 2.5 0 0 1-5 0z"/><path d="M17.5 10.5V18M15.5 18h4"/><path d="M12 2v3M10 3.2l.8 1.3M14 3.2l-.8 1.3"/>',
+    burger: '<path d="M4 11a8 6 0 0 1 16 0z"/><path d="M3 14h18"/><path d="M5 17h14v1a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/>',
+    pizza: '<path d="M12 21 3 6a15 15 0 0 1 18 0z"/><circle cx="9.5" cy="9" r="1.3"/><circle cx="14.5" cy="10" r="1.3"/><circle cx="12" cy="14.5" r="1.3"/>',
+    wings: '<path d="M10 14c-2-2-2-6 1-9s7-3 9 0 0 7-3 9-5 2-7 0z"/><path d="M10 14l-3.5 3.5"/><circle cx="4.8" cy="17.6" r="1.4"/><circle cx="6.4" cy="19.2" r="1.4"/>',
+    taco: '<path d="M3 17a9 9 0 0 1 18 0z"/><path d="M7.5 12.5l1-1.5M11.5 10.5l1-1.5M15.5 12l1-1.5"/>',
+    pasta: '<path d="M3 12h18a9 9 0 0 1-18 0z"/><path d="M8 12c0-3 2-3 2-7M12 12c0-3 2-3 2-7M16 12c0-2.5-1.5-3.5-1.5-5.5"/>',
+    steak: '<path d="M4 13c0-5 4-8 9-8s7 3 7 6-3 4-5 6-4 3-7 3-4-3-4-7z"/><circle cx="14" cy="10" r="2"/>',
+    sushi: '<ellipse cx="12" cy="8" rx="7" ry="3"/><path d="M5 8v8c0 1.7 3.1 3 7 3s7-1.3 7-3V8"/><ellipse cx="12" cy="8" rx="3" ry="1.2"/>',
+    fish: '<path d="M2 12c3-5 10-6 15 0-5 6-12 5-15 0z"/><path d="M17 12l4-4v8z"/><circle cx="7" cy="11" r=".8"/>',
+    fries: '<path d="M5 10h14l-2 11H7z"/><path d="M8 10 6.5 3M10.5 10 10 2.5M13.5 10 14 2.5M16 10 17.5 3"/>',
+    coffee: '<path d="M4 9h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3c-1 1 1 2 0 4M12 3c-1 1 1 2 0 4"/>',
+    cake: '<path d="M4 20h16v-8H4z"/><path d="M4 15c2 1 4 1 6 0s4-1 6 0 3 1 4 0"/><path d="M12 12V8"/><path d="M12 4.5c1 1 1 2 0 2.5-1-.5-1-1.5 0-2.5z"/>',
+    egg: '<circle cx="10" cy="12" r="7"/><path d="M17 12h5"/><circle cx="10" cy="12" r="2"/>',
+    sandwich: '<path d="M3 18 12 5l9 13z"/><path d="M5.5 14.5h13"/>',
+    family: '<circle cx="7" cy="6" r="2"/><circle cx="17" cy="6" r="2"/><circle cx="12" cy="11" r="1.5"/><path d="M4 20v-6a3 3 0 0 1 6 0v6M14 20v-6a3 3 0 0 1 6 0v6M10.5 20v-3a1.5 1.5 0 0 1 3 0v3"/>',
+    kids: '<circle cx="12" cy="7" r="3"/><path d="M7 21v-4a5 5 0 0 1 10 0v4"/>',
+    moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+    leaf: '<path d="M5 19c0-9 6-14 15-14 0 9-5 15-14 15"/><path d="M5 19l8-8"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    plate: '<path d="M7 3v7a2 2 0 0 0 4 0V3M9 3v18"/><path d="M17 3c-2 2-2 7 0 9v9"/>',
+    all: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>',
+  };
+  const fi = (k, size = 22) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">${FOOD[k] || FOOD.plate}</svg>`;
+  const CAT_ICON = { drinks: "beer", "happy hour": "cheers", pizza: "pizza", lunch: "sandwich", appetizers: "fries", family: "family", pasta: "pasta", wings: "wings", seafood: "fish", burgers: "burger", "late night": "moon", chicken: "wings", tacos: "taco", breakfast: "egg", steak: "steak", dessert: "cake", brunch: "egg", kids: "kids", vegetarian: "leaf", coffee: "coffee", sushi: "sushi", "early bird": "sun", combo: "plate" };
+  // The deal's own words win, food before drink (a burger & pint is a burger, a cocktail a cocktail); then its most specific kind.
+  const WORD_ICON = [[/wing/i, "wings"], [/burger/i, "burger"], [/pizza/i, "pizza"], [/taco/i, "taco"], [/pasta|spaghetti|linguine/i, "pasta"], [/steak/i, "steak"], [/sushi|roll/i, "sushi"], [/oyster|shrimp|mussel|fish/i, "fish"], [/nacho|fries|appet|app\b/i, "fries"], [/coffee|latte/i, "coffee"], [/dessert|cake|pie/i, "cake"],
+    [/cocktail|martini|margarita|caesar/i, "cocktail"], [/wine|prosecco|sangria/i, "wine"], [/highball|whisk|rye|shot|spirit|tequila/i, "whisky"], [/pint|beer|draft|draught|lager|ipa|jug|pitcher|bottle|tall ?can/i, "beer"]];
+  const GENERIC = new Set(["happy hour", "drinks", "lunch", "family", "late night", "kids", "early bird", "combo", "deals"]);
+  const emo = (d) => {
+    const text = `${d.price_unit || ""} ${d.title || ""}`;
+    const w = WORD_ICON.find(([re]) => re.test(text));
+    if (w) return fi(w[1], 20);
+    const cats = d.categories || [];
+    return fi(cats.filter((c) => !GENERIC.has(c)).concat(cats).map((c) => CAT_ICON[c]).find(Boolean) || "plate", 20);
+  };
+  ICON.more = '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  ICON.map = '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>';
   const directions = (r) => `https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`;
   function staleNote(d) {
     if (!d.verified_at) return "";
@@ -369,6 +418,7 @@
   }
   function renderRadius() {
     $("radiusBtn").textContent = radiusText(state.radius);
+    $("radiusSel").innerHTML = RADII.map((r) => `<option value="${r}"${r === state.radius ? " selected" : ""}>${r >= 999 ? "All" : `${r} km`}</option>`).join("");
     $("radiusGroup").innerHTML = RADII.map((r) => `<button type="button" data-radius="${r}" aria-pressed="${r === state.radius}">${r >= 999 ? "ALL" : r === RADII[0] ? r + " KM" : r}</button>`).join("");
   }
 
@@ -442,7 +492,7 @@
     const allN = today ? all.filter((i) => i.status === ST.ON_NOW).length : all.length;
     $("cats").innerHTML = [null, ...cats].map((c, i) => {
       const n = c ? now.get(c) || 0 : allN;
-      return `${i ? '<span class="sep" aria-hidden="true">/</span>' : ""}<button type="button" data-cat="${esc(c || "")}" aria-pressed="${state.cat === c}" class="${n ? "" : "none"}">${esc(c ? c : "All")}${n ? `<sup>${n}</sup>` : ""}</button>`;
+      return `<button type="button" data-cat="${esc(c || "")}" aria-pressed="${state.cat === c}" class="pic${n ? "" : " none"}"><span class="e" aria-hidden="true">${fi(c ? CAT_ICON[c] || "plate" : "all", 26)}</span><span class="w">${esc(c ? c : "All")}</span>${n ? `<sup>${n}</sup>` : ""}</button>`;
     }).join("");
   }
 
@@ -519,16 +569,16 @@
       return `<p>${bits}</p>`;
     }).join("")}${p.items[0].branches.length > 1 ? `<p>Also at ${p.items[0].branches.length - 1} more ${p.items[0].branches.length === 2 ? "location" : "locations"} within ${esc(radiusText(state.radius))}.</p>` : ""}${p.r.address ? `<p>${esc(p.r.address)}</p>` : ""}<p class="fix"><a href="${esc(fixLink(p.r))}">Something wrong, or own this restaurant? Tell us</a></p></div>` : "";
     return `${body}<div class="blk-foot">
-      ${more ? `<button type="button" data-open="${esc(id)}" aria-expanded="${open}">${open ? "Less" : "What's included"}</button>` : "<span></span>"}
-      <span class="acts"><button type="button" data-mapsel="${esc(id)}">On the map</button><a href="${directions(p.r)}" target="_blank" rel="noopener">Directions</a>${srcs[0] ? `<a href="${esc(srcs[0])}" target="_blank" rel="noopener">Their site</a>` : ""}</span></div>`;
+      ${more ? `<button type="button" class="ico more${open ? " is-open" : ""}" data-open="${esc(id)}" aria-expanded="${open}" aria-label="${open ? "Less" : "Details"}">${ICON.more}</button>` : "<span></span>"}
+      <span class="acts"><button type="button" class="ico" data-mapsel="${esc(id)}" aria-label="Map">${ICON.map}</button>${srcs[0] ? `<a class="ico" href="${esc(srcs[0])}" target="_blank" rel="noopener" aria-label="Website">${ICON.web}</a>` : ""}<a class="ico go" href="${directions(p.r)}" target="_blank" rel="noopener" aria-label="Directions">${ICON.go}</a></span></div>`;
   }
   // Every place on now gets the same plain row, nearest first within each end time: the list is for
   // comparing quickly, not for promoting one restaurant over another.
   function placeRow(p) {
-    const deals = p.items.slice(0, 3).map((i) => (i.d.price ? `${i.d.price} ${what(i.d)}` : i.d.title)).join(" · ")
-      + (p.items.length > 3 ? ` · +${p.items.length - 3} more` : "");
+    const deals = p.items.slice(0, 3).map((i) => `<span class="dl"><span class="e" aria-hidden="true">${emo(i.d)}</span>${esc(i.d.price || i.d.title)}</span>`).join("")
+      + (p.items.length > 3 ? `<span class="dl">+${p.items.length - 3}</span>` : "");
     return `<article class="nrow" id="p-${esc(p.r.id)}"><div class="nrow-main"><div class="txt"><h3 class="nm">${esc(p.r.name)}</h3>
-      <p class="deals">${esc(deals)}</p></div><span class="km">${esc(kmShort(p.dist))} km</span></div>${details(p)}</article>`;
+      <p class="deals">${deals}</p></div><span class="km">${ICON.pin}${esc(kmShort(p.dist))} km</span></div>${details(p)}</article>`;
   }
 
   function laterSection(later, now) {
@@ -763,7 +813,7 @@
       <h2>${esc(p.r.name)}</h2><p class="meta">${esc(meta)}</p>
       <div class="lines${show.length > 2 ? " many" : ""}">${show.map((i) => `<p class="line">${fig(i.d)}${under(i.d)}</p>`).join("")}</div>
       <p class="when">${esc(daysText(show[0].d))}, ${esc(hoursText(show[0].d))}${show[0].d.dine_in_only ? ". Dine-in only" : ""}${p.items.length > show.length ? `. ${p.items.length - show.length} more here` : ""}.</p>
-      <div class="btns"><a class="solid" href="${directions(p.r)}" target="_blank" rel="noopener">Directions</a>${src ? `<a class="ghost" href="${esc(src)}" target="_blank" rel="noopener">Their website</a>` : ""}</div>
+      <div class="btns"><a class="solid" href="${directions(p.r)}" target="_blank" rel="noopener">${ICON.go}Directions</a>${src ? `<a class="ghost" href="${esc(src)}" target="_blank" rel="noopener">${ICON.web}Website</a>` : ""}</div>
       <p class="fix"><a href="${esc(fixLink(p.r))}">Something wrong? Tell us</a></p>`;
     sheet.hidden = false;
   }
@@ -961,6 +1011,7 @@
     document.querySelector(".cats-row").classList.toggle("on-map", v === "map");
     $("listViewBtn").setAttribute("aria-pressed", String(v === "list"));
     $("mapViewBtn").setAttribute("aria-pressed", String(v === "map"));
+    document.querySelectorAll("#ctlBar [data-view]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
     if (v === "list" && !isDesktop()) state.sel = null;
     render();
     if (v === "map") window.scrollTo(0, 0);
@@ -991,7 +1042,8 @@
     const onSearch = (e) => { state.q = e.target.value; ($("search") === e.target ? $("searchDesk") : $("search")).value = state.q; render(); };
     $("search").oninput = onSearch; $("searchDesk").oninput = onSearch;
     $("locBtn").onclick = () => locate();
-    $("radiusBtn").onclick = () => { state.radius = RADII[(RADII.indexOf(state.radius) + 1) % RADII.length]; store.set("radius", state.radius); state.mapKey = ""; render(); };
+    $("radiusSel").onchange = (e) => { state.radius = +e.target.value; store.set("radius", state.radius); state.mapKey = ""; render(); };
+    $("ctlBar").querySelector(".seg-view").onclick = (e) => { const b = e.target.closest("[data-view]"); if (b) setView(b.dataset.view); };
     $("radiusGroup").onclick = (e) => { const b = e.target.closest("[data-radius]"); if (!b) return; state.radius = +b.dataset.radius; store.set("radius", state.radius); state.mapKey = ""; render(); };
     $("cats").onclick = (e) => { const b = e.target.closest("[data-cat]"); if (!b) return; state.cat = b.dataset.cat || null; state.sel = null; state.nowAll = false; render(); };
     const onDay = (e) => { const b = e.target.closest("[data-day]"); if (!b) return; const d = +b.dataset.day; state.day = d === nowLocal().day ? null : d; state.sel = null; render(); };
