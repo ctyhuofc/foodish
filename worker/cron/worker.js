@@ -1,12 +1,18 @@
-// Foodish exact-time trigger: asks GitHub to run the daily deals update at 4:00 am Edmonton time,
-// instead of waiting on GitHub's own scheduler (which can run hours late).
+// Foodish exact-time trigger: asks GitHub to run the daily deals update at 4:00 am Edmonton time and the
+// daily alerts at 3:45 pm, instead of waiting on GitHub's own scheduler (which runs hours late).
 //
-// Alberta has stayed on UTC-6 year-round since 1 Nov 2026, so 4:00 am Edmonton is always 10:00 UTC
-// (see wrangler.toml). No time-zone lookup here on purpose: Cloudflare's time-zone data may still
+// Alberta has stayed on UTC-6 year-round since 1 Nov 2026, so 4:00 am Edmonton is always 10:00 UTC and
+// 3:45 pm is 21:45 UTC (see wrangler.toml). No time-zone lookup here on purpose: Cloudflare's time-zone data may still
 // expect a November clock change and would fire an hour late.
 //
 // Needs one secret: GITHUB_TOKEN, a fine-grained token for ctyhuofc/foodish with
 // "Actions: Read and write" permission only.  Set it with:  npx wrangler secret put GITHUB_TOKEN
+
+// wrangler.toml cron (UTC) -> the workflow's manual task (pipeline/plan.py TASKS). Keep the two lists together.
+const TASKS = {
+  "0 10 * * *": "scrape",   // 4:00 am Edmonton: read the restaurant websites
+  "45 21 * * *": "notify",  // 3:45 pm Edmonton: send the daily alerts
+};
 
 async function dispatch(env, task) {
   const res = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/actions/workflows/${env.WORKFLOW}/dispatches`, {
@@ -24,13 +30,15 @@ async function dispatch(env, task) {
 
 export default {
   async scheduled(event, env, ctx) {
-    await dispatch(env, "scrape");
-    console.log("Asked GitHub to refresh Foodish deals");
+    const task = TASKS[event.cron];
+    if (!task) throw new Error(`Unknown cron ${event.cron}: add it to TASKS in worker.js`);
+    await dispatch(env, task);
+    console.log(`Asked GitHub to run Foodish task "${task}"`);
   },
   // Visiting the worker's URL shows whether it's set up (it never reveals the token).
   async fetch(request, env) {
     const ready = Boolean(env.GITHUB_TOKEN);
-    return new Response(ready ? "Foodish trigger is set up. Next refresh: 4:00 am Edmonton time.\n"
+    return new Response(ready ? "Foodish trigger is set up. Deals refresh at 4:00 am and alerts go out at 3:45 pm, Edmonton time.\n"
                               : "Missing GITHUB_TOKEN. Run: npx wrangler secret put GITHUB_TOKEN\n",
       { status: ready ? 200 : 500, headers: { "content-type": "text/plain" } });
   },

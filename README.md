@@ -131,8 +131,8 @@ Add the good ones to `data/manual_deals.json` (copy an existing entry). Use `"br
 cd site && python3 -m http.server 8000      # open http://localhost:8000
 ```
 
-## Exact 4 am updates (recommended, free, ~15 minutes)
-GitHub's built-in scheduler can run hours late, so "daily" deals could arrive at lunchtime. `worker/cron` is a tiny free Cloudflare Worker that asks GitHub to run the update at exactly 4:00 am Edmonton time (10:00 UTC; Alberta stays on UTC-6 all year). GitHub's own schedules stay on as backups and skip themselves when the update already ran.
+## Exact 4 am updates and 3:45 pm alerts (recommended, free, ~15 minutes)
+GitHub's built-in scheduler runs hours late (in Nov 2026 the 4 am read started around 10 am–noon and the 3:45 pm alerts went out at 7–10 pm). `worker/cron` is a tiny free Cloudflare Worker that asks GitHub to run the update at exactly 4:00 am Edmonton time (10:00 UTC) and the daily alerts at 3:45 pm (21:45 UTC); Alberta stays on UTC-6 all year. GitHub's own morning schedules stay on as backups and skip themselves when the update already ran.
 
 1. **GitHub token (limited to this one repo):** github.com → your photo → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token. Name: `foodish-4am`. Expiration: 1 year. Repository access: *Only select repositories* → `foodish`. Permissions → Repository permissions → **Actions: Read and write** (nothing else). Generate, then copy the token.
 2. **Cloudflare (free account at cloudflare.com):** download this repo (GitHub → Code → Download ZIP), unzip it, open Terminal in the `worker/cron` folder and run:
@@ -141,7 +141,7 @@ GitHub's built-in scheduler can run hours late, so "daily" deals could arrive at
    npx wrangler deploy                    # prints the worker's web address
    npx wrangler secret put GITHUB_TOKEN   # paste the token from step 1, press Enter
    ```
-3. Open the web address `deploy` printed. It should say *"Foodish trigger is set up."* The next morning, GitHub → Actions should show a run started by **workflow_dispatch** at about 4:00 am, and the 4:17 run should say it skipped because deals were just refreshed.
+3. Open the web address `deploy` printed. It should say *"Foodish trigger is set up."* The next morning, GitHub → Actions should show a run started by **workflow_dispatch** at about 4:00 am, and the 4:17 run should say it skipped because deals were just refreshed. Another **workflow_dispatch** run should appear at about 3:45 pm: the alerts.
 
 The token can only start this repo's workflows; it can't read or change your code. If it expires or you revoke it, GitHub's own schedules keep things running (just less punctually).
 
