@@ -32,7 +32,7 @@
   const cityById = (id) => CITIES.find((c) => c.id === id);
   // Big chains, for the "Include big chains" switch (matched against restaurant names).
   const CHAINS = ["domino", "papa john", "panago", "pizza 73", "pizza hut", "little caesar", "boston pizza", "earls",
-    "carl s jr", "east side mario", "freshii", "wok box", "chuck e", "blaze pizza", "smashburger", "mcdonald", "a w ",
+    "carl s jr", "east side mario", "freshii", "wok box", "chuck e", "blaze pizza", "smashburger", "mcdonald", "a and w", // isChain turns "&" into "and": "A&W" is matched as "a and w"
     "wendy", "burger king", "subway", "kfc", "popeyes", "starbucks", "tim horton", "booster juice", "dairy queen",
     "denny", "ihop", "applebee", "montana s", "kelseys", "swiss chalet", "harvey s", "taco bell", "five guys", "mary brown",
     "the keg", "cactus club", "joey", "moxie", "white spot", "milestones", "chipotle", "osmow", "mucho burrito", "quesada"];
@@ -269,9 +269,14 @@
     if (!("geolocation" in navigator)) { setFallbackLocation("Location isn't available on this device."); return; }
     if (state.loc === LOC.LOCATING) return; // already asking
     setLocation(LOC.LOCATING);
+    // Some browsers let the "allow location?" question be closed without an answer and then never call back
+    // (their timeout only starts once allowed). Fall back after 20 s; a position that arrives later still counts.
+    let settled = false;
+    const fail = () => { if (settled) return; settled = true; setFallbackLocation(quiet ? null : `Location is off, so this is ${city().label}. Tap the place name to try again.`); };
+    const timer = setTimeout(fail, 20000);
     navigator.geolocation.getCurrentPosition(
-      (p) => applyPosition({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      () => setFallbackLocation(quiet ? null : `Location is off, so this is ${city().label}. Tap the place name to try again.`),
+      (p) => { settled = true; clearTimeout(timer); applyPosition({ lat: p.coords.latitude, lng: p.coords.longitude }); },
+      () => { clearTimeout(timer); fail(); },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 }
     );
   }
@@ -389,14 +394,15 @@
         .map((r) => ({ r, dist: km(state.me, r) })).filter((x) => x.dist <= state.radius).sort((a, b) => a.dist - b.dist);
       if (!branches.length) continue;
       if (!state.chains && branches.every((b) => isChain(b.r.name))) continue;
-      if (q) {
-        const hay = `${d.title} ${d.description || ""} ${(d.categories || []).join(" ")} ${branches.map((b) => b.r.name).join(" ")}`.toLowerCase();
-        if (!hay.includes(q)) continue;
-      }
+      if (q && !matchesSearch(d, branches.map((b) => b.r.name), q)) continue;
       out.push({ d, status, nearest: branches[0], branches });
     }
     out.sort((a, b) => RANK[a.status] - RANK[b.status] || a.nearest.dist - b.nearest.dist);
     return out;
+  }
+  // The search test: the lowercased query appears in the deal's title, description, categories or place names.
+  function matchesSearch(d, names, q) {
+    return `${d.title} ${d.description || ""} ${(d.categories || []).join(" ")} ${names.join(" ")}`.toLowerCase().includes(q);
   }
   // Group deals by the place they're nearest at.
   function byPlace(items) {
@@ -413,12 +419,15 @@
     if (!state.data || !state.me) return [];
     const now = nowLocal(), base = state.day == null ? now.day : state.day;
     const baseDate = state.day == null ? now.date : isoForDay(state.day);
+    const q = state.q.trim().toLowerCase();
     const seen = new Map(), hits = [];
     for (const d of state.data.deals) {
       if (state.cat && !(d.categories || []).includes(state.cat)) continue;
-      const r = (d.restaurant_ids || []).map((id) => state.byId.get(id)).filter(Boolean)
-        .map((x) => ({ r: x, dist: km(state.me, x) })).filter((x) => x.dist <= state.radius).sort((a, b) => a.dist - b.dist)[0];
+      const branches = (d.restaurant_ids || []).map((id) => state.byId.get(id)).filter(Boolean)
+        .map((x) => ({ r: x, dist: km(state.me, x) })).filter((x) => x.dist <= state.radius).sort((a, b) => a.dist - b.dist);
+      const r = branches[0];
       if (!r || (!state.chains && isChain(r.r.name))) continue;
+      if (q && !matchesSearch(d, branches.map((b) => b.r.name), q)) continue;
       for (let i = 1; i < 7; i++) {
         const day = (base + i) % 7;
         const st = DS.dealState(d, { date: addDays(baseDate, i), day, mins: null });
@@ -565,7 +574,8 @@
   function emptyNow(sel, later, allDay) {
     const what = state.cat ? `${esc(state.cat)} deals` : "deals";
     const big = sel.length ? `No ${what} on right now within ${esc(radiusText(state.radius))}.` : `Nothing left today within ${esc(radiusText(state.radius))}.`;
-    const hint = later.length ? "See what switches on later, below." : allDay.length ? "The all-day deals below run whenever the restaurant is open." : "Try a wider distance, another day, or clear the search.";
+    const hint = state.onNow && (later.length || allDay.length) ? "Tap Show everything below to see what's on later today."
+      : later.length ? "See what switches on later, below." : allDay.length ? "The all-day deals below run whenever the restaurant is open." : "Try a wider distance, another day, or clear the search.";
     return `<div class="empty${later.length ? " has-later" : ""}"><p class="big">${big}</p><p>${hint}</p></div>`;
   }
 
@@ -728,7 +738,13 @@
     const sel = all.filter(inCat).filter((i) => today ? i.status === ST.ON_NOW || i.status === ST.LATER : i.status === ST.SCHEDULED);
     const day = state.look === "day";
     let from = day ? 600 : 960, to = day ? 1320 : 1440;
-    if (today && now.mins < from) { from = Math.floor(now.mins / 60) * 60; to = from + (day ? 720 : 480); }
+    if (today && now.mins < from) {
+      // Early morning: start the window now if something is on, else at the first deal that starts later
+      // (after midnight the next deals are usually lunch, so "now + 8 h" would squash them into slivers).
+      const starts = sel.filter((i) => i.status === ST.LATER).map((i) => DS.startOf(i.d)).filter((s) => s != null);
+      const anchor = sel.some((i) => i.status === ST.ON_NOW) || !starts.length ? now.mins : Math.min(...starts);
+      from = Math.floor(anchor / 60) * 60; to = from + (day ? 720 : 480);
+    }
     if (today && now.mins > to) { from = Math.floor(now.mins / 60) * 60 - 120; to = from + 480; }
     const span = to - from, pos = (m) => Math.min(100, Math.max(0, ((m - from) / span) * 100));
     const places = byPlace(sel).map((p) => {
@@ -763,7 +779,7 @@
     for (let t = from; t <= to; t += 120) ticks.push(`<span style="left:${pos(t)}%">${t === from || t === to ? shortAP(t).toUpperCase() : clock(t).replace(":00", "")}</span>`);
     const sun = sunToday();
     const sunset = today && sun && sun.set > from && sun.set < to ? `<div class="sunset" style="left:${pos(sun.set)}%"></div><span class="sunset-flag" style="left:calc(${pos(sun.set)}% + 6px)">SUNSET ${clock(sun.set)}</span>` : "";
-    const needle = today ? `<div class="needle" style="left:${pos(now.mins)}%"></div><span class="flag" style="left:calc(${pos(now.mins)}% + 6px)">${clock(now.mins)} NOW</span>` : "";
+    const needle = today && now.mins >= from ? `<div class="needle" style="left:${pos(now.mins)}%"></div><span class="flag" style="left:calc(${pos(now.mins)}% + 6px)">${clock(now.mins)} NOW</span>` : "";
     el.innerHTML = `<div class="tt-rows" role="img" aria-label="Timetable of ${places.length} places from ${shortAP(from)} to ${shortAP(to)}">${rows}<div class="tt-marks" aria-hidden="true">${needle}${sunset}</div></div><div class="tt-axis" aria-hidden="true">${ticks.join("")}</div>`;
   }
 
@@ -929,8 +945,9 @@
     let sub = await reg.pushManager.getSubscription();
     if (on) {
       if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(CFG.VAPID_PUBLIC_KEY) });
-      await fetch(CFG.API_URL + "/subscribe", { method: "POST", headers: { "content-type": "application/json" },
+      const res = await fetch(CFG.API_URL + "/subscribe", { method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ subscription: sub, lat: +spot.lat.toFixed(3), lng: +spot.lng.toFixed(3), radius_km: Math.min(state.radius, 25), categories: cats }) });
+      if (!res.ok) throw new Error(`alerts service said ${res.status}`); // refused: the switch must not show "on"
     } else if (sub) {
       await fetch(CFG.API_URL + "/unsubscribe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) });
       await sub.unsubscribe();
@@ -1053,6 +1070,7 @@
     if (f.q) state.q = f.q;
     if (f.look) state.lookForced = f.look;
   }
+  let linkSearch = null; // location.search as last synced here (onPopState ignores pops that didn't change it)
   function writeLinkFilters() {
     if (applyingLink) return;
     const qs = AS.buildLink({ city: state.city, cityLocked: state.cityLocked, cat: state.cat, day: state.day, onNow: state.onNow,
@@ -1062,18 +1080,21 @@
     // typing a search or changing the distance just updates the address. The step is remembered even when
     // the address is already right (the page as opened), so the first switch is a step too.
     const step = AS.historyStep(state);
-    if (url === location.pathname + location.search + location.hash) { state.histStep = step; return; }
+    if (url === location.pathname + location.search + location.hash) { state.histStep = step; linkSearch = location.search; return; }
     if (state.histStep != null && step !== state.histStep) history.pushState({ foodish: step }, "", url);
     else history.replaceState(history.state, "", url);
     state.histStep = step;
+    linkSearch = location.search;
   }
   // Back / forward inside the app: put everything back the way the address says (city, category, day,
   // on-now-only, search, distance, view).
   function onPopState() {
+    if (location.search === linkSearch) return; // an in-page jump (#p-…, #tell) fires popstate too: no filter changed
     const f = AS.parseLink(location.search, linkRules());
     applyingLink = true;
     try {
-      if (f.city && f.city !== state.city) { setCity(f.city, { locked: true }); relocate(); }
+      const cityId = f.city || CFG.DEFAULT_CITY; // no city= in the address means the default city
+      if (cityId !== state.city) { setCity(cityId, { locked: !!f.city }); relocate(); }
       state.cat = f.cat;
       state.day = AS.normalizeDay(f.day, nowLocal().day);
       state.onNow = f.onNow;
@@ -1165,6 +1186,13 @@
     $("lookSeg").onclick = (e) => { const b = e.target.closest("[data-look-pick]"); if (!b) return; state.lookPref = b.dataset.lookPick; state.lookForced = null; store.set("look", state.lookPref); applyLook(); render(); };
     // Everything drawn by render() uses data-* buttons, handled here once.
     document.addEventListener("click", (e) => {
+      // A street building links to its row (#p-…): open the capped lists first if that row isn't drawn yet.
+      const b = e.target.closest(".bldg");
+      if (b && !document.getElementById(b.getAttribute("href").slice(1))) {
+        state.nowAll = state.laterAll = state.allDayAll = true;
+        if (state.day != null) { state.schedAll.add(`${state.day}|Daytime`); state.schedAll.add(`${state.day}|Evening`); }
+        render();
+      }
       const t = e.target.closest("[data-open],[data-mapsel],[data-allday],[data-nowall],[data-laterall],[data-schedall],[data-cal],[data-closesheet],[data-shownow],.soon [data-day]");
       if (!t) return;
       if (t.dataset.open) { const id = t.dataset.open; state.open.has(id) ? state.open.delete(id) : state.open.add(id); render(); }

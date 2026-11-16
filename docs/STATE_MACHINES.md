@@ -85,7 +85,8 @@ Before the outcome, each site gets a read status (`sites.<domain>.status` in the
 `site_state.py`; `scrape.py` and `health.py` use them, never the words.
 
 "Retried tomorrow" works because a site's text fingerprint is only saved after the AI has read it.
-Deferred and failed sites keep their old deals. Cached deals whose `valid_until` has passed are now
+Deferred and failed sites keep their old deals. A website or an AI deal the robot can't make sense of is
+skipped for the day (the site counts as unreachable, the deal is dropped); it doesn't stop the city. Cached deals whose `valid_until` has passed are now
 dropped when publishing; they used to linger until the website changed.
 
 ## 3. Run plan
@@ -120,7 +121,7 @@ AI key still showed a green tick (that happened every day from 22 Oct to 8 Nov 2
 | Machine | States | Changes via | Notes |
 |---|---|---|---|
 | Data | `loading` → `ready` \| `error`; `error` → `loading` | `setLoad()` | Retry button; retries when back online or when the tab reopens; a failed refresh keeps the deals already shown; "last checked … over a day ago" when deals are 36 h+ old. Each `load()` is numbered and only the newest may show its result. While there are no deals for the shown city (switching city, or a failed first load) the list, street, categories and map card are empty: another city's deals are never shown |
-| Location | `locating` → `precise` \| `last_known` \| `default` \| `away` | `setLocation()` | The location label is derived from the state. `away` = we know where the visitor is, but it's far from the shown city, so distances are from its centre. A second tap while `locating` does nothing. The nearby-watch goes through `applyPosition()` too, but only for the first precise fix or a move of more than 150 m |
+| Location | `locating` → `precise` \| `last_known` \| `default` \| `away` | `setLocation()` | The location label is derived from the state. `away` = we know where the visitor is, but it's far from the shown city, so distances are from its centre. A second tap while `locating` does nothing; if the browser never answers, it falls back after 20 s (a position that arrives later still counts). The nearby-watch goes through `applyPosition()` too, but only for the first precise fix or a move of more than 150 m |
 | Alerts | `off` \| `on` \| `blocked` (derived, never stored twice) | `AS.alertsState()` → `syncAlertsBadge()` | `blocked` = the visitor asked for alerts but the browser now refuses; nearby-watch stops. The "blocked" note under the switches comes and goes with the browser setting (`AS.alertsMessage()`); other notes stay. One change at a time: a double tap doesn't start a second sign-up |
 | Submit | `idle` → `sending` → `sent` \| `error`; or `email` (tips go by email) | `setSubmit()` | Send is off only while `sending`; the words are in `AS.submitView()` |
 | Filters | in the address bar | `AS.parseLink()` (one reader, used on opening and on back/forward) / `AS.buildLink()` (one writer) | `?city=toronto&cat=wings&day=3&now=1&view=map&km=1&q=tacos`: shareable, and opens the app in that state. Back/forward puts all of it back (city, category, day, on-now-only, search, distance, view). Map, day and category are back-button steps; search and distance just update the address. `?look=day` / `?look=night` previews a look and is never saved. Unknown values are ignored |
@@ -129,7 +130,7 @@ AI key still showed a green tick (that happened every day from 22 Oct to 8 Nov 2
 | On now only | `?now=1` hides later and all-day deals | `state.onNow` | A "Showing only what's on now. Show everything" button turns it off |
 | Panels | `null` \| `city` \| `search` | `setPanel()` | One open at a time. Escape closes it and returns to its button; a click elsewhere closes the city picker. The search row opens when a search is in the address |
 | Map card | a place selected \| none \| dismissed | `state.sel`, `state.selDismissed` | Desktop opens the card for the first place on now, unless the visitor closed it (close button or a click on the map). Choosing a place, or changing city, category, day or distance, lets it open again |
-| List expanders | "Details" and "Show more" choices | `resetList()` | Reset together on a new city, category or day, and on back/forward |
+| List expanders | "Details" and "Show more" choices | `resetList()` | Reset together on a new city, category or day, and on back/forward (not on an in-page jump such as a street building). Tapping a building whose row isn't shown yet opens the shortened lists first |
 | Daily-alert sign-up | switch on + browser signed up \| switch on + sign-up lost | `reconcilePush()` on opening | If the browser lost its sign-up (site data cleared, expired) while alerts are allowed, it signs up again quietly; if that fails nothing is shown and the next open tries again |
 
 Debug in the browser console: `__foodish.state`, `__foodish.alertsState()`, `__foodish.statusLine({...})`, `__foodish.setPanel("city")`.

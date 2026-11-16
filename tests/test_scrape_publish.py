@@ -47,6 +47,37 @@ class PublishStep(unittest.TestCase):
         self.assertEqual([d["title"] for d in out["deals"]], ["Half-price wings"])
         self.assertTrue((self.site / "deals.json").exists())
 
+    def test_a_website_that_breaks_the_reader_is_skipped_and_the_city_still_publishes(self):
+        (self.dir / "restaurants.json").write_text(json.dumps(
+            [{"id": "osm-1", "name": "Test Diner", "lat": 43.65, "lng": -79.38, "address": "1 Test St",
+              "website": "http://testdiner.example/"}]))
+        def broken(site, info):
+            raise ValueError("Invalid IPv6 URL")  # e.g. a link like http://[oops on the page
+        real, scrape.read_site_once = scrape.read_site_once, broken
+        try:
+            out = self.run_for("America/Edmonton", False)
+        finally:
+            scrape.read_site_once = real
+        self.assertEqual([d["title"] for d in out["deals"]], ["Half-price wings"])
+        report = json.loads((self.dir / "cache" / "report.json").read_text())
+        self.assertEqual(report["sites"]["testdiner.example"]["status"], "error: ValueError")
+
+    def test_a_deal_ending_today_on_the_city_clock_is_kept_on_an_evening_run(self):
+        # On an evening run the runner's UTC date is already tomorrow; the deal's last day is today in the city.
+        import datetime as dt
+        import deal_state as ds
+        city_today = ds.now_in("America/Edmonton").date
+        tomorrow = (dt.date.fromisoformat(city_today) + dt.timedelta(days=1)).isoformat()
+        manual = json.loads((self.dir / "manual_deals.json").read_text())
+        manual[0]["valid_until"] = city_today
+        (self.dir / "manual_deals.json").write_text(json.dumps(manual))
+        real, scrape.TODAY = scrape.TODAY, tomorrow
+        try:
+            out = self.run_for("America/Edmonton", False)
+        finally:
+            scrape.TODAY = real
+        self.assertEqual([d["title"] for d in out["deals"]], ["Half-price wings"])
+
     def test_publishes_a_valid_file_for_a_fixed_clock_city(self):
         out = self.run_for("America/Edmonton", False)
         self.assertEqual((out["observes_dst"], out["utc_offset_hours"]), (False, -6))
