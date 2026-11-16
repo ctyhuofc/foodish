@@ -4,11 +4,11 @@
     "expired": "valid_until is before today. Hide it.",
     "upcoming": "valid_from is after today. Hide it.",
     "not_today": "The deal doesn't run on this day.",
-    "all_day": "Runs today with no start or end time. Show as 'All day', never as 'On now' (we don't know the restaurant's opening hours).",
+    "all_day": "Runs that day with no start or end time (today, or a day picked with no time of day). Show as 'All day', never as 'On now' (we don't know the restaurant's opening hours).",
     "later": "Runs today and starts later.",
     "on_now": "Its time window is open right now. Includes the after-midnight part of a deal that started yesterday (e.g. 9 pm to 2 am).",
     "ended": "Ran earlier today and is over.",
-    "scheduled": "Runs on that day, when no time of day is given (e.g. looking at next Friday)."
+    "scheduled": "Runs on that day at a set time, when no time of day is given (e.g. looking at next Friday). A deal with no times that day is all_day instead."
   },
   "fields": {
     "days": "list of 0-6; missing or empty means every day",
@@ -45,6 +45,8 @@
     {"name": "valid from tomorrow is upcoming", "deal": {"valid_from": "2026-11-12", "start": "15:00", "end": "18:00"}, "at": "2026-11-11T16:00", "expect": "upcoming"},
     {"name": "valid from today counts", "deal": {"valid_from": "2026-11-11", "start": "15:00", "end": "18:00"}, "at": "2026-11-11T16:00", "expect": "on_now"},
     {"name": "another day with no time given", "deal": {"days": [5], "start": "15:00", "end": "18:00"}, "at": "2026-11-13", "expect": "scheduled"},
+    {"name": "another day, deal has no times: all day, not a blank-time 'Daytime' row", "deal": {"days": [5]}, "at": "2026-11-13", "expect": "all_day"},
+    {"name": "another day, end-only deal is still scheduled", "deal": {"days": [5], "end": "16:00"}, "at": "2026-11-13", "expect": "scheduled"},
     {"name": "another day the deal doesn't run", "deal": {"days": [5]}, "at": "2026-11-14", "expect": "not_today"},
     {"name": "expired beats everything else", "deal": {"valid_until": "2026-11-01", "start": "00:00", "end": "23:59"}, "at": "2026-11-11T12:00", "expect": "expired"},
     {"name": "empty days list means every day", "deal": {"days": [], "start": "11:00", "end": "15:00"}, "at": "2026-11-15T12:00", "expect": "on_now"},

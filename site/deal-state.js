@@ -92,7 +92,10 @@
     const days = daysOf(deal);
     const start = toMins(deal.start), end = toMins(deal.end);
     const overnight = start != null && end != null && end <= start;
-    if (at.mins == null) return days.includes(at.day) ? S.SCHEDULED : S.NOT_TODAY;
+    if (at.mins == null) {
+      if (!days.includes(at.day)) return S.NOT_TODAY;
+      return start == null && end == null ? S.ALL_DAY : S.SCHEDULED;
+    }
     if (overnight && days.includes((at.day + 6) % 7) && at.mins < end) return S.ON_NOW; // yesterday's late deal
     if (!days.includes(at.day)) return S.NOT_TODAY;
     if (start == null && end == null) return S.ALL_DAY;

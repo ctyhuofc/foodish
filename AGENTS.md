@@ -1,8 +1,8 @@
 # Working on Foodish (for AI agents and developers)
 
 Foodish finds restaurant deals near you in Edmonton, Vancouver and Toronto (the list is `cities.json`). A GitHub Actions robot reads restaurant websites
-daily and publishes `data/deals.json`; the app (`site/`, and the live foodish.ca app built in Grok)
-reads that file. The owner isn't a developer: explain changes in plain words.
+daily and publishes `data/deals.json`; the app (`site/`, published to www.foodish.ca by GitHub
+Pages) reads that file. The owner isn't a developer: explain changes in plain words.
 
 ## Before you change behaviour
 Read `docs/STATE_MACHINES.md`. Everything that moves through stages is a named state machine with one

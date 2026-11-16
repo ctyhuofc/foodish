@@ -133,12 +133,37 @@ def shared_site(urls: list[str]) -> str | None:
     return url
 
 
+# A lone branch's website is replaced by its chain's only when at least this many branches agree on the chain's.
+CHAIN_AGREES = 3
+
+
+def _site_name(host: str) -> str:
+    """'order.blenz.com' and 'www.blenz.ca' -> 'blenz': the part of a domain that names the business."""
+    parts = host.split(".")
+    return parts[-2] if len(parts) >= 2 else host
+
+
+def _odd_one_out(site: str, chain_site: str, keys: set[str], urls: list[str]) -> bool:
+    """True when a branch lists another business's website: its chain's branches agree on a different site,
+    no other branch lists this domain, and the domain names neither the chain (blenz.ca vs blenz.com is kept)
+    nor this place's own name or brand (a franchise's bostonpizza-whyte.ca is kept).
+    Example: one Toronto Starbucks inside a Mac's lists macs.ca."""
+    host, chain_host = _host(site), _host(chain_site)
+    hosts = collections.Counter(_host(u) for u in urls)
+    if hosts[chain_host] < CHAIN_AGREES or hosts[host] != 1:
+        return False
+    if _site_name(host) == _site_name(chain_host) or _site_name(chain_host) in name_key(host):
+        return False
+    return not any(k in name_key(host) for k in keys)
+
+
 def link_websites(rows: list[dict], brand_sites: dict) -> int:
-    """Give branches with no website one they can share. Only fills gaps: a listed website is never replaced.
+    """Give branches with no website one they can share, and correct a branch whose listed website is another
+    business's (see _odd_one_out). Any other listed website is kept.
       1. other branches in this city with the same brand tag or the same (non-generic) name agree on one
          (see shared_site; if they disagree, the gap is left)
       2. the chain is in brand_sites.json
-    Returns how many places got a website."""
+    Returns how many places got a website (filled or corrected)."""
     listed = collections.defaultdict(list)
     for r in rows:
         if r.get("website"):
@@ -148,6 +173,12 @@ def link_websites(rows: list[dict], brand_sites: dict) -> int:
     filled = 0
     for r in rows:
         if r.get("website"):
+            keys = {name_key(r.get("brand")), name_key(r["name"])} - {""}
+            for k in keys - GENERIC_NAMES:
+                if known.get(k) and _odd_one_out(r["website"], known[k], keys, listed[k]):
+                    r["website"] = known[k]
+                    filled += 1
+                    break
             continue
         for k in [name_key(r.get("brand")), name_key(r["name"])]:
             if not k or k in GENERIC_NAMES:
@@ -206,7 +237,8 @@ def relink(city: cities.City) -> None:
     before = sum(1 for r in rows if r.get("website"))
     n = link_websites(rows, load_brand_sites())
     city.restaurants.write_text(json.dumps(rows, indent=1, ensure_ascii=False))
-    print(f"{city.name}: {n} more places now have a website ({before} -> {before + n} of {len(rows)})")
+    after = sum(1 for r in rows if r.get("website"))
+    print(f"{city.name}: {n} websites filled or corrected ({before} -> {after} of {len(rows)} places have one)")
 
 
 def discover(city: cities.City) -> None:

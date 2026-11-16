@@ -50,9 +50,9 @@ The app opens the city the visitor is in (within 100 km of its centre), a link l
 | Find restaurants | OpenStreetMap, re-checked every Sunday. Chains are tagged with a brand, so every Boston Pizza / Ricky's / Brewhouse branch is found and linked to one website. | $0 |
 | Read websites | One visit per **website**, not per location. Robots.txt is respected; the bot identifies itself. | $0 (GitHub Actions) |
 | Spot changes | Each site's deal text is fingerprinted. Most deals ("Wing Wednesday") don't change, so most days a site costs nothing. Pages with no prices or deal words are skipped. | $0 |
-| Understand deals | Only *changed* sites go to a small AI model, which turns the text into days, times, prices and categories. Hard caps: `MAX_LLM_CALLS` per run (400) and `MONTHLY_LLM_CALLS` (6,000). | Usually a few dollars/month* |
+| Understand deals | Only *changed* sites go to a small AI model, which turns the text into days, times, prices and categories. Hard caps: `MAX_LLM_CALLS` per run (400) and `MONTHLY_LLM_CALLS` (12,000, all cities together). | Usually a few dollars/month* |
 | Alerts + submissions | Cloudflare Worker + KV free plan | $0 |
-| Map | Leaflet + CARTO/OpenStreetMap tiles | $0 at pilot traffic** |
+| Map | Leaflet + OpenStreetMap tiles | $0 at pilot traffic** |
 
 \* The first full run is the biggest (every site is new). After that, only changed sites are sent. Set a monthly spending limit in your AI account's console as a backstop, and the caps above stop the robot before it overspends. Note: a Grok/X subscription doesn't include API usage — the API is billed separately at console.x.ai.
 \** If Foodish takes off, check the tile provider's usage terms; paid tile plans are cheap and fit the budget.
@@ -64,7 +64,7 @@ The app opens the city the visitor is in (within 100 km of its centre), a link l
 - ✅ Restaurants with their own website that posts specials (most chains and many independents).
 - ✅ Chain deals are applied to every Edmonton branch automatically; location-only deals stay at that location.
 - ⚠️ OpenStreetMap doesn't list a website for every place. After the first run, open `data/restaurants.json` to see coverage, and add fixes in `data/brand_sites.json` or `data/extra_restaurants.json`.
-- ❌ Deals posted **only** on Instagram/Facebook can't be collected automatically (login walls and their terms forbid scraping). That's what the in-app **"Know a deal we're missing?"** form is for — and later, a free "list your deals" page for restaurants is the strongest way to close the gap.
+- ❌ Deals posted **only** on Instagram/Facebook can't be collected automatically (login walls and their terms forbid scraping). That's what the in-app **"A deal we missed?"** form (it opens an email to us) is for — and later, a free "list your deals" page for restaurants is the strongest way to close the gap.
 - Sites built entirely in JavaScript show little text to a simple reader, so the robot opens those in a real browser (about 450 sites, including Tim Hortons, Starbucks and Pizza Pizza). It's on by default; set the GitHub variable `RENDER_JS` = `0` to turn it off.
 
 ---
@@ -149,13 +149,13 @@ The token can only start this repo's workflows; it can't read or change your cod
 The app has two looks and picks one from the sky in the city being shown: **Daylight** (stone-grey ground, navy buildings) from sunrise until 30 minutes before sunset, then **Blue Hour** (night blue) until the next sunrise. Visitors can fix one in Settings (Auto / Daylight / Blue Hour). Add `?look=day` or `?look=night` to any link to preview a look. The rule everywhere: a deal that's **on now is lit yellow**, **later today is an outline**, **all day sits on the blue band**, and deals that have **ended aren't shown**. The "on now" blocks are drawn in different ways depending on the deal (a countdown for the first place, a price chart when a place has many prices, a cut-away block for a percentage off, and so on), so the list never becomes a stack of identical cards.
 
 ## How it works inside
-Everything that moves through stages (whether a deal is on now, what happens to each website on a run, what each scheduled run does, the app's loading/location/alerts states) is written down once in [`docs/STATE_MACHINES.md`](docs/STATE_MACHINES.md), with tests. The deal-timing rules are in [`spec/deal-states.json`](spec/deal-states.json), which any app reading the deals (including the live Grok-built site) can follow. Working with an AI coding agent? Point it at [`AGENTS.md`](AGENTS.md).
+Everything that moves through stages (whether a deal is on now, what happens to each website on a run, what each scheduled run does, the app's loading/location/alerts states) is written down once in [`docs/STATE_MACHINES.md`](docs/STATE_MACHINES.md), with tests. The deal-timing rules are in [`spec/deal-states.json`](spec/deal-states.json), which any app reading the deals can follow. Working with an AI coding agent? Point it at [`AGENTS.md`](AGENTS.md).
 
 Run the tests: `python -m unittest discover -s tests && node --test tests/*.test.mjs` (they also run on GitHub for every change).
 
 ## Search pages and the daily health check
 - Every run also writes plain HTML pages Google can read: **foodish.ca/deals/** (one page per day and per deal type, e.g. `/deals/wings.html`, `/deals/wednesday.html`) plus `sitemap.xml` and `robots.txt`. The app itself draws deals with JavaScript, so search engines would otherwise see only "Loading today's deals…". Each page links into the app pre-filtered (`/?cat=wings`, `/?day=3`).
-- **Getting them onto foodish.ca:** your live site reads deals straight from GitHub, but its pages are files on your web host. To publish the `/deals/` pages automatically every day, add your host's FTP details as GitHub secrets (`FTP_HOST`, `FTP_USER`, `FTP_PASS`) and, if your site isn't in `/public_html`, a variable `FTP_DIR` = `<your site folder>/data`. Otherwise, upload `site/deals/`, `site/sitemap.xml` and `site/robots.txt` by hand (they'll show the deals from the day you upload).
+- **Getting them onto foodish.ca:** nothing to do. www.foodish.ca is this repo's `site/` folder, published by GitHub Pages (`.github/workflows/pages.yml`) after every daily run, so the pages, `sitemap.xml` and `robots.txt` go live with the deals.
 - After they're live, add the site in [Google Search Console](https://search.google.com/search-console) and submit `https://www.foodish.ca/sitemap.xml`.
 - Need to rebuild just the pages? Actions → *Foodish daily update* → Run workflow → task `pages`.
 - Each run's **Summary** page on GitHub (Actions → the run) shows a short health check: deals published, % of websites read, the big chains we can't read, AI usage this month, and hand-added deals the robot now finds itself.
