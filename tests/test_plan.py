@@ -47,6 +47,16 @@ class Guards(unittest.TestCase):
         in_yaml = set(re.findall(r'-\s*cron:\s*"([^"]+)"', WORKFLOW))
         self.assertEqual(in_yaml, set(plan.SCHEDULES), "edit both daily.yml and SCHEDULES in pipeline/plan.py")
 
+    def test_no_empty_headings_in_any_workflow(self):
+        # GitHub rejects the whole file over an empty "env:", "with:", "steps:" or "jobs:" and the robot stops.
+        # (Empty triggers such as "pull_request:" are allowed, so only these are checked.)
+        for wf in (ROOT / ".github" / "workflows").glob("*.yml"):
+            lines = [l for l in wf.read_text().splitlines() if l.strip() and not l.strip().startswith("#")]
+            for here, nxt in zip(lines, lines[1:] + [""]):
+                if re.fullmatch(r"\s*(env|with|steps|jobs):\s*(#.*)?", here):
+                    indent = len(here) - len(here.lstrip())
+                    self.assertGreater(len(nxt) - len(nxt.lstrip()), indent, f"{wf.name}: empty '{here.strip()}'")
+
     def test_unknown_schedule_is_an_error_not_a_silent_skip(self):
         with self.assertRaises(ValueError):
             plan.decide("schedule", "0 4 * * *")

@@ -25,7 +25,6 @@ jobs:
   run:
     runs-on: ubuntu-latest
     timeout-minutes: 240   # every city is read in turn; a new city's first read is the slow one
-    env:
     steps:
       - uses: actions/checkout@v4
         with:
