@@ -9,12 +9,18 @@ changes it, and the test that pins it down. If you're changing behaviour, change
 | 2 | Website lifecycle (one site, one daily run) | `pipeline/site_state.py`, used by `pipeline/scrape.py` | `tests/test_site_state.py` |
 | 3 | Run plan (what a workflow run does) | `pipeline/plan.py`, used by `.github/workflows/daily.yml` | `tests/test_plan.py` |
 | 4 | Robot health (is the robot broken?) | `pipeline/health.py --gate` (last workflow step) | `tests/test_plan.py` |
-| 5 | App data loading | `site/app.js` `setLoad()` | browser check (see below) |
+| 5 | App data loading | `site/app.js` `setLoad()` / `load()` | browser check (see below) |
 | 6 | App location | `site/app.js` `setLocation()` | browser check |
-| 7 | Alerts | `site/app.js` `alertsState()` / `syncAlertsBadge()`; `worker/worker.js` | browser check |
-| 8 | Filters ↔ address bar | `site/app.js` `readLinkFilters()` / `writeLinkFilters()` | browser check |
+| 7 | Alerts | rule: `site/app-state.js` `alertsState()`; applied by `site/app.js` `syncAlertsBadge()`; `worker/worker.js` | `tests/app-state.test.mjs`, browser check |
+| 8 | Filters ↔ address bar | `site/app-state.js` `parseLink()` / `buildLink()`, used by `site/app.js` `readLinkFilters()`, `onPopState()`, `writeLinkFilters()` | `tests/app-state.test.mjs`, browser check |
 | 9 | City (which city's deals are showing) | `site/app.js` `setCity()`; list in `cities.json` | `tests/test_cities.py`, browser check |
 | 10 | Look (Daylight or Blue Hour) | `site/sky.js` `lookAt()`, applied by `site/app.js` `applyLook()` | `tests/sky.test.mjs`, browser check |
+| 11 | Status line (the one line under the count) | `site/app-state.js` `statusLine()`, shown by `site/app.js` `renderStatus()` | `tests/app-state.test.mjs`, browser check |
+| 12 | Smaller app machines: chosen day, panels, map card, list expanders, submit form, daily-alert sign-up | `site/app-state.js` + `site/app.js` (see below) | `tests/app-state.test.mjs`, browser check |
+
+The app's page-free rules live in `site/app-state.js` (like `deal-state.js` and `sky.js`: a plain script in the
+page, and a module for `node --test`). `site/app.js` applies them to the page. `tests/test_app_shell.py` checks that
+every script the page loads is also in the offline copy (`SHELL` in `site/sw.js`).
 
 Run everything: `python -m unittest discover -s tests && node --test tests/*.test.mjs`
 
@@ -73,6 +79,10 @@ stateDiagram-v2
     deferred_ai_stopped --> [*]: retried tomorrow
 ```
 
+Before the outcome, each site gets a read status (`sites.<domain>.status` in the report): `ok`, `removed by request`,
+`blocked by robots.txt`, or an error. The names are `READ_OK`, `READ_REMOVED`, `READ_ROBOTS` and `BLOCKED_READS` in
+`site_state.py`; `scrape.py` and `health.py` use them, never the words.
+
 "Retried tomorrow" works because a site's text fingerprint is only saved after the AI has read it.
 Deferred and failed sites keep their old deals. Cached deals whose `valid_until` has passed are now
 dropped when publishing; they used to linger until the website changed.
@@ -104,17 +114,24 @@ silent no-op. `tests/test_plan.py` checks the table against a copy of the old wo
 run turns red and GitHub emails the owner, with the fix in the error. Before this, a run with a dead
 AI key still showed a green tick (that happened every day from 22 Oct to 8 Nov 2026).
 
-## 5–8. The app (`site/app.js`)
+## 5–8, 11–12. The app (`site/app.js`, rules in `site/app-state.js`)
 
 | Machine | States | Changes via | Notes |
 |---|---|---|---|
-| Data | `loading` → `ready` \| `error`; `error` → `loading` | `setLoad()` | Retry button; retries when back online or when the tab reopens; a failed refresh keeps the deals already shown; "last checked … over a day ago" when deals are 36 h+ old |
-| Location | `locating` → `precise` \| `last_known` \| `default` | `setLocation()` | The location label is derived from the state |
-| Alerts | `off` \| `on` \| `blocked` (derived, never stored twice) | `syncAlertsBadge()` | `blocked` = the visitor asked for alerts but the browser now refuses; nearby-watch stops |
-| Submit | `idle` → `sending` → `sent` \| `error` | `submitDeal()` | Send is disabled while sending (the form is at the bottom of the page) |
-| Filters | in the address bar | `readLinkFilters()` / `writeLinkFilters()` | `?cat=wings&day=3&now=1&view=map&km=1&q=tacos`: shareable, and opens the app in that state. `?look=day` / `?look=night` previews a look and is never saved |
+| Data | `loading` → `ready` \| `error`; `error` → `loading` | `setLoad()` | Retry button; retries when back online or when the tab reopens; a failed refresh keeps the deals already shown; "last checked … over a day ago" when deals are 36 h+ old. Each `load()` is numbered and only the newest may show its result. While there are no deals for the shown city (switching city, or a failed first load) the list, street, categories and map card are empty: another city's deals are never shown |
+| Location | `locating` → `precise` \| `last_known` \| `default` \| `away` | `setLocation()` | The location label is derived from the state. `away` = we know where the visitor is, but it's far from the shown city, so distances are from its centre. A second tap while `locating` does nothing. The nearby-watch goes through `applyPosition()` too, but only for the first precise fix or a move of more than 150 m |
+| Alerts | `off` \| `on` \| `blocked` (derived, never stored twice) | `AS.alertsState()` → `syncAlertsBadge()` | `blocked` = the visitor asked for alerts but the browser now refuses; nearby-watch stops. The "blocked" note under the switches comes and goes with the browser setting (`AS.alertsMessage()`); other notes stay. One change at a time: a double tap doesn't start a second sign-up |
+| Submit | `idle` → `sending` → `sent` \| `error`; or `email` (tips go by email) | `setSubmit()` | Send is off only while `sending`; the words are in `AS.submitView()` |
+| Filters | in the address bar | `AS.parseLink()` (one reader, used on opening and on back/forward) / `AS.buildLink()` (one writer) | `?city=toronto&cat=wings&day=3&now=1&view=map&km=1&q=tacos`: shareable, and opens the app in that state. Back/forward puts all of it back (city, category, day, on-now-only, search, distance, view). Map, day and category are back-button steps; search and distance just update the address. `?look=day` / `?look=night` previews a look and is never saved. Unknown values are ignored |
+| Status line | `error` > `loading` > `note` > `stale` > `none` | `AS.statusLine()` → `renderStatus()` (the only writer of `#status`) | Most important wins: a failed load with nothing to show (with Try again), then "Loading…" with nothing to show, then a location note ("Location is off, so…"), then "last checked over a day ago". A location note lasts until the next locate or a precise fix |
+| Chosen day | `null` (today, live) \| 0–6 (a schedule) | `AS.normalizeDay()`, at the top of `render()` | A chosen day that has become today (open past midnight, or another city's clock) turns back into the live today view |
+| On now only | `?now=1` hides later and all-day deals | `state.onNow` | A "Showing only what's on now. Show everything" button turns it off |
+| Panels | `null` \| `city` \| `search` | `setPanel()` | One open at a time. Escape closes it and returns to its button; a click elsewhere closes the city picker. The search row opens when a search is in the address |
+| Map card | a place selected \| none \| dismissed | `state.sel`, `state.selDismissed` | Desktop opens the card for the first place on now, unless the visitor closed it (close button or a click on the map). Choosing a place, or changing city, category, day or distance, lets it open again |
+| List expanders | "Details" and "Show more" choices | `resetList()` | Reset together on a new city, category or day, and on back/forward |
+| Daily-alert sign-up | switch on + browser signed up \| switch on + sign-up lost | `reconcilePush()` on opening | If the browser lost its sign-up (site data cleared, expired) while alerts are allowed, it signs up again quietly; if that fails nothing is shown and the next open tries again |
 
-Debug in the browser console: `__foodish.state`, `__foodish.alertsState()`.
+Debug in the browser console: `__foodish.state`, `__foodish.alertsState()`, `__foodish.statusLine({...})`, `__foodish.setPanel("city")`.
 
 Alert subscriptions (worker): `subscribed` → `unsubscribed` (visitor turns it off) or `expired`
 (`notify.py` removes it when the push service answers 404/410). Admin endpoints stay locked unless

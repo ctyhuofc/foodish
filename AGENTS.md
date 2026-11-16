@@ -19,13 +19,17 @@ place that changes it. Change the machine, not a copy of its logic.
   (`python pipeline/scrape.py vancouver`; none = every city). Edmonton's paths (`data/deals.json`, …)
   must never move: the live site reads them.
 - **The app's look** (Daylight / Blue Hour) → `site/sky.js` decides, `applyLook()` in `site/app.js` applies. Colours are CSS variables under `html[data-look="night"]` and `html[data-look="day"]` in `site/styles.css`; never hard-code a colour for one look only. Lit yellow means on now, everywhere.
+- **The app's own rules** (what the address bar means, which status message wins, alerts on/off, the chosen
+  day, the tip form's stages) → `site/app-state.js`. Rules that don't touch the page go there, with a case in
+  `tests/app-state.test.mjs` first; `site/app.js` only applies the answer. A new script the page loads must also go in
+  `SHELL` in `site/sw.js` (bump `CACHE`); `tests/test_app_shell.py` checks.
 - **Local time** → `deal_state.now_in(city.timezone)` / `FoodishDealState.zonedNow(zone)`. Alberta is
   UTC-6 and B.C. is UTC-7 year-round; Ontario (Toronto) still changes clocks and uses normal tz data; don't use raw `ZoneInfo(...)` or `Intl` for "now".
 
 ## Check your work
 ```bash
 python -m unittest discover -s tests     # Python: deal rules, site lifecycle, run plan, health gate
-node --test tests/*.test.mjs            # Browser rules: same deal cases as Python
+node --test tests/*.test.mjs            # Browser rules: same deal cases as Python, the look, the app's rules (app-state)
 python pipeline/plan.py --event schedule --schedule "47 11 * * *"   # what a run would do
 python pipeline/health.py                # summary of the latest robot run
 ```

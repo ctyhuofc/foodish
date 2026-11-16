@@ -8,6 +8,7 @@ foodish/
 │   ├── index.html, app.js, styles.css, config.js
 │   ├── deal-state.js      when a deal is "on" (same rules as the robot)
 │   ├── sky.js             Daylight or Blue Hour look, from the sun in each city
+│   ├── app-state.js       the app's own rules: address bar, status line, alerts, chosen day
 │   ├── sw.js, manifest.webmanifest, icons  (installable app + notifications)
 │   └── data/deals.json    (starter data; replaced daily)
 ├── pipeline/              ← the daily robot (runs free on GitHub)
