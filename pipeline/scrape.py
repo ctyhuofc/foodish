@@ -84,8 +84,9 @@ def site_host(url) -> str:
 # ---------------- fetching ----------------
 # Every download has limits, so one broken or hostile website can't stall or crash the whole run
 # (a server that sends one byte every few seconds, or a small "zip bomb" that unzips to gigabytes).
-PAGE_BYTES = 3_000_000    # largest page we read (after unzipping); restaurant pages are well under 1 MB
-ROBOTS_BYTES = 500_000    # largest robots.txt (Google reads at most 500 KB too)
+PAGE_BYTES = 8_000_000    # largest page we read (after unzipping); some site builders make 4 MB home pages
+ROBOTS_BYTES = 500_000    # how much of a robots.txt we read; the rest is ignored (as Google does, RFC 9309)
+ROBOTS_RETRY_PAUSE = 5    # seconds before asking once more for a robots.txt that failed (often a passing hiccup)
 FETCH_SECONDS = 30        # one download, start to finish, redirects included
 TIMEOUTS = (10, 15)       # seconds to connect; seconds of silence allowed while reading
 HARD_SECONDS = FETCH_SECONDS + TIMEOUTS[1]  # give up on a download after this, whatever it is stuck on
@@ -160,9 +161,10 @@ def check_address(url, lookup=_lookup):
 
 
 def download(url, limit, want=lambda r: True, deadline=FETCH_SECONDS, clock=time.monotonic, opener=None,
-             lookup=None, robots=None):
+             lookup=None, robots=None, truncate=False):
     """(response, body bytes) for `url`, reading at most `limit` bytes within `deadline` seconds, or
-    FetchStopped. The body is only read when want(response) says so (else it is None): a 404 isn't
+    FetchStopped. With truncate=True a longer body is cut at `limit` instead (robots.txt).
+    The body is only read when want(response) says so (else it is None): a 404 isn't
     downloaded. The response is always closed. `clock`, `opener` and `lookup` are swapped in by the tests
     (with a fake `opener` and no `lookup`, host names aren't looked up).
     Redirects are followed here, one at a time (at most MAX_REDIRECTS), so every address is checked before it
@@ -187,12 +189,14 @@ def download(url, limit, want=lambda r: True, deadline=FETCH_SECONDS, clock=time
         if not want(r):
             return r, None
         size = r.headers.get("content-length", "")
-        if size.isdigit() and int(size) > limit:
+        if size.isdigit() and int(size) > limit and not truncate:
             raise FetchStopped(TOO_LARGE)
         body = bytearray()
         for chunk in r.iter_content(CHUNK):  # unzipped as it comes
             body += chunk
             if len(body) > limit:
+                if truncate:
+                    return r, bytes(body[:limit])
                 raise FetchStopped(TOO_LARGE)
             if clock() - start > deadline:
                 raise FetchStopped(TOO_SLOW)
@@ -254,28 +258,41 @@ _robots = {}  # "https://site.ca" -> its robots.txt rules, or why the site can't
 
 def robots_rules(url):
     """The rules in the robots.txt of `url`'s site, read once per run (the internet's standard, RFC 9309):
-      * read fine -> its rules;  no robots.txt (an answer in the 400s) -> everything allowed
-      * a server error (500s), too slow, too large, too many redirects -> nothing allowed today (ROBOTS_UNAVAILABLE).
+      * read fine -> its rules (only the first ROBOTS_BYTES; some sites send a whole web page here)
+      * no robots.txt (an answer in the 400s), or more than MAX_REDIRECTS redirects -> everything allowed
+      * a server error (500s) or too slow, twice in a row -> nothing allowed today (ROBOTS_UNAVAILABLE).
         Before Nov 2026 this allowed everything. The site counts as unreachable today, so its saved deals are
         kept (site_state: unreachable, then gone after STALE_DAYS), not cleared like a site that says no.
       * the site can't be reached at all (no such name, refused, bad SSL, not a public address) -> that reason."""
     p = urlparse(url)
     base = f"{p.scheme}://{p.netloc}"
     if base not in _robots:
-        rp = urllib.robotparser.RobotFileParser()
-        try:  # download() itself doesn't ask about robots.txt here, so this never loops back
-            r, body = bounded(download, base + "/robots.txt", ROBOTS_BYTES, want=lambda r: r.status_code == 200)
-            if r.status_code == 200:
-                rp.parse(as_text(body, requests.utils.get_encoding_from_headers(r.headers)).splitlines())
-            elif 400 <= r.status_code < 500:
-                rp.parse([])
-            else:
-                rp = ROBOTS_UNAVAILABLE
-        except Exception as e:  # noqa: BLE001
-            why = why_unread(e)
-            rp = why if why in (CANT_CONNECT, "SSL error", ADDRESS_NOT_ALLOWED) else ROBOTS_UNAVAILABLE
-        _robots[base] = rp
+        rules = _read_robots(base)
+        if rules == ROBOTS_UNAVAILABLE:  # often a passing hiccup: ask once more before skipping the site today
+            time.sleep(ROBOTS_RETRY_PAUSE)
+            rules = _read_robots(base)
+        _robots[base] = rules
     return _robots[base]
+
+
+def _read_robots(base):
+    """One try at `base`'s robots.txt: its rules, or the reason it can't be used (see robots_rules)."""
+    rp = urllib.robotparser.RobotFileParser()
+    try:  # download() itself doesn't ask about robots.txt here, so this never loops back
+        r, body = bounded(download, base + "/robots.txt", ROBOTS_BYTES, want=lambda r: r.status_code == 200,
+                          truncate=True)
+        if r.status_code == 200:
+            rp.parse(as_text(body, requests.utils.get_encoding_from_headers(r.headers)).splitlines())
+        elif 400 <= r.status_code < 500:
+            rp.parse([])
+        else:
+            return ROBOTS_UNAVAILABLE
+    except Exception as e:  # noqa: BLE001
+        why = why_unread(e)
+        if why != TOO_MANY_REDIRECTS:
+            return why if why in (CANT_CONNECT, "SSL error", ADDRESS_NOT_ALLOWED) else ROBOTS_UNAVAILABLE
+        rp.parse([])  # RFC 9309: past five redirects, treat it as if there were no robots.txt
+    return rp
 
 
 def allowed(url):

@@ -117,29 +117,51 @@ class Download(unittest.TestCase):
             self.assertEqual(scrape.REASONS["https://slow.ca/"], reason)
 
     def test_robots_txt_rules_and_a_robots_txt_we_cant_read_blocks_the_site_today(self):
-        # RFC 9309: no robots.txt (4xx) allows everything; a server error, or one too large or too slow, allows nothing
-        # today. (Before Nov 2026 those allowed everything.) The reason is not "blocked by robots.txt", so the
-        # site's saved deals are kept as for any site we couldn't read today.
+        # RFC 9309: no robots.txt (4xx) or more than five redirects allows everything; a server error or one too slow,
+        # twice in a row, allows nothing today. (Before Nov 2026 those allowed everything.) The reason is not
+        # "blocked by robots.txt", so the site's saved deals are kept as for any site we couldn't read today.
         cases = [(response(b"User-agent: FoodishBot\nDisallow: /", ctype="text/plain"), False, ss.READ_ROBOTS),
                  (response(b"User-agent: *\nDisallow: /", status=404, ctype="text/plain"), True, None),
-                 (response(b"User-agent: FoodishBot\nDisallow: /" + b"#" * scrape.ROBOTS_BYTES, ctype="text/plain"), False,
-                  scrape.ROBOTS_UNAVAILABLE),
                  (response(b"oops", status=503, ctype="text/plain"), False, scrape.ROBOTS_UNAVAILABLE)]
         for r, ok, why in cases:
             scrape._robots.clear()
-            with mock.patch.object(scrape, "bounded", lambda fn, *a, _r=r, **kw: fn(*a, opener=opener_for(lambda: _r), **kw)):
+            with mock.patch.object(scrape, "bounded", lambda fn, *a, _r=r, **kw: fn(*a, opener=opener_for(lambda: _r), **kw)), \
+                 mock.patch.object(scrape, "ROBOTS_RETRY_PAUSE", 0):
                 self.assertEqual(scrape.allowed("https://robots.example/menu"), ok)
                 if why:
                     self.assertEqual(scrape.robots_reason("https://robots.example/menu"), why)
-        for err, why in [(scrape.FetchStopped("too slow"), scrape.ROBOTS_UNAVAILABLE), (requests.exceptions.ReadTimeout(), scrape.ROBOTS_UNAVAILABLE),
-                         (requests.exceptions.ConnectionError(), scrape.CANT_CONNECT)]:
+        for err, ok, why in [(scrape.FetchStopped("too slow"), False, scrape.ROBOTS_UNAVAILABLE),
+                             (requests.exceptions.ReadTimeout(), False, scrape.ROBOTS_UNAVAILABLE),
+                             (requests.exceptions.ConnectionError(), False, scrape.CANT_CONNECT),
+                             (scrape.FetchStopped(scrape.ADDRESS_NOT_ALLOWED), False, scrape.ADDRESS_NOT_ALLOWED),
+                             (scrape.FetchStopped(scrape.TOO_MANY_REDIRECTS), True, None)]:
             scrape._robots.clear()
             def boom(*a, _e=err, **kw):
                 raise _e
-            with mock.patch.object(scrape, "bounded", boom):
-                self.assertFalse(scrape.allowed("https://robots.example/menu"))
-                self.assertEqual(scrape.robots_reason("https://robots.example/menu"), why)
-            self.assertNotIn(why, ss.BLOCKED_READS)  # unreachable today (deals kept), not "blocked" (deals cleared)
+            with mock.patch.object(scrape, "bounded", boom), mock.patch.object(scrape, "ROBOTS_RETRY_PAUSE", 0):
+                self.assertEqual(scrape.allowed("https://robots.example/menu"), ok)
+                if why:
+                    self.assertEqual(scrape.robots_reason("https://robots.example/menu"), why)
+                    self.assertNotIn(why, ss.BLOCKED_READS)  # unreachable today (deals kept), not "blocked" (deals cleared)
+        scrape._robots.clear()
+
+    def test_a_huge_robots_txt_is_read_up_to_the_limit(self):
+        # Some sites answer /robots.txt with their whole home page: read the first ROBOTS_BYTES, like Google.
+        for body, ok in [(b"User-agent: FoodishBot\nDisallow: /\n" + b"#" * scrape.ROBOTS_BYTES, False),
+                         (b"<html>" + b"x" * (2 * scrape.ROBOTS_BYTES), True)]:
+            scrape._robots.clear()
+            r = response(body, ctype="text/html")
+            with mock.patch.object(scrape, "bounded", lambda fn, *a, _r=r, **kw: fn(*a, opener=opener_for(lambda: _r), **kw)):
+                self.assertEqual(scrape.allowed("https://robots.example/menu"), ok)
+        scrape._robots.clear()
+
+    def test_a_robots_txt_that_fails_once_is_asked_for_again(self):
+        answers = [response(b"oops", status=502, ctype="text/plain"), response(b"User-agent: *\nAllow: /", ctype="text/plain")]
+        with mock.patch.object(scrape, "bounded", lambda fn, *a, **kw: fn(*a, opener=opener_for(lambda: answers.pop(0)), **kw)), \
+             mock.patch.object(scrape, "ROBOTS_RETRY_PAUSE", 0):
+            scrape._robots.clear()
+            self.assertTrue(scrape.allowed("https://robots.example/menu"))
+        self.assertEqual(answers, [])
         scrape._robots.clear()
 
     def test_a_slow_site_stops_opening_more_pages(self):
