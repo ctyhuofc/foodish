@@ -40,6 +40,10 @@ jobs:
       # On by default: about 450 sites (Tim Hortons, Starbucks, Pizza Pizza...) only show text in a browser.
       # To turn it off, set the GitHub variable RENDER_JS to 0.
       - name: Browser for JavaScript-only sites (on unless variable RENDER_JS=0)
+        id: browser
+        # If the browser can't be installed (e.g. GitHub moved to a newer Ubuntu than this Playwright knows),
+        # the run still reads every site without it instead of stopping: see RENDER_JS in "Scrape deals".
+        continue-on-error: true
         # (vars.RENDER_JS || '1') turns "not set" into '1': comparing an unset variable straight to '0'
         # counts as equal in GitHub's expressions (null becomes 0), which skipped this step.
         if: (vars.RENDER_JS || '1') != '0'
@@ -47,7 +51,7 @@ jobs:
         # the sandbox uses; this turns it back on for this machine ("|| true": older runners don't have the setting).
         run: |
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
-          pip install playwright==1.60.0 && python -m playwright install --with-deps chromium
+          pip install playwright==1.65.2 && python -m playwright install --with-deps chromium
 
       - name: Decide what this run does (pipeline/plan.py)
         id: plan
@@ -70,7 +74,8 @@ jobs:
           LLM_MODEL: ${{ vars.LLM_MODEL }}
           LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          RENDER_JS: ${{ vars.RENDER_JS || '1' }}
+          # '0' when the browser step above failed, so JavaScript-only sites are read as plain pages today
+          RENDER_JS: ${{ steps.browser.outcome == 'success' && (vars.RENDER_JS || '1') || '0' }}
           MAX_LLM_CALLS: ${{ vars.MAX_LLM_CALLS || '400' }}
           MONTHLY_LLM_CALLS: ${{ vars.MONTHLY_LLM_CALLS || '12000' }}   # all cities together
         run: python pipeline/scrape.py ${{ steps.plan.outputs.scrape_cities }}
