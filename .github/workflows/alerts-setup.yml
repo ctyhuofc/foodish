@@ -54,7 +54,7 @@ jobs:
           [ "$(echo "$r" | jq -r .success)" = "true" ] || \
             say "Cloudflare token not accepted" "Check the CLOUDFLARE_API_TOKEN secret is the whole token. Cloudflare said: $(echo "$r" | jq -c .errors)"
           r=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID")
-          echo "Account check: $(echo "$r" | jq -c '{success, name: .result.name, errors}')"
+          echo "Account check: $(echo "$r" | jq -c '{success, errors}')"
           [ "$(echo "$r" | jq -r .success)" = "true" ] || \
             say "Account ID not accepted" "Check the CLOUDFLARE_ACCOUNT_ID secret (32 letters and numbers). Cloudflare said: $(echo "$r" | jq -c .errors)"
 
