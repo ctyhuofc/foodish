@@ -116,14 +116,30 @@ class Download(unittest.TestCase):
                 self.assertIsNone(scrape.get("https://slow.ca/"))
             self.assertEqual(scrape.REASONS["https://slow.ca/"], reason)
 
-    def test_robots_txt_works_as_before_and_a_huge_one_blocks_nothing(self):
-        cases = [(response(b"User-agent: FoodishBot\nDisallow: /", ctype="text/plain"), False),
-                 (response(b"User-agent: *\nDisallow: /", status=404, ctype="text/plain"), True),
-                 (response(b"User-agent: FoodishBot\nDisallow: /" + b"#" * scrape.ROBOTS_BYTES, ctype="text/plain"), True)]
-        for r, ok in cases:
+    def test_robots_txt_rules_and_a_robots_txt_we_cant_read_blocks_the_site_today(self):
+        # RFC 9309: no robots.txt (4xx) allows everything; a server error, or one too large or too slow, allows nothing
+        # today. (Before Nov 2026 those allowed everything.) The reason is not "blocked by robots.txt", so the
+        # site's saved deals are kept as for any site we couldn't read today.
+        cases = [(response(b"User-agent: FoodishBot\nDisallow: /", ctype="text/plain"), False, ss.READ_ROBOTS),
+                 (response(b"User-agent: *\nDisallow: /", status=404, ctype="text/plain"), True, None),
+                 (response(b"User-agent: FoodishBot\nDisallow: /" + b"#" * scrape.ROBOTS_BYTES, ctype="text/plain"), False,
+                  scrape.ROBOTS_UNAVAILABLE),
+                 (response(b"oops", status=503, ctype="text/plain"), False, scrape.ROBOTS_UNAVAILABLE)]
+        for r, ok, why in cases:
             scrape._robots.clear()
             with mock.patch.object(scrape, "bounded", lambda fn, *a, _r=r, **kw: fn(*a, opener=opener_for(lambda: _r), **kw)):
                 self.assertEqual(scrape.allowed("https://robots.example/menu"), ok)
+                if why:
+                    self.assertEqual(scrape.robots_reason("https://robots.example/menu"), why)
+        for err, why in [(scrape.FetchStopped("too slow"), scrape.ROBOTS_UNAVAILABLE), (requests.exceptions.ReadTimeout(), scrape.ROBOTS_UNAVAILABLE),
+                         (requests.exceptions.ConnectionError(), scrape.CANT_CONNECT)]:
+            scrape._robots.clear()
+            def boom(*a, _e=err, **kw):
+                raise _e
+            with mock.patch.object(scrape, "bounded", boom):
+                self.assertFalse(scrape.allowed("https://robots.example/menu"))
+                self.assertEqual(scrape.robots_reason("https://robots.example/menu"), why)
+            self.assertNotIn(why, ss.BLOCKED_READS)  # unreachable today (deals kept), not "blocked" (deals cleared)
         scrape._robots.clear()
 
     def test_a_slow_site_stops_opening_more_pages(self):

@@ -2,6 +2,10 @@
 <html lang="en" data-look="night">
 <head>
   <meta charset="utf-8">
+  <!-- Security: the only places this page may load from or talk to. Anything else is refused by the browser.
+       Change it with care: tests/test_csp.py checks it against config.js and the script below. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-b3IEU+4dbdyAatY+vATCQ8uxh0yEpaVYBiwUPHaCjD8=' https://gc.zgo.at; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-elem 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data: https://tile.openstreetmap.org https://ctyh.goatcounter.com; connect-src 'self' https://raw.githubusercontent.com https://foodish-api.foodish-ca.workers.dev https://ctyh.goatcounter.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Foodish — Restaurant deals near you in Edmonton, Vancouver and Toronto</title>
   <meta name="description" content="Find today's restaurant deals near you in Edmonton, Vancouver and Toronto — wing nights, happy hours, half-price burgers and more.">
@@ -9,6 +13,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
+  <!-- Editing this script changes its fingerprint (sha256) in the Content-Security-Policy above; until both match,
+       the browser won't run it. tests/test_csp.py prints the new value. -->
   <script>
     // Pick the look before anything paints, so the page never flashes the wrong colours.
     // app.js makes the real decision from the sun once it knows the city; this uses the last one.
@@ -26,8 +32,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@1,6..96,500;1,6..96,700&family=Schibsted+Grotesk:wght@400;500;700&family=Sofia+Sans+Extra+Condensed:wght@600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <!-- Visit counter: GoatCounter (free, no cookies). Stats at ctyh.goatcounter.com -->
-  <script data-goatcounter="https://ctyh.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+  <!-- Visit counter: GoatCounter (free, no cookies). Stats at ctyh.goatcounter.com. A fixed version with its
+       published fingerprint (integrity), so the browser refuses it if it is ever changed. app.js does the
+       counting ("no_onload"), so only the page's path is sent, never a search. -->
+  <script data-goatcounter="https://ctyh.goatcounter.com/count" data-goatcounter-settings='{"no_onload": true}' async src="https://gc.zgo.at/count.v5.js" crossorigin="anonymous" integrity="sha384-atnOLvQb9t+jTSipvd75X2yginT4PjVbqDdlJAmxMm+wYElFmeR6EmLP5bYeoRVQ"></script>
 </head>
 <body>
   <svg class="grain" aria-hidden="true" focusable="false"><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#grain)"/></svg>

@@ -17,8 +17,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+    # ADMIN_TOKEN is given only to the steps below that use it, not to the whole job.
     steps:
       - uses: actions/checkout@v4
 
@@ -27,6 +26,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         run: |
           missing=""
           for s in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID ADMIN_TOKEN; do
@@ -79,13 +79,19 @@ jobs:
           done
           if grep -q PASTE_ worker/wrangler.toml; then echo "::error::Couldn't fill in the storage ids"; exit 1; fi
 
+      # Wrangler is pinned to one exact version, so a new release can't run here (with the tokens) unchecked.
+      # To update it: change both numbers below to a newer version listed at npmjs.com/package/wrangler.
       - name: Deploy
         working-directory: worker
+        env:
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         run: |
-          npx -y wrangler@4 deploy
-          printf '%s' "$ADMIN_TOKEN" | npx -y wrangler@4 secret put ADMIN_TOKEN
+          npx -y wrangler@4.163.0 deploy
+          printf '%s' "$ADMIN_TOKEN" | npx -y wrangler@4.163.0 secret put ADMIN_TOKEN
 
       - name: Check it answers
+        env:
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         run: |
           r=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain")

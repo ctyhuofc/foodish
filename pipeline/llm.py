@@ -14,6 +14,12 @@ import requests
 
 PROMPT_VERSION = 7  # bump when the instructions change, so every site is re-read once
 
+# The deal types the AI may tag a deal with. The prompt lists exactly these, and scrape.py's clean_deal()
+# drops any other tag, so a website can't talk the AI into a made-up type (each type becomes a search page).
+# Changing this list changes the instructions: bump PROMPT_VERSION too.
+CATEGORIES = ("wings", "burgers", "pizza", "tacos", "sushi", "pasta", "steak", "breakfast", "brunch", "chicken", "seafood",
+              "appetizers", "dessert", "drinks", "happy hour", "kids", "family", "coffee", "lunch", "late night", "vegetarian")
+
 PROMPT = """You extract restaurant DEALS for a deals app in {city}, {region}. Today is {today}.
 
 Restaurant: {name}
@@ -59,7 +65,7 @@ Return ONLY JSON in exactly this shape:
   "price_unit": "what the price buys, max 14 chars, e.g. 'per wing', 'pints', 'per taco', 'wine bottles', 'kids meal', or null",
   "days": ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]  (only the days it runs; all 7 if every day),
   "start": "HH:MM 24h or null", "end": "HH:MM 24h or null (null = until close)",
-  "categories": 1-3 lowercase tags from: wings, burgers, pizza, tacos, sushi, pasta, steak, breakfast, brunch, chicken, seafood, appetizers, dessert, drinks, happy hour, kids, family, coffee, lunch, late night, vegetarian,
+  "categories": 1-3 lowercase tags from: {categories},
   "valid_from": "YYYY-MM-DD if it starts on a later date, else null",
   "valid_until": "YYYY-MM-DD if a limited-time end date is stated, else null",
   "dine_in_only": true/false,
@@ -115,8 +121,16 @@ def _call_anthropic(prompt):
     return "".join(b.get("text", "") for b in r.json()["content"])
 
 
+def _base_url():
+    """The OpenAI-compatible provider's address. Only https://, so the API key is never sent unencrypted."""
+    base = (os.environ.get("LLM_BASE_URL") or "https://api.x.ai/v1").strip().rstrip("/")
+    if not base.lower().startswith("https://"):
+        raise LLMError("LLM_BASE_URL must start with https:// (an http:// address would send the API key unencrypted)")
+    return base
+
+
 def _call_openai_compatible(prompt):
-    base = (os.environ.get("LLM_BASE_URL") or "https://api.x.ai/v1").rstrip("/")
+    base = _base_url()
     r = requests.post(
         f"{base}/chat/completions",
         headers={"Authorization": f"Bearer {os.environ['LLM_API_KEY']}", "content-type": "application/json"},
@@ -145,8 +159,11 @@ def parse_reply(out):
 
 
 def extract_deals(name, url, text, city="Edmonton", region="Alberta"):
-    prompt = PROMPT.format(today=dt.date.today().isoformat(), name=name, url=url, text=text, city=city, region=region)
+    prompt = PROMPT.format(today=dt.date.today().isoformat(), name=name, url=url, text=text, city=city, region=region,
+                           categories=", ".join(CATEGORIES))
     call = _call_openai_compatible if os.environ.get("LLM_PROVIDER", "anthropic") != "anthropic" else _call_anthropic
+    if call is _call_openai_compatible:
+        _base_url()  # a plain http:// address is refused before anything is sent (or counted)
     global requests_made
     unreadable = None
     for attempt in range(3):

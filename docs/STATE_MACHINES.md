@@ -106,6 +106,11 @@ works starts the count again, so a few odd sites spread through a run can't stop
 
 **Limits on reading a site** (`scrape.py`): each download stops after 30 s or 3 MB (500 KB for robots.txt);
 such a page's read status is `too slow` or `too large`. No more pages of a site are opened after 90 s on it.
+Only public web addresses are opened: a link or redirect to a private or local address (127.0.0.1, 10.x, 169.254.169.254, `localhost`)
+is `address not allowed`; redirects are followed one at a time, at most 5 (`too many redirects`), each checked and its robots.txt asked.
+A robots.txt that answers with a server error, or is too slow or too large, means "don't read this site today" (`robots.txt unavailable`,
+the internet's standard RFC 9309); none at all (an answer in the 400s) allows everything. These sites are `unreachable`, not `blocked`:
+their deals are kept, and go after 14 days as usual.
 JavaScript-only pages open in a separate, sandboxed browser that gets no secrets and is stopped after 60 s. A website or an AI deal the robot can't make sense of is
 skipped for the day (the site counts as unreachable, the deal is dropped); it doesn't stop the city. Cached deals whose `valid_until` has passed are now
 dropped when publishing; they used to linger until the website changed.
