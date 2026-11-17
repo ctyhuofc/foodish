@@ -73,7 +73,7 @@ The app opens the city the visitor is in (within 100 km of its centre), a link l
 
 ### 1. Put the code on GitHub (free)
 1. Create a free account at github.com → **New repository** → name it `foodish` → **Public** (public repos get unlimited free Action minutes; private gets 2,000 min/month, which is also enough).
-2. **Add file → Upload files** → drag in everything from this folder (including the hidden `.github` folder — on a Mac press ⌘⇧. to show it).
+2. **Add file → Upload files** → drag in everything from this folder (including the hidden `.github` folder — on a Mac press ⌘⇧. to show it). Don't drag in any `.wrangler` folder (for example `worker/cron/.wrangler`) or `.env` / `.dev.vars` file if you have one: they can hold your account details, and uploading in the browser ignores `.gitignore`.
 
 ### 2. Connect an AI key
 Pick one:
@@ -103,12 +103,14 @@ The app is plain files, no server needed. `.github/workflows/pages.yml` publishe
    - `www` → **CNAME** → `YOUR-GITHUB-NAME.github.io`
    - `@` (the bare domain) → four **A** records: `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
    It usually works within an hour (up to a day). Your old host keeps serving until the DNS change reaches visitors, so there's no downtime, and you can point the records back to undo it.
+3. **Verify the domain** so only your GitHub account can use it: github.com → your photo → **Settings → Pages → Add a domain** → `foodish.ca`. GitHub shows a **TXT** record; add it at the domain company, then press **Verify**. Keep that record.
+   If you ever turn Pages off or delete the repo, delete the `www` and `@` records above **first**: a domain still pointing at GitHub with no site behind it can be claimed by someone else, who could then show their own pages at your address.
 
 Location needs **https** (all the options above provide it).
 
 ### 6. Turn on push alerts and deal tips (optional, ~15 min, no terminal)
 1. Free account at cloudflare.com. Open **Workers & Pages** once so Cloudflare gives the account its `workers.dev` address.
-2. Cloudflare → your profile → **API Tokens** → Create Token → template **Edit Cloudflare Workers** → Continue → Create. Copy the token. Also copy your **Account ID** (Workers & Pages page, right-hand side).
+2. Cloudflare → your profile → **API Tokens** → Create Token → template **Edit Cloudflare Workers**. Before going on, narrow it: **Account Resources** → *Include* → your own account (not *All accounts*); **Zone Resources** → include no zones if Cloudflare lets you (the service only uses a `workers.dev` address), otherwise the narrowest choice it offers (*Specific zone* → one domain); **TTL** → an end date, for example a year from today (when it ends, only re-running step 4 stops working: make a new token then). → Continue → Create. Copy the token. Also copy your **Account ID** (Workers & Pages page, right-hand side).
 3. GitHub → Settings → Secrets and variables → Actions → **Secrets**, add:
    `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `ADMIN_TOKEN` (any long random password), and
    `VAPID_PRIVATE_KEY` (the private half of a key pair from `npx web-push generate-vapid-keys`).
@@ -145,6 +147,7 @@ GitHub's built-in scheduler runs hours late (in Nov 2026 the 4 am read started a
    npx wrangler login                     # opens Cloudflare in your browser: click Allow
    npx wrangler deploy                    # prints the worker's web address
    npx wrangler secret put GITHUB_TOKEN   # paste the token from step 1, press Enter
+   npx wrangler logout                    # when finished: this computer no longer holds your Cloudflare login
    ```
 3. Open the web address `deploy` printed. It should say *"Foodish trigger is set up."* The next morning, GitHub → Actions should show a run started by **workflow_dispatch** at about 4:00 am, and the 4:17 run should say it skipped because deals were just refreshed. Another **workflow_dispatch** run should appear at about 3:45 pm: the alerts.
 

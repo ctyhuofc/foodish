@@ -60,15 +60,28 @@ def not_restaurant_site(host: str) -> bool:
 
 
 def norm_site(url):
+    """A website as we save it, or None if it isn't one we should visit. Anyone can edit OpenStreetMap, so an
+    address that points somewhere a restaurant's site never is (a bare number like 127.0.0.1, a machine on a
+    private network, a hidden login like www.timhortons.com@evil.ca, an odd port) is left off."""
     if not url:
         return None
     url = url.strip().split(";")[0]
-    if not re.match(r"^https?://", url):
+    if not re.match(r"^https?://", url, re.I):
         url = "https://" + url
-    p = urlparse(url)
-    if not p.netloc or not_restaurant_site(p.netloc):
+    try:
+        p = urlparse(url)
+        host, port = (p.hostname or "").rstrip("."), p.port
+    except ValueError:  # a broken port or IPv6 address
+        return None
+    if not host or p.username is not None or "@" in p.netloc or not_restaurant_site(host):
         return None  # social pages, directories and delivery apps: not the restaurant's own site
-    return f"{p.scheme}://{p.netloc.lower()}{p.path.rstrip('/') or ''}"
+    if ":" in host or not re.fullmatch(r"[a-z][a-z0-9-]*", host.split(".")[-1]) or "." not in host \
+            or host.endswith((".local", ".internal", ".localhost")):
+        return None  # a bare number (IP address), or a name that only works inside a private network
+    scheme = p.scheme.lower()
+    if port is not None and port != {"http": 80, "https": 443}.get(scheme):
+        return None
+    return f"{scheme}://{host}{p.path.rstrip('/') or ''}"
 
 
 def place_name(name: str) -> str:
@@ -166,9 +179,9 @@ def _odd_one_out(site: str, chain_site: str, keys: set[str], urls: list[str]) ->
 def link_websites(rows: list[dict], brand_sites: dict) -> int:
     """Give branches with no website one they can share, and correct a branch whose listed website is another
     business's (see _odd_one_out). Any other listed website is kept.
-      1. other branches in this city with the same brand tag or the same (non-generic) name agree on one
+      1. the chain is in brand_sites.json (the owner's list: it always wins, see `chosen` below)
+      2. other branches in this city with the same brand tag or the same (non-generic) name agree on one
          (see shared_site; if they disagree, the gap is left)
-      2. the chain is in brand_sites.json
     Returns how many places got a website (filled or corrected)."""
     listed = collections.defaultdict(list)
     for r in rows:
@@ -176,11 +189,16 @@ def link_websites(rows: list[dict], brand_sites: dict) -> int:
             for k in {name_key(r.get("brand")), name_key(r["name"])} - {""}:
                 listed[k].append(r["website"])
     known = {k: shared_site(urls) for k, urls in listed.items()}
+    # The owner's own list wins over what branches on OpenStreetMap agree on: anyone can edit OpenStreetMap,
+    # so three made-up "Dairy Queen" entries listing another site must not repoint every Dairy Queen.
+    chosen = {k: s for k, s in ((k, norm_site(v)) for k, v in brand_sites.items()) if s}
     filled = 0
     for r in rows:
         if r.get("website"):
             keys = {name_key(r.get("brand")), name_key(r["name"])} - {""}
             for k in keys - GENERIC_NAMES:
+                if k in chosen and _host(chosen[k]) != _host(known.get(k) or ""):
+                    break  # branches agree on a site the owner's list doesn't name: change nothing
                 if known.get(k) and _odd_one_out(r["website"], known[k], keys, listed[k]):
                     r["website"] = known[k]
                     filled += 1
@@ -189,7 +207,7 @@ def link_websites(rows: list[dict], brand_sites: dict) -> int:
         for k in [name_key(r.get("brand")), name_key(r["name"])]:
             if not k or k in GENERIC_NAMES:
                 continue
-            site = known.get(k) or norm_site(brand_sites.get(k))
+            site = chosen.get(k) or known.get(k)
             if site:
                 r["website"] = site
                 filled += 1
@@ -205,7 +223,7 @@ def add_overture(city: cities.City, rows: list[dict]) -> None:
     try:
         import overture
         n = overture.fill_websites(city, rows)
-        n += link_websites(rows, {})
+        n += link_websites(rows, load_brand_sites())  # the owner's list still wins over shared sites
         print(f"{city.name}: Overture Maps filled {n} more websites")
     except Exception as e:  # noqa: BLE001
         print(f"::warning title=Overture skipped for {city.name}::{type(e).__name__}: {str(e)[:200]}")

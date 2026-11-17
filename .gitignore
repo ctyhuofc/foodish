@@ -1,5 +1,10 @@
 __pycache__/
 *.pyc
 .DS_Store
-worker/.wrangler/
+# Wrangler's local folders, at any depth (worker/.wrangler, worker/cron/.wrangler): they can hold your Cloudflare account details.
+.wrangler/
+# Secrets kept on your computer for local testing.
+.env
+.env.*
+.dev.vars
 node_modules/

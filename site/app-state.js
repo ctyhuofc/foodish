@@ -1,5 +1,6 @@
 /* The app's small rules that don't touch the page: what the address bar means, which message the status
- * line shows, whether alerts are on, which day is chosen, and the stages of the "tell us a deal" form.
+ * line shows, whether alerts are on, which alert sign-ups still need deleting, what a visit count sends,
+ * which day is chosen, and the stages of the "tell us a deal" form.
  * No page, no storage, no clock: everything comes in as arguments, so tests/app-state.test.mjs can check
  * every case. Loaded as a plain <script> before app.js (window.FoodishAppState), and as a CommonJS module
  * by the tests. app.js applies the answers to the page. State machines: docs/STATE_MACHINES.md.
@@ -83,6 +84,29 @@
     return current === BLOCKED_TEXT ? "" : current;
   }
 
+  // Turning the daily heads-up off asks the alerts service to delete this browser's sign-up (its notification
+  // address and rounded location). If that request fails, the address waits in a short list (saved on the phone)
+  // and is sent again on later opens until the service says it's deleted. result: "queued" (about to ask),
+  // "deleted" (the service said so), "failed" (keep waiting), "signed_up" (on again with that address: the
+  // service's copy is current, so it must not be deleted later). Only https addresses are kept, at most 5.
+  const UNSUB_MAX = 5;
+  function nextUnsubscribes(list, { endpoint, result }) {
+    const ok = (e) => typeof e === "string" && /^https:\/\/[^\s]+$/.test(e);
+    const kept = (Array.isArray(list) ? list : []).filter(ok);
+    const others = kept.filter((e) => e !== endpoint);
+    if (result === "queued") return ok(endpoint) ? [...others, endpoint].slice(-UNSUB_MAX) : kept;
+    if (result === "deleted" || result === "signed_up") return others;
+    return kept;  // "failed": nothing changes
+  }
+
+  // ---------- counting visits (GoatCounter) ----------
+  // GoatCounter would send the whole address, search included (?q=tacos). We send the page's path only.
+  function visitData(data, pathname) {
+    const d = { ...(data || {}), p: pathname || "/" };
+    delete d.q;
+    return d;
+  }
+
   // ---------- "A deal we missed?" form ----------
   const SUBMIT = Object.freeze({ IDLE: "idle", SENDING: "sending", SENT: "sent", ERROR: "error", EMAIL: "email" });
   const SUBMIT_TEXT = {
@@ -102,5 +126,5 @@
     } catch { return ""; }
   }
 
-  return { safeUrl, parseLink, buildLink, historyStep, normalizeDay, STATUS, statusLine, alertsState, alertsMessage, BLOCKED_TEXT, SUBMIT, submitView };
+  return { safeUrl, parseLink, buildLink, historyStep, normalizeDay, STATUS, statusLine, alertsState, alertsMessage, BLOCKED_TEXT, nextUnsubscribes, visitData, SUBMIT, submitView };
 });

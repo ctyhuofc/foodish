@@ -1,4 +1,6 @@
 // Foodish configuration (see README.md).
+// If you change a dataUrl or API_URL to another web address, add it to connect-src in the
+// Content-Security-Policy line of index.html too, or the browser will refuse it (tests/test_csp.py checks).
 window.FOODISH_CONFIG = {
   // The cities Foodish covers. Keep in step with cities.json (tests/test_cities.py checks they match).
   // dataUrl is where each city's daily deal file lives. While testing on your computer you can use the

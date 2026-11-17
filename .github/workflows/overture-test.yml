@@ -25,7 +25,9 @@ jobs:
         with: { python-version: "3.12" }
       - run: pip install -r pipeline/requirements.txt duckdb
       - name: Match Overture places to restaurants missing a website
-        run: python pipeline/overture_test.py ${{ inputs.city || 'toronto' }}
+        env:
+          CITY: ${{ inputs.city || 'toronto' }}  # passed as a value, never pasted into the command
+        run: python pipeline/overture_test.py "$CITY"
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: overture-report, path: overture_report.json, if-no-files-found: ignore }

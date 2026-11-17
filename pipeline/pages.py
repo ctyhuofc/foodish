@@ -14,12 +14,15 @@ No extra packages needed.  Run:  python pipeline/pages.py
 """
 from __future__ import annotations
 
+import base64
 import datetime as dt
+import hashlib
 import html
 import json
 import os
 import re
 from pathlib import Path
+from urllib.parse import urlencode
 
 import cities
 import deal_state as ds  # the shared deal-timing rules (spec/deal-states.json)
@@ -137,13 +140,22 @@ h2{font-size:18px;margin:26px 0 6px}footer{color:var(--muted);font-size:13px;mar
 
 
 # Visit counter (GoatCounter: free, no cookies). Same one as site/index.html; stats at ctyh.goatcounter.com.
-COUNTER = '<script data-goatcounter="https://ctyh.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>'
+COUNT_AT = "https://ctyh.goatcounter.com"
+COUNTER = f'<script data-goatcounter="{COUNT_AT}/count" async src="https://gc.zgo.at/count.v5.js" crossorigin="anonymous" integrity="sha384-atnOLvQb9t+jTSipvd75X2yginT4PjVbqDdlJAmxMm+wYElFmeR6EmLP5bYeoRVQ"></script>'
+
+# What these pages may load (Content-Security-Policy), so text that slips into a page can't run code or send a
+# visitor's data anywhere: the counter's script and the counter itself, the style written in the page (only
+# that exact style: its fingerprint is in the rule), and the site's own icon. No fonts, frames or forms.
+CSP = ("default-src 'none'; script-src https://gc.zgo.at; "
+       f"style-src 'sha256-{base64.b64encode(hashlib.sha256(CSS.encode()).digest()).decode()}'; "
+       f"img-src 'self' data: {COUNT_AT}; connect-src {COUNT_AT}; base-uri 'none'; form-action 'none'")
 
 
 def page(title: str, desc: str, path: str, body: str, updated: str, city: cities.City) -> str:
     url = f"{SITE_URL}/{path}"
     return f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="{CSP}">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{esc(title)} | Foodish</title>
 <meta name="description" content="{esc(desc)}">
 <link rel="canonical" href="{esc(url)}">
@@ -155,6 +167,21 @@ def page(title: str, desc: str, path: str, body: str, updated: str, city: cities
 <footer>Deals are gathered from restaurants' own websites and checked daily. Always confirm with the restaurant before you go. Updated {esc(updated)}.<br><a href="/bot/">About the robot</a> · <a href="/privacy/">Privacy</a> · Restaurants: <a href="mailto:yates@foodish.ca?subject=Foodish%20listing">fix or remove a listing</a></footer>
 </body></html>
 """
+
+
+# File names a deal type's page may never take: the day pages and the hub (index.html).
+RESERVED = {slug(d) for d in DAY_LONG} | {"index", "sitemap", "robots", "404"}
+
+
+def page_types(cats: list[str]) -> list[str]:
+    """The deal types that get a page: one whose file name would be empty, a day page, the hub or another
+    type's page (e.g. a type called "monday" or "index") is left out, so it can't overwrite that page."""
+    taken, out = set(RESERVED), []
+    for c in cats:
+        if slug(c) and slug(c) not in taken:
+            taken.add(slug(c))
+            out.append(c)
+    return out
 
 
 def nav(day_counts: dict, cat_counts: dict, cats: list[str], city: cities.City) -> str:
@@ -181,8 +208,9 @@ def build(city: cities.City, others: list[cities.City]) -> list[str]:
     cat_counts: dict[str, int] = {}
     for d in deals:
         for c in d.get("categories") or []:
-            cat_counts[c] = cat_counts.get(c, 0) + 1
-    cats = sorted((c for c, n in cat_counts.items() if n >= MIN_DEALS), key=lambda c: -cat_counts[c])
+            if isinstance(c, str):
+                cat_counts[c] = cat_counts.get(c, 0) + 1
+    cats = page_types(sorted((c for c, n in cat_counts.items() if n >= MIN_DEALS), key=lambda c: -cat_counts[c]))
     links = nav(day_counts, cat_counts, cats, city)
 
     OUT.mkdir(parents=True, exist_ok=True)
@@ -209,7 +237,7 @@ def build(city: cities.City, others: list[cities.City]) -> list[str]:
         title = f"{TITLES.get(c, c.capitalize() + ' deals')} in {CITY}"
         write(f"{slug(c)}.html", title,
               f"{len(items)} {c} deals at {CITY} restaurants, with days, times and prices, checked daily.",
-              f"{len(items)} deals, with the days and times they run.", app_link(city, f"cat={c}"), items)
+              f"{len(items)} deals, with the days and times they run.", app_link(city, urlencode({"cat": c})), items)
 
     # the hub page also points to the other cities that have pages
     elsewhere = "".join(f'<a href="/{o.pages_dir}/">{esc(o.name)}</a>' for o in others)

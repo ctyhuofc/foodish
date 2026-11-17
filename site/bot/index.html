@@ -1,5 +1,8 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="en"><head><meta charset="utf-8">
+<!-- Security: this page loads only its own styles below and the icon (tests/test_csp.py checks the fingerprint). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'sha256-FK+lojSs0MSBI0m5pVyeJmMiql2uCz8IhY117VjV+UQ='; img-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FoodishBot: the robot that reads restaurant websites | Foodish</title>
 <meta name="description" content="What FoodishBot reads, how often, and how a restaurant can correct a listing, be removed, or block the robot.">
 <link rel="canonical" href="https://www.foodish.ca/bot/">

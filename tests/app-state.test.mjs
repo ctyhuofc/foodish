@@ -143,6 +143,35 @@ test("submit form: Send is off only while sending", () => {
   assert.deepEqual(as.submitView(as.SUBMIT.IDLE), { disabled: false, text: "" });
 });
 
+// Turning daily alerts off must really delete the sign-up kept by the alerts service. The browser's address is
+// remembered first ("queued"), and forgotten only once the service has said it's deleted, or the same address
+// is signed up again (then the service's copy is the current one and must not be deleted later).
+test("alerts off: the sign-up waits to be deleted until the service says it's done", () => {
+  const A = "https://fcm.googleapis.com/fcm/send/aaa", B = "https://updates.push.services.mozilla.com/wpush/v2/bbb";
+  const next = as.nextUnsubscribes;
+  assert.deepEqual(next([], { endpoint: A, result: "queued" }), [A]);
+  assert.deepEqual(next([A], { endpoint: A, result: "queued" }), [A]);            // never twice
+  assert.deepEqual(next([A], { endpoint: B, result: "queued" }), [A, B]);         // an older one still waits
+  assert.deepEqual(next([A, B], { endpoint: A, result: "deleted" }), [B]);
+  assert.deepEqual(next([A], { endpoint: A, result: "failed" }), [A]);            // try again on the next open
+  assert.deepEqual(next([A], { endpoint: A, result: "signed_up" }), []);          // on again with the same address
+  assert.deepEqual(next([A], { endpoint: B, result: "signed_up" }), [A]);
+  assert.deepEqual(next(null, { endpoint: A, result: "deleted" }), []);
+  // the list is small, and only holds real https addresses (it is read back from storage)
+  const many = ["1", "2", "3", "4", "5", "6"].map((n) => `https://push.example/${n}`);
+  assert.deepEqual(many.reduce((l, e) => next(l, { endpoint: e, result: "queued" }), []), many.slice(-5));
+  assert.deepEqual(next(["javascript:x", 42, "http://plain.example/x", A], { endpoint: B, result: "failed" }), [A]);
+  assert.deepEqual(next("nonsense", { endpoint: "not a url", result: "queued" }), []);
+});
+
+// Visits are counted by path only: what comes after the "?" (a search like ?q=tacos) is never sent.
+test("visitData sends the path, never the address's search part", () => {
+  const sent = as.visitData({ p: "/?q=tacos&city=vancouver", q: "?q=tacos&city=vancouver", t: "Foodish", r: "", s: [390] }, "/");
+  assert.deepEqual(sent, { p: "/", t: "Foodish", r: "", s: [390] });
+  assert.equal(as.visitData({ p: "/x?q=1" }, "").p, "/");
+  assert.equal(as.visitData(null, "/privacy/").p, "/privacy/");
+});
+
 // A deal's link only ever opens a plain web page (FIX: a website could talk the AI into a "javascript:" link).
 test("safeUrl keeps http(s) links and drops everything else", () => {
   assert.equal(as.safeUrl("https://wingplace.ca/specials"), "https://wingplace.ca/specials");

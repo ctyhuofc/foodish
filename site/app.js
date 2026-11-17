@@ -948,10 +948,31 @@
       const res = await fetch(CFG.API_URL + "/subscribe", { method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ subscription: sub, lat: +spot.lat.toFixed(3), lng: +spot.lng.toFixed(3), radius_km: Math.min(state.radius, 25), categories: cats }) });
       if (!res.ok) throw new Error(`alerts service said ${res.status}`); // refused: the switch must not show "on"
+      unsubList(sub.endpoint, "signed_up"); // this address is current again: never delete it later
     } else if (sub) {
-      await fetch(CFG.API_URL + "/unsubscribe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) });
-      await sub.unsubscribe();
+      // Remember the address first, stop alerts in this browser straight away, then ask the service to delete
+      // the sign-up. If that fails, the next open asks again (retryUnsubscribes) until it's done.
+      const endpoint = sub.endpoint;
+      unsubList(endpoint, "queued");
+      try { await sub.unsubscribe(); } finally { await sendUnsubscribe(endpoint); }
     }
+  }
+  // Sign-ups the service still has to delete: a short list on the phone ("unsubPending"). Rules in app-state.js.
+  const unsubList = (endpoint, result) => store.set("unsubPending", AS.nextUnsubscribes(store.get("unsubPending", []), { endpoint, result }));
+  async function sendUnsubscribe(endpoint) {
+    let ok = false;
+    try {
+      const res = await fetch(CFG.API_URL + "/unsubscribe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ endpoint }) });
+      ok = res.ok;
+    } catch { /* offline or the service is down: try again next time */ }
+    unsubList(endpoint, ok ? "deleted" : "failed");
+    return ok;
+  }
+  // On opening: ask again for any sign-up that turning alerts off couldn't delete. Quiet either way.
+  async function retryUnsubscribes() {
+    if (!CFG.API_URL) return;
+    const waiting = AS.nextUnsubscribes(store.get("unsubPending", []), {}); // the saved list, cleaned
+    for (const endpoint of waiting) await sendUnsubscribe(endpoint);
   }
   const pushCatsList = () => $("pushCats").value.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
   async function setAlerts(change) {
@@ -1052,6 +1073,17 @@
     const v = AS.submitView(next);
     $("sendSubmit").disabled = v.disabled;
     $("submitMsg").textContent = v.text;
+  }
+
+  // ---------- counting visits ----------
+  // GoatCounter (index.html) is told not to count by itself ("no_onload"), so the count can leave out what's
+  // after the "?" in the address: searches stay private. Its script version is fixed, so this keeps working.
+  function countVisit() {
+    const gc = window.goatcounter;
+    if (!gc || typeof gc.count !== "function" || typeof gc.get_data !== "function") return false;
+    if (!gc.foodishPathOnly) { const own = gc.get_data; gc.get_data = (v) => AS.visitData(own(v), location.pathname); gc.foodishPathOnly = true; }
+    gc.count();
+    return true;
   }
 
   // ---------- address bar ----------
@@ -1212,6 +1244,8 @@
     if (store.get("nearbyWatch", false)) startWatch();
     syncAlertsBadge();
     registerSW().then(reconcilePush);
+    retryUnsubscribes();
+    if (!countVisit()) document.querySelector("script[data-goatcounter]")?.addEventListener("load", countVisit, { once: true });
     window.addEventListener("online", () => { if (state.load === LOAD.ERROR) load(); });
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState !== "visible") return;

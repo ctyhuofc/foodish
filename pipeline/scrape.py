@@ -17,10 +17,12 @@ import argparse
 import concurrent.futures as cf
 import datetime as dt
 import hashlib
+import ipaddress
 import json
 import os
 import re
 import signal
+import socket
 import subprocess
 import threading
 import time
@@ -61,11 +63,22 @@ def removed_sites() -> set[str]:
         raw = json.loads(REMOVED.read_text())
     except (OSError, ValueError):
         return set()
-    return {domain(u if "://" in u else "https://" + u) for u in raw.get("sites", []) if isinstance(u, str) and u.strip()}
+    return {site_host(u.strip()) for u in raw.get("sites", []) if isinstance(u, str) and u.strip()} - {""}
 
 
 def domain(url):
+    """The key a website is saved under in sites.json and report.json. Don't change it: the saved deals are filed by it."""
     return urlparse(url).netloc.lower().removeprefix("www.")
+
+
+def site_host(url) -> str:
+    """The website's bare name, for matching removal requests: 'https://user@WWW.X.ca.:443/menu' -> 'x.ca'.
+    (domain() keeps the port and the rest, so 'x.ca:443' would slip past a removal request for 'x.ca'.)"""
+    try:
+        host = urlparse(url if "://" in url else "https://" + url).hostname or ""
+    except ValueError:
+        return ""
+    return host.rstrip(".").removeprefix("www.")
 
 
 # ---------------- fetching ----------------
@@ -78,19 +91,98 @@ TIMEOUTS = (10, 15)       # seconds to connect; seconds of silence allowed while
 HARD_SECONDS = FETCH_SECONDS + TIMEOUTS[1]  # give up on a download after this, whatever it is stuck on
 SITE_SECONDS = 90         # after this long on one site, don't open more of its pages
 CHUNK = 16_384            # read in small pieces, so an unzipped piece can't be huge before it's counted
+MAX_REDIRECTS = 5         # a page that sends us on more often than this isn't read
 TOO_LARGE, TOO_SLOW = "too large", "too slow"  # reasons in report.json
+TOO_MANY_REDIRECTS = "too many redirects"
+ADDRESS_NOT_ALLOWED = "address not allowed"    # not a plain public web address (see check_address); never opened
+ROBOTS_UNAVAILABLE = "robots.txt unavailable"  # its robots.txt couldn't be read today, so the site isn't either
+CANT_CONNECT = "can't connect (site down or domain gone)"
 
 
 class FetchStopped(Exception):
-    """A download went over a limit; the message is TOO_LARGE or TOO_SLOW."""
+    """A download was stopped before it finished; the message is the reason for report.json
+    (TOO_LARGE, TOO_SLOW, TOO_MANY_REDIRECTS, ADDRESS_NOT_ALLOWED, or a robots.txt answer)."""
 
 
-def download(url, limit, want=lambda r: True, deadline=FETCH_SECONDS, clock=time.monotonic, opener=None):
+# ---- only public web addresses ----
+# A website's address comes from OpenStreetMap or Overture (anyone can edit them), and a site can send us on
+# anywhere. Without this check a link could make the robot open pages on GitHub's own private network (for
+# example 169.254.169.254, where cloud machines keep their secrets) or on the machine itself (127.0.0.1).
+def public_ip(text) -> bool:
+    """True for an address on the public internet; False for private, local, loopback, link-local and the like."""
+    try:
+        ip = ipaddress.ip_address(str(text).split("%")[0])
+    except ValueError:
+        return False
+    if ip.version == 6 and ip.ipv4_mapped:  # ::ffff:10.0.0.1 is really 10.0.0.1
+        ip = ip.ipv4_mapped
+    return ip.is_global and not ip.is_multicast
+
+
+_addresses = {}  # host name -> its addresses, looked up once per run
+
+
+def _lookup(host):
+    """Every address a host name points to (the real DNS lookup). Raises OSError if it has none."""
+    if host not in _addresses:
+        _addresses[host] = {a[4][0] for a in socket.getaddrinfo(host, None, proto=socket.IPPROTO_TCP)}
+    return _addresses[host]
+
+
+def check_address(url, lookup=_lookup):
+    """Raise FetchStopped(ADDRESS_NOT_ALLOWED) unless `url` is http(s), has no hidden login ('user@'), and its
+    host is on the public internet: every address its name points to (looked up with `lookup`) must be public.
+    A name that doesn't exist raises requests' ConnectionError, so the site is "can't connect" as before.
+    `lookup=None` skips the name lookup (the tests' fake downloads); a bare IP address is still checked."""
+    try:
+        p = urlparse(url)
+        host = (p.hostname or "").rstrip(".")
+        p.port  # noqa: B018  raises ValueError on a broken port
+    except ValueError:
+        raise FetchStopped(ADDRESS_NOT_ALLOWED) from None
+    if p.scheme not in ("http", "https") or not host or p.username is not None or "@" in p.netloc \
+            or host == "localhost" or host.endswith((".localhost", ".local", ".internal")):
+        raise FetchStopped(ADDRESS_NOT_ALLOWED)
+    try:
+        ipaddress.ip_address(host.split("%")[0])
+        addresses = {host}  # a bare IP address
+    except ValueError:
+        if lookup is None:
+            return
+        try:
+            addresses = lookup(host)
+        except (OSError, UnicodeError) as e:
+            raise requests.exceptions.ConnectionError(f"no address for {host}") from e
+        if not addresses:
+            raise requests.exceptions.ConnectionError(f"no address for {host}")
+    if not all(public_ip(a) for a in addresses):
+        raise FetchStopped(ADDRESS_NOT_ALLOWED)
+
+
+def download(url, limit, want=lambda r: True, deadline=FETCH_SECONDS, clock=time.monotonic, opener=None,
+             lookup=None, robots=None):
     """(response, body bytes) for `url`, reading at most `limit` bytes within `deadline` seconds, or
     FetchStopped. The body is only read when want(response) says so (else it is None): a 404 isn't
-    downloaded. The response is always closed. `clock` and `opener` are swapped in by the tests."""
+    downloaded. The response is always closed. `clock`, `opener` and `lookup` are swapped in by the tests
+    (with a fake `opener` and no `lookup`, host names aren't looked up).
+    Redirects are followed here, one at a time (at most MAX_REDIRECTS), so every address is checked before it
+    is opened (check_address), and `robots(url)` (from get(): None, or why not) is asked about each new one."""
     start = clock()
-    r = (opener or requests.get)(url, headers=HEADERS, timeout=TIMEOUTS, stream=True, allow_redirects=True)
+    lookup = lookup or (_lookup if opener is None else None)
+    for hop in range(MAX_REDIRECTS + 1):
+        check_address(url, lookup)
+        if hop and robots and robots(url):
+            raise FetchStopped(robots(url))
+        if clock() - start > deadline:
+            raise FetchStopped(TOO_SLOW)
+        r = (opener or requests.get)(url, headers=HEADERS, timeout=TIMEOUTS, stream=True, allow_redirects=False)
+        if r.status_code in (301, 302, 303, 307, 308) and r.headers.get("location"):
+            r.close()
+            url = urljoin(url, r.headers["location"])
+            continue
+        break
+    else:
+        raise FetchStopped(TOO_MANY_REDIRECTS)
     try:
         if not want(r):
             return r, None
@@ -144,30 +236,71 @@ def as_text(body, encoding):
         return str(body, errors="replace")
 
 
-_robots = {}
+def why_unread(e) -> str:
+    """The reason for report.json when a download raised `e`."""
+    if isinstance(e, FetchStopped):
+        return str(e)
+    if isinstance(e, requests.exceptions.SSLError):
+        return "SSL error"
+    if isinstance(e, requests.exceptions.Timeout):
+        return "timeout"
+    if isinstance(e, requests.exceptions.ConnectionError):
+        return CANT_CONNECT
+    return f"error: {type(e).__name__}"
 
 
-def allowed(url):
+_robots = {}  # "https://site.ca" -> its robots.txt rules, or why the site can't be read today
+
+
+def robots_rules(url):
+    """The rules in the robots.txt of `url`'s site, read once per run (the internet's standard, RFC 9309):
+      * read fine -> its rules;  no robots.txt (an answer in the 400s) -> everything allowed
+      * a server error (500s), too slow, too large, too many redirects -> nothing allowed today (ROBOTS_UNAVAILABLE).
+        Before Nov 2026 this allowed everything. The site counts as unreachable today, so its saved deals are
+        kept (site_state: unreachable, then gone after STALE_DAYS), not cleared like a site that says no.
+      * the site can't be reached at all (no such name, refused, bad SSL, not a public address) -> that reason."""
     p = urlparse(url)
     base = f"{p.scheme}://{p.netloc}"
     if base not in _robots:
         rp = urllib.robotparser.RobotFileParser()
-        try:
+        try:  # download() itself doesn't ask about robots.txt here, so this never loops back
             r, body = bounded(download, base + "/robots.txt", ROBOTS_BYTES, want=lambda r: r.status_code == 200)
-            rp.parse(as_text(body, requests.utils.get_encoding_from_headers(r.headers)).splitlines() if r.status_code == 200 else [])
-        except Exception:  # noqa: BLE001  as before: a robots.txt we can't read (now also: too big or too slow) blocks nothing
-            rp.parse([])
+            if r.status_code == 200:
+                rp.parse(as_text(body, requests.utils.get_encoding_from_headers(r.headers)).splitlines())
+            elif 400 <= r.status_code < 500:
+                rp.parse([])
+            else:
+                rp = ROBOTS_UNAVAILABLE
+        except Exception as e:  # noqa: BLE001
+            why = why_unread(e)
+            rp = why if why in (CANT_CONNECT, "SSL error", ADDRESS_NOT_ALLOWED) else ROBOTS_UNAVAILABLE
         _robots[base] = rp
-    return _robots[base].can_fetch(BOT, url)
+    return _robots[base]
+
+
+def allowed(url):
+    rules = robots_rules(url)
+    return not isinstance(rules, str) and rules.can_fetch(BOT, url)
+
+
+def robots_reason(url):
+    """Why allowed(url) said no: its robots.txt blocks FoodishBot (READ_ROBOTS), or couldn't be read today."""
+    rules = robots_rules(url)
+    return rules if isinstance(rules, str) else ss.READ_ROBOTS
+
+
+def _robots_say(url):
+    """For download(): None if a page we are sent on to may be read, else why not."""
+    return None if allowed(url) else robots_reason(url)
 
 
 def get(url):
     if not allowed(url):
-        REASONS[url] = ss.READ_ROBOTS
+        REASONS[url] = robots_reason(url)
         return None
     try:
         page = lambda r: r.status_code == 200 and "html" in r.headers.get("content-type", "")  # noqa: E731
-        r, body = bounded(download, url, PAGE_BYTES, want=page)
+        r, body = bounded(download, url, PAGE_BYTES, want=page, robots=_robots_say)
         ctype = r.headers.get("content-type", "")
         if r.status_code != 200:
             REASONS[url] = f"HTTP {r.status_code}"
@@ -181,16 +314,8 @@ def get(url):
             m = re.search(rb'<meta[^>]+charset=["\']?([\w-]+)', body[:3000], re.I)
             encoding = m.group(1).decode() if m else (_guess_encoding(body) or "utf-8")
         return as_text(body, encoding)
-    except FetchStopped as e:
-        REASONS[url] = str(e)
-    except requests.exceptions.SSLError:
-        REASONS[url] = "SSL error"
-    except requests.exceptions.Timeout:
-        REASONS[url] = "timeout"
-    except requests.exceptions.ConnectionError:
-        REASONS[url] = "can't connect (site down or domain gone)"
-    except Exception as e:  # noqa: BLE001
-        REASONS[url] = f"error: {type(e).__name__}"
+    except Exception as e:  # noqa: BLE001  too slow, can't connect, address not allowed, ...
+        REASONS[url] = why_unread(e)
     return None
 
 
@@ -212,9 +337,28 @@ def browser_env():
     return {k: v for k, v in os.environ.items() if k.upper() in BROWSER_ENV or k.startswith("PLAYWRIGHT_")}
 
 
+def browser_may_load(url) -> bool:
+    """What the browser may load for a page: plain web addresses only, never 'localhost' or a bare private,
+    loopback or link-local address (192.168.1.1, 127.0.0.1, the cloud's 169.254.169.254). Host names aren't
+    looked up here (that would slow every picture down); the page itself was checked by get() first."""
+    try:
+        p = urlparse(url)
+        host = (p.hostname or "").rstrip(".")
+    except ValueError:
+        return False
+    if p.scheme not in ("http", "https") or not host or host == "localhost" or host.endswith((".localhost", ".local", ".internal")):
+        return False
+    try:
+        ipaddress.ip_address(host.split("%")[0])
+    except ValueError:
+        return True  # a name, not an address
+    return public_ip(host)
+
+
 def render_page(url, sandbox):
     """In the separate copy: open `url` in Chromium and write its HTML to stdout (nothing if over PAGE_BYTES).
-    The browser runs in Chromium's sandbox, can't download files, and doesn't run the site's service worker."""
+    The browser runs in Chromium's sandbox, can't download files, doesn't run the site's service worker,
+    and every request it makes passes browser_may_load() first."""
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
         try:
@@ -223,6 +367,7 @@ def render_page(url, sandbox):
             sys.exit(LAUNCH_FAILED)
         try:
             ctx = b.new_context(user_agent=UA, accept_downloads=False, service_workers="block")
+            ctx.route("**/*", lambda route: route.continue_() if browser_may_load(route.request.url) else route.abort())
             pg = ctx.new_page()
             pg.goto(url, timeout=25000, wait_until="networkidle")
             html = pg.content().encode("utf-8", "replace")
@@ -456,6 +601,33 @@ def safe_source(url, site_url) -> str:
     return url if ok else site_url
 
 
+# A deal's title or description is shown as written, and a website can write anything for the AI to copy:
+# "Visit cheap-wings.example for 90% off" or "DM @someone". So a deal that names a web address (other than
+# the restaurant's own), an email address or an @handle is dropped. (Checked against every deal in data/ in
+# Nov 2026: one deal named a web address, its own restaurant's, and it is kept.)
+WEB_ADDRESS = re.compile(r"https?://\S*|\b(?:[a-z0-9-]+\.)+[a-z]{2,}\b(?:/\S*)?", re.I)
+EMAIL_OR_HANDLE = re.compile(r"\S@\S|(?<!\S)@\w")
+
+
+def names_a_link(text, site_url) -> bool:
+    """True if `text` has an email address, an @handle, or a web address that isn't the restaurant's own site."""
+    if EMAIL_OR_HANDLE.search(text):
+        return True
+    own = site_host(site_url)
+    return any(site_host(m if "://" in m else "https://" + m) != own for m in WEB_ADDRESS.findall(text))
+
+
+MAX_PLACES, MAX_PLACE_CHARS = 20, 80  # applies_to: at most this many branch names, each at most this long
+
+
+def clean_applies_to(v):
+    """The AI's "applies_to": "all", or a list of branch names or addresses (only strings, MAX_PLACES at most)."""
+    if not isinstance(v, list):
+        return "all"
+    names = [x.strip() for x in v if isinstance(x, str) and x.strip() and len(x.strip()) <= MAX_PLACE_CHARS]
+    return names[:MAX_PLACES] or "all"
+
+
 def clean_deal(d, site_url, page_text=None, today=None):
     """Check and tidy one deal from the AI; None drops it. With page_text (what the AI read), a deal is
     also dropped if its price or its quote isn't on the page: the AI made it up or misread it.
@@ -473,6 +645,9 @@ def clean_deal(d, site_url, page_text=None, today=None):
         return None
     if vu and vf and vf > vu:
         vf = None
+    description = (d.get("description") or "").strip()[:240] or None
+    if names_a_link(f"{title}\n{description or ''}", site_url):
+        return None  # a link, email or @handle in the text: possibly written to steer the AI (see WEB_ADDRESS)
     price = (d.get("price") or "").strip()[:12] or None
     if page_text is not None:
         if price and not price_on_page(price, page_text):
@@ -481,19 +656,27 @@ def clean_deal(d, site_url, page_text=None, today=None):
             return None
     return {
         "title": title,
-        "description": (d.get("description") or "").strip()[:240] or None,
+        "description": description,
         "price": price,
         "price_unit": (d.get("price_unit") or "").strip()[:20] or None,
         "days": days,
         "start": t(d.get("start")),
         "end": t(d.get("end")),
-        "categories": [c.strip().lower() for c in (d.get("categories") or []) if c][:4],
+        "categories": clean_categories(d.get("categories")),
         "valid_from": vf,
         "valid_until": vu,
         "dine_in_only": bool(d.get("dine_in_only")),
-        "applies_to": d.get("applies_to") or "all",
+        "applies_to": clean_applies_to(d.get("applies_to")),
         "source_url": safe_source(d.get("source_url"), site_url),
     }
+
+
+def clean_categories(raw) -> list[str]:
+    """The deal types the AI gave, keeping only the ones in llm.CATEGORIES (each type gets its own search page),
+    at most 4."""
+    raw = [raw] if isinstance(raw, str) else raw if isinstance(raw, list) else []
+    tags = (c.strip().lower() for c in raw if isinstance(c, str))
+    return list(dict.fromkeys(c for c in tags if c in llm.CATEGORIES))[:4]
 
 
 def match_branches(applies_to, branches):
@@ -598,7 +781,7 @@ def run_city(city, args):
     def work(k):
         info = {"url": sites[k]["url"], "locations": len(sites[k]["branches"])}
         report[k] = info
-        if k in removed:
+        if site_host(sites[k]["url"]) in removed:
             info["status"] = ss.READ_REMOVED
             return None
         try:

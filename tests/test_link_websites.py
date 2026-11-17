@@ -153,3 +153,41 @@ class BranchesMustAgree(unittest.TestCase):
 
     def test_wendys_points_at_the_canadian_site(self):
         self.assertIn("/en-ca", load_brand_sites()[name_key("Wendy's")])
+
+
+class OwnersListWins(unittest.TestCase):
+    """data/brand_sites.json is the owner's: made-up OpenStreetMap entries can't repoint a chain listed there."""
+
+    def test_branches_agreeing_on_another_site_do_not_beat_the_owners_list(self):
+        rows = [place("Dairy Queen", "https://evil.example") for _ in range(3)] + [place("Dairy Queen")]
+        link_websites(rows, {name_key("Dairy Queen"): "https://www.dairyqueen.com/en-ca"})
+        self.assertEqual(rows[3]["website"], "https://www.dairyqueen.com/en-ca")
+
+    def test_a_real_branch_is_not_swapped_for_the_fake_majority(self):
+        rows = [place("Dairy Queen", "https://evil.example") for _ in range(3)] + [
+            place("Dairy Queen", "https://www.dairyqueen.com/en-ca/locations/ab/edmonton/1")]
+        self.assertEqual(link_websites(rows, {name_key("Dairy Queen"): "https://www.dairyqueen.com/en-ca"}), 0)
+        self.assertEqual(rows[3]["website"], "https://www.dairyqueen.com/en-ca/locations/ab/edmonton/1")
+
+    def test_an_odd_branch_is_still_corrected_when_the_majority_matches_the_owners_list(self):
+        rows = [place("Starbucks", "http://www.macs.ca")] + [
+            place("Starbucks", f"https://www.starbucks.ca/store-locator/store/{i}/a") for i in range(3)]
+        self.assertEqual(link_websites(rows, {name_key("Starbucks"): "https://www.starbucks.ca"}), 1)
+        self.assertEqual(rows[0]["website"], "https://www.starbucks.ca")
+
+
+class OnlyPublicWebsites(unittest.TestCase):
+    def test_addresses_a_restaurant_site_never_has_are_dropped(self):
+        from discover import norm_site
+        for u in ["127.0.0.1:8080", "http://169.254.169.254/latest", "www.timhortons.com@evil.ca", "https://user:pw@pizza.ca",
+                  "http://[::1]/", "https://[2606:4700::1]/", "http://10.0.0.1", "https://0x7f.1", "https://intranet",
+                  "https://printer.local", "https://db.internal/x", "https://app.localhost", "https://pizza.ca:8080/",
+                  "https://pizza.ca:80", "https://pizza.ca:99999", "https://none", "https://+1-647-358-5000"]:
+            self.assertIsNone(norm_site(u), u)
+
+    def test_ordinary_websites_are_kept_and_tidied(self):
+        from discover import norm_site
+        self.assertEqual(norm_site("https://pizza.ca:443/menu/"), "https://pizza.ca/menu")
+        self.assertEqual(norm_site("http://www.pizza.ca:80"), "http://www.pizza.ca")
+        self.assertEqual(norm_site("HTTPS://Pizza.CA./menu"), "https://pizza.ca/menu")
+        self.assertEqual(norm_site("www.local1794.ca"), "https://www.local1794.ca")
