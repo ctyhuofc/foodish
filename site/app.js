@@ -622,7 +622,7 @@
   function details(p) {
     const id = p.r.id, open = state.open.has(id);
     const more = p.items.length > 1 || p.items.some((i) => i.d.description);
-    const srcs = [...new Set(p.items.map((i) => i.d.source_url || p.r.website).filter(Boolean))];
+    const srcs = [...new Set(p.items.map((i) => AS.safeUrl(i.d.source_url) || AS.safeUrl(p.r.website)).filter(Boolean))];
     const body = open ? `<div class="more-text">${p.items.map((i) => {
       const bits = [esc(i.d.title) + (i.d.price ? `, ${esc(i.d.price)}` : "") + ".", i.d.description ? esc(i.d.description) : "",
         `${esc(daysText(i.d))}, ${esc(hoursText(i.d))}.`, i.d.dine_in_only ? "Dine-in only." : "", esc(staleNote(i.d))].filter(Boolean).join(" ");
@@ -877,7 +877,7 @@
     const left = ends.length ? Math.min(...ends) - now.mins : null;
     const later = today && !on.length && p.items.some((i) => i.status === ST.LATER);
     const meta = `${kmCaps(p.dist)} · ` + (today ? (on.length ? (left == null ? "ON UNTIL CLOSE" : left < 180 ? leftText(left) + " LEFT" : "UNTIL " + shortAP(left + now.mins).toUpperCase()) : later ? "STARTS " + shortAP(Math.min(...p.items.filter((i) => i.status === ST.LATER).map((i) => DS.startOf(i.d)))).toUpperCase() : "ALL DAY") : DAY_LONG[state.day].toUpperCase());
-    const src = show.map((i) => i.d.source_url).find(Boolean) || p.r.website;
+    const src = show.map((i) => AS.safeUrl(i.d.source_url)).find(Boolean) || AS.safeUrl(p.r.website);  // http(s) only
     sheet.className = "sheet" + (later ? " is-later" : left != null && left > 60 ? " glow" : "");
     sheet.innerHTML = `<span class="grab" aria-hidden="true"></span><button type="button" class="close" data-closesheet aria-label="Close"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       <h2>${esc(p.r.name)}</h2><p class="meta">${esc(meta)}</p>
@@ -897,10 +897,10 @@
     const off = utcOffsetMins();
     const y = +now.date.slice(0, 4), mo = +now.date.slice(5, 7) - 1, da = +now.date.slice(8, 10);
     const stamp = (mins) => new Date(Date.UTC(y, mo, da, 0, mins - off)).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-    const text = (t) => String(t || "").replace(/[\\,;]/g, (c) => "\\" + c).replace(/\n/g, " ");
+    const text = (t) => String(t || "").replace(/[\\,;]/g, (c) => "\\" + c).replace(/[\r\n]+/g, " ");  // a line break would start a new calendar field
     const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Foodish//EN", "BEGIN:VEVENT", `UID:${d.id}-${now.date}@foodish.ca`, `DTSTAMP:${stamp(now.mins)}`,
       `DTSTART:${stamp(s)}`, `DTEND:${stamp(e)}`, `SUMMARY:${text(`${d.title} at ${r.name}`)}`,
-      `DESCRIPTION:${text([d.price, d.description, d.source_url].filter(Boolean).join(" · "))}`, `LOCATION:${text(r.address || r.name)}`,
+      `DESCRIPTION:${text([d.price, d.description, AS.safeUrl(d.source_url)].filter(Boolean).join(" · "))}`, `LOCATION:${text(r.address || r.name)}`,
       "BEGIN:VALARM", "TRIGGER:-PT15M", "ACTION:DISPLAY", `DESCRIPTION:${text(d.title)}`, "END:VALARM", "END:VEVENT", "END:VCALENDAR"].join("\r\n");
     const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
     const a = document.createElement("a");

@@ -91,5 +91,16 @@
   };
   const submitView = (s) => ({ disabled: s === SUBMIT.SENDING, text: SUBMIT_TEXT[s] ?? "" });
 
-  return { parseLink, buildLink, historyStep, normalizeDay, STATUS, statusLine, alertsState, alertsMessage, BLOCKED_TEXT, SUBMIT, submitView };
+  // ---------- links from the deals file ----------
+  // A deal's link comes from a restaurant's website via the AI. Only plain web addresses (http/https) are
+  // used; anything else ("javascript:...", "data:...", nonsense) gives "" so no link is shown.
+  function safeUrl(u) {
+    if (typeof u !== "string" || !u) return "";
+    try {
+      const url = new URL(u);
+      return url.protocol === "http:" || url.protocol === "https:" ? url.href : "";
+    } catch { return ""; }
+  }
+
+  return { safeUrl, parseLink, buildLink, historyStep, normalizeDay, STATUS, statusLine, alertsState, alertsMessage, BLOCKED_TEXT, SUBMIT, submitView };
 });

@@ -99,6 +99,29 @@ class HealthGate(unittest.TestCase):
     def test_refresh_that_never_finished(self):
         self.assertIn("didn't finish", health.gate({"date": "2026-11-08"}, self.TODAY))
 
+    def test_paused_sites_are_not_a_broken_robot(self):
+        """deferred_ai_backoff (a page the AI couldn't read, paused for a few days) never turns the run red."""
+        report = {"date": "2026-11-09", "ai_stopped": None, "outcome_counts": {"extracted": 3, "deferred_ai_backoff": 2}}
+        self.assertIsNone(health.gate(report, self.TODAY))
+
+    def test_summary_lists_paused_and_unknown_outcomes(self):
+        import json
+        import shutil
+        import tempfile
+        import cities
+        tmp = Path(tempfile.mkdtemp())
+        try:
+            base = cities.get("edmonton")
+            city = cities.City(**{**base.__dict__, "id": "_t", "data_dir": str(tmp)})
+            city.report.parent.mkdir(parents=True, exist_ok=True)
+            city.report.write_text(json.dumps({"date": "2026-11-09", "status_counts": {"ok": 4}, "sites": {},
+                                               "outcome_counts": {"extracted": 1, "deferred_ai_backoff": 2, "someday_new": 1}}))
+            text = "\n".join(health.summary(city))
+        finally:
+            shutil.rmtree(tmp)
+        self.assertIn("Paused after an unreadable AI reply", text)
+        self.assertIn("1 someday_new", text)
+
 
 if __name__ == "__main__":
     unittest.main()

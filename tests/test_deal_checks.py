@@ -113,3 +113,35 @@ class RemovedSites(unittest.TestCase):
         from unittest import mock
         with mock.patch.object(scrape, "REMOVED", mock.Mock(read_text=lambda: '{"sites": ["https://www.Example.com/menu", "joes.ca", ""]}')):
             self.assertEqual(scrape.removed_sites(), {"example.com", "joes.ca"})
+
+
+class DealLink(unittest.TestCase):
+    """The AI's source_url is shown as a link: it must be a plain web page on the restaurant's own site."""
+    SITE = "https://www.wingplace.ca/"
+
+    def link(self, url):
+        return scrape.clean_deal(ai(source_url=url), self.SITE, PAGE)["source_url"]
+
+    def test_a_page_on_the_restaurants_own_site_is_kept(self):
+        self.assertEqual(self.link("https://wingplace.ca/specials"), "https://wingplace.ca/specials")
+        self.assertEqual(self.link("http://www.wingplace.ca/menu?x=1"), "http://www.wingplace.ca/menu?x=1")
+
+    def test_anything_else_becomes_the_restaurants_home_page(self):
+        for bad in ["javascript:alert(document.cookie)", "JAVASCRIPT:alert(1)", "data:text/html,<script>x</script>",
+                    "https://evil.example/wingplace.ca", "https://wingplace.ca.evil.example/",
+                    "https://wingplace.ca@evil.example/", "https://user:pw@wingplace.ca/",
+                    "https://deals.wingplace.ca/",  # sub-sites aren't allowed (none seen in real data)
+                    "https://wingplace.ca:8443/", "//wingplace.ca/x", "/specials", "https://[oops/",
+                    "https://wingplace.ca/" + "a" * 600, "https://wingplace.ca/\njavascript:x",
+                    None, "", 42, ["https://wingplace.ca/"], {"href": "https://wingplace.ca/"}]:
+            self.assertEqual(self.link(bad), self.SITE, repr(bad)[:60])
+
+    def test_published_pages_only_link_to_web_pages(self):
+        import pages
+        by_id = {"r1": {"id": "r1", "name": "Wing Place", "address": "1 Main St", "website": "javascript:alert(2)"}}
+        city = cities.get("edmonton")
+        card = lambda src: pages.deal_card({"title": "Wing night", "days": [3], "restaurant_ids": ["r1"], "source_url": src}, by_id, city)  # noqa: E731
+        self.assertIn('href="https://wingplace.ca/specials"', card("https://wingplace.ca/specials"))
+        for bad in ["javascript:alert(1)", " javascript:alert(1)", "data:text/html,x", None, 7]:
+            self.assertNotIn("href=", card(bad), bad)  # and the restaurant's own (bad) website isn't used either
+            self.assertNotIn("javascript", card(bad).lower())

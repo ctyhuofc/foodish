@@ -118,9 +118,14 @@ Location needs **https** (all the options above provide it).
 
 Re-run step 4 whenever `worker/worker.js` changes.
 
+**Deal tips by the service instead of email (optional):** the app's "A deal we missed?" form opens the visitor's email app (`TIPS: "email"` in `site/config.js`). To collect tips in the service instead, set `TIPS: "service"` there **and** turn the service's tip box on: Cloudflare → Workers & Pages → **foodish-api** → Settings → Variables and Secrets → Add → type **Secret**, name `TIPS_ENABLED`, value `1` → Deploy. (Pick *Secret*, not *Text*: re-running step 4 keeps secrets but clears text variables.) Until then the service answers "not found" to tips, so nobody can fill its free daily storage allowance with junk.
+
 **How alerts work:** the bell button and the "Get deal alerts" section offer (a) "while Foodish is open, ping me when I walk near a deal that's on now" and (b) a daily ~4 pm "deals near you today" push. On iPhone, push only works after the visitor taps Share → **Add to Home Screen** (an Apple rule); the app tells them this.
 
+The service only stores sign-ups that point at a real browser push service (Google for Chrome, Android, Samsung Internet and other Chromium browsers; Mozilla for Firefox; Microsoft for Edge on Windows; Apple for Safari and iPhone) with proper keys, so a fake sign-up can't hold up everyone else's alert. The daily send also tries each subscriber on its own (10 seconds each, 10 minutes in all), removes junk and expired sign-ups, and ends its log with a line like `120 subscribers · 95 alerts sent · 2 expired removed · 1 skipped (bad sign-up) · 1 failed (Timeout 1)`. The step only turns red when there were alerts to send and none got through (usually a wrong `VAPID_PRIVATE_KEY`).
+
 ### Reviewing submitted deals
+Only when deal tips go to the service (`TIPS_ENABLED` above):
 ```bash
 curl -H "Authorization: Bearer YOUR_ADMIN_TOKEN" https://foodish-api.YOURNAME.workers.dev/submissions
 ```

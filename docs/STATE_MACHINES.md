@@ -73,11 +73,14 @@ stateDiagram-v2
     [*] --> no_deals: no deal words (deals cleared)
     [*] --> deferred_ai_stopped: AI already failed 3× the same way this run
     [*] --> deferred_budget: AI call limit used up
+    [*] --> deferred_ai_backoff: same text got an unreadable AI reply before (pause not over)
     [*] --> extracted: AI read it (deals replaced)
     [*] --> ai_error: AI call failed
     deferred_budget --> [*]: retried tomorrow
     ai_error --> [*]: retried tomorrow
+    ai_error --> deferred_ai_backoff: the reply was unreadable (pause 3 days, then 14)
     deferred_ai_stopped --> [*]: retried tomorrow
+    deferred_ai_backoff --> [*]: retried when the pause ends, or at once if the text changes
 ```
 
 Before the outcome, each site gets a read status (`sites.<domain>.status` in the report): `ok`, `removed by request`,
@@ -85,7 +88,25 @@ Before the outcome, each site gets a read status (`sites.<domain>.status` in the
 `site_state.py`; `scrape.py` and `health.py` use them, never the words.
 
 "Retried tomorrow" works because a site's text fingerprint is only saved after the AI has read it.
-Deferred and failed sites keep their old deals. A website or an AI deal the robot can't make sense of is
+Deferred and failed sites keep their old deals.
+
+**Paying for the AI.** Every request sent to the AI counts toward `MAX_LLM_CALLS` (per run) and the monthly
+total (`_usage` in each city's cache), whether it worked or not: one site can take up to 3 requests (a retry
+after an unreadable reply, waits when the AI is busy), and requests that were refused or never arrived are
+counted too, to be safe (`llm.requests_made`). A site whose text gets an **unreadable AI reply** (twice in one
+call) is remembered on its cache entry (`ai_fail`: fingerprint, AI instructions version, date, how many times
+in a row, `until`), and `next_step()` gives `deferred_ai_backoff` for that same text until `until`: 3 days
+after the first failure, 14 after the next ones. New text, or new AI instructions, are tried at once; a
+success clears `ai_fail`. AI outages and credit problems are not paused (not the site's fault): those sites
+are `ai_error` and retried tomorrow. The health summary lists paused sites; they don't turn the run red.
+
+**The AI breaker** (`AIBreaker`) stops AI calls for the rest of the run after 3 AI calls *in a row* failed the
+same way. Unreadable replies count as the same error whatever the reply said (`error_kind()`). A call that
+works starts the count again, so a few odd sites spread through a run can't stop it for everyone.
+
+**Limits on reading a site** (`scrape.py`): each download stops after 30 s or 3 MB (500 KB for robots.txt);
+such a page's read status is `too slow` or `too large`. No more pages of a site are opened after 90 s on it.
+JavaScript-only pages open in a separate, sandboxed browser that gets no secrets and is stopped after 60 s. A website or an AI deal the robot can't make sense of is
 skipped for the day (the site counts as unreachable, the deal is dropped); it doesn't stop the city. Cached deals whose `valid_until` has passed are now
 dropped when publishing; they used to linger until the website changed.
 
