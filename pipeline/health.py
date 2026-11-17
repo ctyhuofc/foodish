@@ -97,11 +97,18 @@ def summary(city: cities.City) -> list[str]:
                   ("blocked", "blocked or removed by request")]
         parts = [f"{oc[k]} {label}" for k, label in labels if oc.get(k)]
         lines.append(f"- **Sites:** {', '.join(parts) or 'none'}")
-        waiting = {k: oc.get(k, 0) for k in ("deferred_budget", "ai_error", "deferred_ai_stopped")}
+        waiting = {k: oc.get(k, 0) for k in ss.RETRY_TOMORROW}
         if any(waiting.values()):
             why = {"deferred_budget": "AI limit reached", "ai_error": "AI error", "deferred_ai_stopped": "AI stopped"}
             lines.append("- ⚠️ **Waiting for tomorrow (old deals kept):** "
-                         + ", ".join(f"{n} ({why[k]})" for k, n in waiting.items() if n))
+                         + ", ".join(f"{n} ({why.get(k, k)})" for k, n in waiting.items() if n))
+        if oc.get(ss.DEFERRED_AI_BACKOFF):  # not a problem with the robot: a few pages the AI can't make sense of
+            lines.append(f"- **Paused after an unreadable AI reply (old deals kept, tried again in a few days):** "
+                         f"{oc[ss.DEFERRED_AI_BACKOFF]}")
+        known = {k for k, _ in labels} | set(ss.RETRY_TOMORROW) | {ss.DEFERRED_AI_BACKOFF}
+        other = {k: n for k, n in oc.items() if n and k not in known}  # an outcome this summary doesn't know yet
+        if other:
+            lines.append(f"- **Other:** {', '.join(f'{n} {k}' for k, n in other.items())}")
     if city.cache.exists():  # scrape.py keeps monthly AI usage under "_usage"
         try:
             usage = json.loads(city.cache.read_text()).get("_usage", {})

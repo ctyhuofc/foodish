@@ -77,6 +77,17 @@ class LLMError(Exception):
     """An AI request was refused; the message is the provider's own explanation."""
 
 
+class UnreadableReply(LLMError):
+    """The AI answered, but not with the deals list we asked for (cut off, not JSON, wrong shape)."""
+
+
+# Every request sent to the AI provider, this run, whether it worked or not. scrape.py adds these up for
+# the per-run and monthly limits, so a failed request counts as much as a good one. Requests that never
+# got there (no connection) or were turned away (bad key, "too busy") are counted too: we can't always
+# tell which ones were billed, and counting too many is the safe side.
+requests_made = 0
+
+
 def _check(r):
     if r.status_code >= 400:
         try:
@@ -129,16 +140,18 @@ def parse_reply(out):
         data = None
     deals = data.get("deals") if isinstance(data, dict) else None
     if not isinstance(deals, list):
-        raise LLMError(f"unreadable AI reply: {(out or '').strip()[:80]!r}")
+        raise UnreadableReply(f"unreadable AI reply: {(out or '').strip()[:80]!r}")
     return [d for d in deals if isinstance(d, dict)]
 
 
 def extract_deals(name, url, text, city="Edmonton", region="Alberta"):
     prompt = PROMPT.format(today=dt.date.today().isoformat(), name=name, url=url, text=text, city=city, region=region)
     call = _call_openai_compatible if os.environ.get("LLM_PROVIDER", "anthropic") != "anthropic" else _call_anthropic
+    global requests_made
     unreadable = None
     for attempt in range(3):
         try:
+            requests_made += 1  # counted before sending: see requests_made above
             return parse_reply(call(prompt))
         except LLMError as e:
             status = getattr(e, "status", 0)

@@ -85,6 +85,12 @@ def app_link(city: cities.City, query: str = "") -> str:
     return "/?" + q if q else "/"
 
 
+def web_link(url) -> str | None:
+    """A link we can put on a page: only plain http(s) addresses. Deal links come from the AI (and by hand in
+    manual_deals.json); a 'javascript:' one would run code when clicked, so it is left off instead."""
+    return url if isinstance(url, str) and re.match(r"https?://", url, re.I) else None
+
+
 def deal_card(d: dict, by_id: dict, city: cities.City) -> str:
     places = [by_id[i] for i in d.get("restaurant_ids", []) if i in by_id]
     if not places:
@@ -104,7 +110,7 @@ def deal_card(d: dict, by_id: dict, city: cities.City) -> str:
     if len(places) > 1:
         where = f"{len(places)} {city.name} locations"
     price = f'<span class="price">{esc(d["price"])}</span>' if d.get("price") else ""
-    src = d.get("source_url") or (places[0].get("website") if places else None)
+    src = web_link(d.get("source_url")) or (web_link(places[0].get("website")) if places else None)
     link = f' · <a href="{esc(src)}" rel="nofollow noopener">restaurant site</a>' if src else ""
     desc = f"<p>{esc(d['description'])}</p>" if d.get("description") else ""
     return (f'<li class="card"><div class="card-top"><h3>{esc(d.get("title"))}</h3>{price}</div>'

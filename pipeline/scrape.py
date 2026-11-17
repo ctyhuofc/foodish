@@ -20,6 +20,9 @@ import hashlib
 import json
 import os
 import re
+import signal
+import subprocess
+import threading
 import time
 import urllib.robotparser
 from pathlib import Path
@@ -34,7 +37,8 @@ from bs4 import BeautifulSoup
 import cities
 import deal_state as ds  # shared deal-timing rules (spec/deal-states.json)
 import site_state as ss  # the per-site lifecycle: unchanged / extracted / deferred_budget / ...
-from llm import PROMPT_VERSION, extract_deals
+import llm  # llm.requests_made: every request sent to the AI, for the limits below
+from llm import PROMPT_VERSION, UnreadableReply, extract_deals
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -65,6 +69,81 @@ def domain(url):
 
 
 # ---------------- fetching ----------------
+# Every download has limits, so one broken or hostile website can't stall or crash the whole run
+# (a server that sends one byte every few seconds, or a small "zip bomb" that unzips to gigabytes).
+PAGE_BYTES = 3_000_000    # largest page we read (after unzipping); restaurant pages are well under 1 MB
+ROBOTS_BYTES = 500_000    # largest robots.txt (Google reads at most 500 KB too)
+FETCH_SECONDS = 30        # one download, start to finish, redirects included
+TIMEOUTS = (10, 15)       # seconds to connect; seconds of silence allowed while reading
+HARD_SECONDS = FETCH_SECONDS + TIMEOUTS[1]  # give up on a download after this, whatever it is stuck on
+SITE_SECONDS = 90         # after this long on one site, don't open more of its pages
+CHUNK = 16_384            # read in small pieces, so an unzipped piece can't be huge before it's counted
+TOO_LARGE, TOO_SLOW = "too large", "too slow"  # reasons in report.json
+
+
+class FetchStopped(Exception):
+    """A download went over a limit; the message is TOO_LARGE or TOO_SLOW."""
+
+
+def download(url, limit, want=lambda r: True, deadline=FETCH_SECONDS, clock=time.monotonic, opener=None):
+    """(response, body bytes) for `url`, reading at most `limit` bytes within `deadline` seconds, or
+    FetchStopped. The body is only read when want(response) says so (else it is None): a 404 isn't
+    downloaded. The response is always closed. `clock` and `opener` are swapped in by the tests."""
+    start = clock()
+    r = (opener or requests.get)(url, headers=HEADERS, timeout=TIMEOUTS, stream=True, allow_redirects=True)
+    try:
+        if not want(r):
+            return r, None
+        size = r.headers.get("content-length", "")
+        if size.isdigit() and int(size) > limit:
+            raise FetchStopped(TOO_LARGE)
+        body = bytearray()
+        for chunk in r.iter_content(CHUNK):  # unzipped as it comes
+            body += chunk
+            if len(body) > limit:
+                raise FetchStopped(TOO_LARGE)
+            if clock() - start > deadline:
+                raise FetchStopped(TOO_SLOW)
+        return r, bytes(body)
+    finally:
+        r.close()
+
+
+def bounded(fn, *args, seconds=None, **kw):
+    """fn(*args, **kw), but give up after `seconds` (HARD_SECONDS). The timeouts above can't cover
+    everything (a slow address lookup, headers sent a byte at a time), so the download runs in a helper
+    thread; if it isn't back in time we move on and it finishes or fails by itself, unseen."""
+    box = {}
+
+    def run():
+        try:
+            box["ok"] = fn(*args, **kw)
+        except BaseException as e:  # noqa: BLE001  handed back to the caller below
+            box["err"] = e
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+    t.join(HARD_SECONDS if seconds is None else seconds)
+    if t.is_alive():
+        raise FetchStopped(TOO_SLOW)
+    if "err" in box:
+        raise box["err"]
+    return box["ok"]
+
+
+def _guess_encoding(body):
+    """What requests' r.apparent_encoding does: guess the text encoding from the bytes."""
+    from requests.compat import chardet
+    return chardet.detect(body)["encoding"] if chardet else None
+
+
+def as_text(body, encoding):
+    """Bytes -> text, the way requests' r.text does it (guess the encoding if none is given)."""
+    try:
+        return str(body, encoding or _guess_encoding(body) or "utf-8", errors="replace")
+    except (LookupError, TypeError):
+        return str(body, errors="replace")
+
+
 _robots = {}
 
 
@@ -74,9 +153,9 @@ def allowed(url):
     if base not in _robots:
         rp = urllib.robotparser.RobotFileParser()
         try:
-            r = requests.get(base + "/robots.txt", headers=HEADERS, timeout=10)
-            rp.parse(r.text.splitlines() if r.status_code == 200 else [])
-        except Exception:  # noqa: BLE001
+            r, body = bounded(download, base + "/robots.txt", ROBOTS_BYTES, want=lambda r: r.status_code == 200)
+            rp.parse(as_text(body, requests.utils.get_encoding_from_headers(r.headers)).splitlines() if r.status_code == 200 else [])
+        except Exception:  # noqa: BLE001  as before: a robots.txt we can't read (now also: too big or too slow) blocks nothing
             rp.parse([])
         _robots[base] = rp
     return _robots[base].can_fetch(BOT, url)
@@ -87,7 +166,8 @@ def get(url):
         REASONS[url] = ss.READ_ROBOTS
         return None
     try:
-        r = requests.get(url, headers=HEADERS, timeout=20, allow_redirects=True)
+        page = lambda r: r.status_code == 200 and "html" in r.headers.get("content-type", "")  # noqa: E731
+        r, body = bounded(download, url, PAGE_BYTES, want=page)
         ctype = r.headers.get("content-type", "")
         if r.status_code != 200:
             REASONS[url] = f"HTTP {r.status_code}"
@@ -95,10 +175,14 @@ def get(url):
         if "html" not in ctype:
             REASONS[url] = f"not a web page ({ctype.split(';')[0] or 'unknown type'})"
             return None
-        if "charset" not in ctype.lower():
-            m = re.search(rb'<meta[^>]+charset=["\']?([\w-]+)', r.content[:3000], re.I)
-            r.encoding = m.group(1).decode() if m else (r.apparent_encoding or "utf-8")
-        return r.text
+        if "charset" in ctype.lower():
+            encoding = requests.utils.get_encoding_from_headers(r.headers)
+        else:  # the page's own <meta charset>, else a guess from the bytes
+            m = re.search(rb'<meta[^>]+charset=["\']?([\w-]+)', body[:3000], re.I)
+            encoding = m.group(1).decode() if m else (_guess_encoding(body) or "utf-8")
+        return as_text(body, encoding)
+    except FetchStopped as e:
+        REASONS[url] = str(e)
     except requests.exceptions.SSLError:
         REASONS[url] = "SSL error"
     except requests.exceptions.Timeout:
@@ -110,21 +194,89 @@ def get(url):
     return None
 
 
+# ---------------- the browser, for JavaScript-only sites ----------------
+# Each page is opened by a separate copy of this script (render_page() below), so that:
+#   * it can be stopped for sure after RENDER_SECONDS, even if the page's own code never lets go;
+#   * the browser never sees the AI key or any other secret: it gets only BROWSER_ENV;
+#   * a browser that crashes or eats memory takes down only that copy, not the run.
+RENDER_SECONDS = 60
+LAUNCH_FAILED = 3  # exit code: the browser didn't start (so the sandbox, not the page, is the problem)
+BROWSER_ENV = ("PATH", "HOME", "LANG", "LC_ALL", "LC_CTYPE", "TZ", "TMPDIR", "TMP", "TEMP", "LD_LIBRARY_PATH",
+               "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "SYSTEMROOT")
+_sandbox = {"on": True}  # turned off for the rest of the run if the sandboxed browser can't start
+_sandbox_lock = threading.Lock()
+
+
+def browser_env():
+    """The few settings the browser needs, and nothing else (no LLM_API_KEY, no GitHub token)."""
+    return {k: v for k, v in os.environ.items() if k.upper() in BROWSER_ENV or k.startswith("PLAYWRIGHT_")}
+
+
+def render_page(url, sandbox):
+    """In the separate copy: open `url` in Chromium and write its HTML to stdout (nothing if over PAGE_BYTES).
+    The browser runs in Chromium's sandbox, can't download files, and doesn't run the site's service worker."""
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        try:
+            b = p.chromium.launch(chromium_sandbox=sandbox, env=browser_env())
+        except Exception:  # noqa: BLE001
+            sys.exit(LAUNCH_FAILED)
+        try:
+            ctx = b.new_context(user_agent=UA, accept_downloads=False, service_workers="block")
+            pg = ctx.new_page()
+            pg.goto(url, timeout=25000, wait_until="networkidle")
+            html = pg.content().encode("utf-8", "replace")
+        finally:
+            b.close()
+    if len(html) <= PAGE_BYTES:
+        sys.stdout.buffer.write(html)
+
+
+def _render_cmd(url, sandbox):
+    return [sys.executable, str(Path(__file__).resolve()), "--render-page", url] + ([] if sandbox else ["--no-sandbox"])
+
+
+def _render(url, sandbox):
+    """(html or None, exit code) from one separate copy, stopped after RENDER_SECONDS."""
+    try:
+        proc = subprocess.Popen(_render_cmd(url, sandbox), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                stderr=subprocess.DEVNULL, env=browser_env(), start_new_session=True)
+    except OSError:
+        return None, 1
+    try:
+        out, _ = proc.communicate(timeout=RENDER_SECONDS)
+    except subprocess.TimeoutExpired:
+        for sig in (signal.SIGTERM, signal.SIGKILL):  # TERM lets Playwright close its browser; then KILL
+            try:
+                os.killpg(proc.pid, sig)
+            except OSError:
+                pass
+            try:
+                proc.communicate(timeout=5)
+                break
+            except subprocess.TimeoutExpired:
+                continue
+        return None, -1
+    if proc.returncode != 0 or not out or len(out) > PAGE_BYTES:
+        return None, proc.returncode
+    return out.decode("utf-8", "replace"), 0
+
+
 def render_js(url):
     """For sites that build their page with JavaScript. On in the daily workflow unless RENDER_JS=0."""
     if os.environ.get("RENDER_JS") != "1" or not allowed(url):
         return None
-    try:
-        from playwright.sync_api import sync_playwright
-        with sync_playwright() as p:
-            b = p.chromium.launch()
-            pg = b.new_page(user_agent=UA)
-            pg.goto(url, timeout=25000, wait_until="networkidle")
-            html = pg.content()
-            b.close()
-            return html
-    except Exception:  # noqa: BLE001
-        return None
+    html, code = _render(url, _sandbox["on"])
+    if code == LAUNCH_FAILED and _sandbox["on"]:
+        # GitHub's machines sometimes refuse the sandbox. Losing ~450 JavaScript-only sites silently would be
+        # worse, so carry on without it, but say so once in the log.
+        with _sandbox_lock:
+            if _sandbox["on"]:
+                _sandbox["on"] = False
+                print("::warning title=Browser sandbox off::Chromium couldn't start with its sandbox, so "
+                      "JavaScript-only sites are read without it this run. Check the workflow's browser step.")
+        html, code = _render(url, False)
+    return html
 
 
 def visible_text(html):
@@ -165,7 +317,8 @@ def read_site_once(site, info):
 _full_text = {}  # site url -> all visible text read this run (for confirmed_site; never saved)
 
 
-def read_site(site, info):
+def read_site(site, info, clock=time.monotonic):
+    started = clock()
     home = get(site)
     if not home:  # OpenStreetMap links often point at an old location page: fall back to the home page
         p = urlparse(site)
@@ -185,6 +338,9 @@ def read_site(site, info):
     pages = [(site, visible_text(home))]
     _full_text[site] = pages[0][1][:200_000]
     for link in candidate_links(home, site):
+        if clock() - started > SITE_SECONDS:  # a slow site: what we have is enough for today
+            info["cut_short"] = True
+            break
         html = get(link)
         if html:
             pages.append((link, visible_text(html)))
@@ -281,6 +437,25 @@ def _date(v):
     return v if v and re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(v)) else None
 
 
+MAX_URL = 500  # longest deal link we publish
+
+
+def safe_source(url, site_url) -> str:
+    """The deal's link, as the AI gave it, only if it is a plain web address on the restaurant's own site
+    (same domain, www. or not; not a sub-site). A website can write text that talks the AI into a
+    'javascript:' link or a look-alike phishing page, so anything else becomes the restaurant's home page.
+    (Checked against every deal in data/ in Nov 2026: no AI link pointed at another host or a sub-domain.)"""
+    if not isinstance(url, str) or len(url) > MAX_URL or any(c in url for c in "\r\n\t\\ <>\"'`"):
+        return site_url
+    try:
+        p = urlparse(url)
+        ok = p.scheme in ("http", "https") and p.hostname and not p.username and not p.password \
+            and "@" not in p.netloc and domain(url) == domain(site_url)
+    except ValueError:  # e.g. a broken port or IPv6 address
+        ok = False
+    return url if ok else site_url
+
+
 def clean_deal(d, site_url, page_text=None, today=None):
     """Check and tidy one deal from the AI; None drops it. With page_text (what the AI read), a deal is
     also dropped if its price or its quote isn't on the page: the AI made it up or misread it.
@@ -317,7 +492,7 @@ def clean_deal(d, site_url, page_text=None, today=None):
         "valid_until": vu,
         "dine_in_only": bool(d.get("dine_in_only")),
         "applies_to": d.get("applies_to") or "all",
-        "source_url": d.get("source_url") or site_url,
+        "source_url": safe_source(d.get("source_url"), site_url),
     }
 
 
@@ -451,7 +626,7 @@ def run_city(city, args):
             readable=text is not None, fingerprint=h, has_deal_words=bool(text and DEAL_WORDS.search(text)),
             entry=entry, prompt_version=PROMPT_VERSION, stale_before=stale_before,
             budget_left=calls < max_calls and used_this_month + calls < monthly_cap, ai_stopped=breaker.stopped,
-            blocked=report[k].get("status") in ss.BLOCKED_READS,
+            blocked=report[k].get("status") in ss.BLOCKED_READS, today=TODAY,
         )
         outcome = step.outcome
         if text is None:
@@ -465,22 +640,29 @@ def run_city(city, args):
             elif step.action == ss.CLEAR:  # readable, but nothing deal-like on it
                 report[k]["result"] = "no deal words found"
                 entry.update(hash=h, pv=PROMPT_VERSION, deals=[], checked_at=TODAY)
+                entry.pop("ai_fail", None)
                 cache[k] = entry
             elif step.action == ss.CALL_AI:
                 names = sorted({b["name"] for b in sites[k]["branches"]})
+                sent_before = llm.requests_made
                 try:
                     raw = extract_deals(names[0], sites[k]["url"], text, city=city.name, region=city.region)
-                    calls += 1
                 except Exception as e:  # noqa: BLE001
                     msg = str(e)[:300]
                     print(f"  ! AI error on {k}: {msg}")
                     report[k]["result"] = f"AI error: {msg}"
                     outcome = ss.AI_ERROR
+                    if isinstance(e, UnreadableReply):  # this text confuses the AI: don't pay to ask again tomorrow
+                        entry["ai_fail"] = ss.ai_failed(entry.get("ai_fail"), h, PROMPT_VERSION, TODAY)
+                        report[k]["retry_from"] = entry["ai_fail"]["until"]
+                        cache[k] = entry
                     breaker.failure(msg)
                     if breaker.stopped:
                         print(f"Stopping AI calls: the same error {ss.SAME_ERROR_LIMIT} times in a row -> {msg}")
                 else:
+                    breaker.success()
                     kept = [x for x in (clean_or_drop(d, sites[k]["url"], text, city_today) for d in raw) if x]
+                    entry.pop("ai_fail", None)
                     entry.update(hash=h, pv=PROMPT_VERSION, checked_at=TODAY, deals=kept[:6])
                     report[k]["result"] = f"{len(entry['deals'])} deals"
                     if len(kept) < len(raw):  # price or quote not on the page, unreadable days, ...
@@ -488,11 +670,15 @@ def run_city(city, args):
                     cache[k] = entry
                     changed += 1
                     outcome = ss.EXTRACTED
+                finally:
+                    # every request sent counts toward both limits, failed ones too (up to 3 per site)
+                    calls += llm.requests_made - sent_before
             # KEEP (deferred): the new fingerprint isn't saved, so tomorrow's run tries the AI again
+            # (deferred_ai_backoff: once its pause is over)
         report[k]["outcome"] = outcome
     ai_stopped = breaker.stopped_with
 
-    usage[month] = own_usage + calls
+    usage[month] = own_usage + calls  # AI requests sent this month, including ones that failed
 
     # diagnostics report: why each site did or didn't produce deals
     status = collections.Counter(v.get("status", "?") for v in report.values())
@@ -593,4 +779,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if sys.argv[1:2] == ["--render-page"]:  # the separate copy that runs the browser (see render_js)
+        render_page(sys.argv[2], sandbox="--no-sandbox" not in sys.argv[3:])
+    else:
+        main()

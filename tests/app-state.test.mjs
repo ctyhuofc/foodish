@@ -142,3 +142,13 @@ test("submit form: Send is off only while sending", () => {
   assert.deepEqual(as.submitView(as.SUBMIT.EMAIL), { disabled: false, text: "Your email app should open with the deal filled in." });
   assert.deepEqual(as.submitView(as.SUBMIT.IDLE), { disabled: false, text: "" });
 });
+
+// A deal's link only ever opens a plain web page (FIX: a website could talk the AI into a "javascript:" link).
+test("safeUrl keeps http(s) links and drops everything else", () => {
+  assert.equal(as.safeUrl("https://wingplace.ca/specials"), "https://wingplace.ca/specials");
+  assert.equal(as.safeUrl("http://wingplace.ca/"), "http://wingplace.ca/");
+  for (const bad of ["javascript:alert(1)", " JavaScript:alert(1)", "data:text/html,<b>x</b>", "vbscript:x",
+    "//evil.example", "/specials", "not a url", "", null, undefined, 42, { href: "https://x.ca" }]) {
+    assert.equal(as.safeUrl(bad), "", String(bad));
+  }
+});

@@ -56,9 +56,44 @@ class NextStep(unittest.TestCase):
         seen = {step(fingerprint="old").outcome, step(has_deal_words=False).outcome, step(budget_left=False).outcome,
                 step(ai_stopped=True).outcome, step(readable=False, fingerprint=None).outcome,
                 step(entry={**SEEN, "ok_at": "2026-01-01"}, readable=False, fingerprint=None).outcome,
-                step(readable=False, fingerprint=None, blocked=True).outcome}
+                step(readable=False, fingerprint=None, blocked=True).outcome,
+                step(entry={**SEEN, "ai_fail": ss.ai_failed(None, "new", 4, "2026-11-08")}, today="2026-11-09").outcome}
         seen |= {ss.EXTRACTED, ss.AI_ERROR}  # set by scrape.py after the AI call
         self.assertEqual(seen, set(ss.OUTCOMES))
+
+
+class BackOff(unittest.TestCase):
+    """After an unreadable AI reply, the same text isn't sent to the AI (and paid for) again for a while."""
+    def failed(self, day="2026-11-08", previous=None, fingerprint="new"):
+        return {**SEEN, "ai_fail": ss.ai_failed(previous, fingerprint, 4, day)}
+
+    def test_first_failure_pauses_three_days_then_retries(self):
+        e = self.failed()
+        self.assertEqual(e["ai_fail"], {"hash": "new", "pv": 4, "at": "2026-11-08", "count": 1, "until": "2026-11-11"})
+        for day in ("2026-11-08", "2026-11-09", "2026-11-10"):
+            self.assertEqual(step(entry=e, today=day), ss.Step(ss.DEFERRED_AI_BACKOFF, ss.KEEP), day)
+        self.assertEqual(step(entry=e, today="2026-11-11").action, ss.CALL_AI)
+
+    def test_failing_again_pauses_fourteen_days(self):
+        again = ss.ai_failed(self.failed()["ai_fail"], "new", 4, "2026-11-11")
+        self.assertEqual((again["count"], again["until"]), (2, "2026-11-25"))
+        e = {**SEEN, "ai_fail": again}
+        self.assertEqual(step(entry=e, today="2026-11-24").outcome, ss.DEFERRED_AI_BACKOFF)
+        self.assertEqual(step(entry=e, today="2026-11-25").action, ss.CALL_AI)
+
+    def test_changed_text_or_instructions_retry_at_once(self):
+        e = self.failed()
+        self.assertEqual(step(entry=e, today="2026-11-09", fingerprint="newer").action, ss.CALL_AI)
+        self.assertEqual(step(entry=e, today="2026-11-09", prompt_version=5).action, ss.CALL_AI)
+
+    def test_other_outcomes_still_come_first(self):
+        e = self.failed()
+        self.assertEqual(step(entry=e, today="2026-11-09", has_deal_words=False).outcome, ss.NO_DEALS)
+        self.assertEqual(step(entry=e, today="2026-11-09", readable=False, fingerprint=None).outcome, ss.UNREACHABLE)
+        self.assertEqual(step(entry=e, today="2026-11-09", blocked=True).outcome, ss.BLOCKED)
+
+    def test_without_a_date_nothing_is_paused(self):
+        self.assertEqual(step(entry=self.failed()).action, ss.CALL_AI)
 
 
 class Breaker(unittest.TestCase):
@@ -73,6 +108,19 @@ class Breaker(unittest.TestCase):
         b = ss.AIBreaker()
         for msg in ("timeout", "overloaded", "timeout"):
             b.failure(msg)
+        self.assertFalse(b.stopped)
+
+    def test_unreadable_replies_count_as_the_same_error(self):
+        b = ss.AIBreaker()
+        for reply in ("'Sorry'", "'{\"deals\": [{'", "''"):
+            b.failure(f"unreadable AI reply: {reply}")
+        self.assertTrue(b.stopped)
+        self.assertEqual(b.stopped_with, "unreadable AI reply: ''")  # the full message is kept for the report
+
+    def test_a_call_that_works_starts_the_count_again(self):
+        b = ss.AIBreaker()
+        for _ in range(5):  # one odd site now and then never stops the AI for everyone
+            b.failure("unreadable AI reply: 'x'"); b.failure("unreadable AI reply: 'y'"); b.success()
         self.assertFalse(b.stopped)
 
 
