@@ -1,11 +1,11 @@
 {
 "_usage": {
 "2026-10": 627,
-"2026-11": 1351
+"2026-11": 1388
 },
 "timhortons.com": {
 "ok_at": "2026-11-20",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "134ee031ca1d697c254ba40514fd06114185a67307594ba9f09fd4ca75ed3abc",
 "deals": [],
 "checked_at": "2026-11-20",
 "pv": 7
@@ -40,7 +40,7 @@
 },
 "popeyeschicken.ca": {
 "ok_at": "2026-11-20",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "b47a57faf9cc57d8e3d6003ed39e19462b91bbda3f6a2c4125153c3cd4c042c5",
 "deals": [],
 "checked_at": "2026-11-20",
 "pv": 7
@@ -82,11 +82,11 @@
 },
 "burgerking.ca": {
 "ok_at": "2026-11-20",
-"hash": "f0956dedb90b8aebb04330a47281eb129d975ea659a2bce1caada955fd77b2bc",
+"hash": "b84cab9f9e2ec6a55cac5a33f411121d33723eca2179aafcb478fe0542221adb",
 "deals": [
 {
 "title": "Snack Box",
-"description": "Get fries, onion rings, and your choice of nuggets, chicken fries, or mozzarella fries in one box.",
+"description": "Get fries, onion rings and your choice of nuggets, chicken fries or mozzarella fries in one snack box.",
 "price": "$5",
 "price_unit": "snack box",
 "days": [
@@ -838,7 +838,7 @@
 },
 "nagoyaexpress.ca": {
 "ok_at": "2026-11-20",
-"hash": "9f719590657e3d9db05d790bdf5cd6570a3ea6abb1617c82daf111d2a8b0fd0b",
+"hash": "f94beb3b1b19b4234279d8faf5838f75188f1f5cf789c483ea80de1c35d2e536",
 "deals": [],
 "checked_at": "2026-11-20",
 "pv": 7
@@ -1533,14 +1533,14 @@
 },
 "pizza.dominos.ca": {
 "ok_at": "2026-11-20",
-"hash": "a3566d911c6fddbf795419c3d543579cb451e4d23dd4623003bdf4713ca33f66",
+"hash": "778320d0b0ea36b5c69342aa8f497a811f23f2b2b2d0508e22e5c047bf80ae03",
 "checked_at": "2026-11-20",
 "deals": [
 {
 "title": "Mix & Match",
-"description": "Choose any 2 or more items, including the new Domino, with a 2-item minimum. Bone-in wings, boneless chicken, specialty chicken, handmade pan and Parmesan stuffed crust pizzas cost extra.",
+"description": "Choose any 2 or more items, including the new Domino, for a starting price per item; applies to Medium 2-Topping Hand Tossed Pizzas, with bone-in wings, boneless chicken, specialty chicken, handmade pan pizza, feast pizzas, and Parmesan stu",
 "price": "$8.99",
-"price_unit": "per item",
+"price_unit": "each",
 "days": [
 0,
 1,
@@ -1553,8 +1553,31 @@
 "start": null,
 "end": null,
 "categories": [
-"pizza",
-"pasta",
+"pizza"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "https://pizza.dominos.ca/sherwood-park-alberta-10221"
+},
+{
+"title": "Dip days",
+"description": "Limited-time $1 dip offer, valid at participating locations; delivery charge and tax are extra.",
+"price": "$1",
+"price_unit": "per dip",
+"days": [
+0,
+1,
+2,
+3,
+4,
+5,
+6
+],
+"start": null,
+"end": null,
+"categories": [
 "appetizers"
 ],
 "valid_from": null,
@@ -1564,8 +1587,8 @@
 "source_url": "https://pizza.dominos.ca/sherwood-park-alberta-10221"
 },
 {
-"title": "Large 2-Topping Carryout",
-"description": "Carryout only. Get a large pizza with 2 toppings for $12.99 each. Parmesan stuffed crust and specialty pizzas cost extra.",
+"title": "Large 2-topping carryout",
+"description": "Carryout only, large pizza with 2 toppings at a limited-time price per pizza; excludes XL and specialty pizzas.",
 "price": "$12.99",
 "price_unit": "per pizza",
 "days": [
@@ -1581,6 +1604,57 @@
 "end": null,
 "categories": [
 "pizza"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "https://pizza.dominos.ca/sherwood-park-alberta-10221"
+},
+{
+"title": "The Perfect Combo",
+"description": "Two medium 1-topping pizzas and 16 parm & Cinna bites for one price; conditions apply.",
+"price": "$29.99",
+"price_unit": "combo",
+"days": [
+0,
+1,
+2,
+3,
+4,
+5,
+6
+],
+"start": null,
+"end": null,
+"categories": [
+"pizza",
+"appetizers"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "https://pizza.dominos.ca/sherwood-park-alberta-10221"
+},
+{
+"title": "S'mores Lava Cakes",
+"description": "New S’mores Lava Cakes available in Mix & Match at a starting price each; 2-item minimum.",
+"price": "$8.99",
+"price_unit": "each",
+"days": [
+0,
+1,
+2,
+3,
+4,
+5,
+6
+],
+"start": null,
+"end": null,
+"categories": [
+"dessert"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -1627,14 +1701,14 @@
 },
 "papajohns.com": {
 "ok_at": "2026-11-20",
-"hash": "955f9b3a59ea4bdbb3203a952ea0398d02ca8f42621b0fb670c0b7ba817350d5",
-"checked_at": "2026-11-19",
+"hash": "fd05af367fac46ec1902c6886466489285c932406e49a7d3568605dda602bb67",
+"checked_at": "2026-11-20",
 "deals": [
 {
-"title": "Discount on regular menu items",
-"description": "Save on regular menu-price items in your order at participating Papa Johns locations, with prices, participation, exclusions and availability varying by location.",
+"title": "20% off menu items",
+"description": "Save 20% on regular menu-price items in your order at participating Papa Johns locations.",
 "price": "20% off",
-"price_unit": null,
+"price_unit": "menu items",
 "days": [
 0,
 1,
@@ -2842,8 +2916,8 @@
 },
 "birdogyeg.com": {
 "ok_at": "2026-11-20",
-"hash": "e6d3797702bb610d24fdf9a942386791b8ed9d665855a1c27bff6de54829fe50",
-"checked_at": "2026-11-14",
+"hash": "8aef8c71cdf95da403bb7b9a8a2be373f06564e90ac519d6a5efe4826a2329f9",
+"checked_at": "2026-11-20",
 "deals": [],
 "pv": 7
 },
@@ -3336,8 +3410,8 @@
 },
 "duggansboundary.ca": {
 "ok_at": "2026-11-20",
-"hash": "7ec63087352e31ab11f7403fe8478471916d1fcced32f6da054d15ad9b7288b1",
-"checked_at": "2026-11-16",
+"hash": "191f2e0ff61f5a29328d56a88b6cd6306c4201cd3d56e9f7e9060377cb81b5d9",
+"checked_at": "2026-11-20",
 "deals": [],
 "pv": 7
 },
@@ -3509,12 +3583,36 @@
 },
 "elmeromerotacotruck.com": {
 "ok_at": "2026-11-20",
-"hash": "606b769551c419b6da678147aedd95abf8457f7cac3ccc4d96dfb92c247a2a7d",
-"checked_at": "2026-11-19",
+"hash": "70e50ddd2b6ad1d20582e9e4a7e1a5921fa9157a75fce6cb26df8da19a324105",
+"checked_at": "2026-11-20",
 "deals": [
 {
-"title": "Weekday happy hour",
-"description": "Dine-in happy hour on weekdays with $5 domestic beers, $6 draught and tall cans, and $2 off signature cocktails.",
+"title": "Lunch special",
+"description": "Tacos, a side of chips and salsa, and a beverage for one price, dine-in or take out.",
+"price": "$22",
+"price_unit": "lunch combo",
+"days": [
+1,
+2,
+3,
+4,
+5
+],
+"start": "12:00",
+"end": "14:00",
+"categories": [
+"tacos",
+"lunch"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "https://elmeromerotacotruck.com/edmonton-el-mero-mero-taqueria-happy-hours-specials"
+},
+{
+"title": "Happy hour",
+"description": "Domestic beers, draught, tall cans and signature cocktails at reduced prices, plus Chilaquiles, Tortas and Gordita con Queso specials, dine-in only.",
 "price": "$5",
 "price_unit": "domestic beers",
 "days": [
@@ -3528,7 +3626,8 @@
 "end": "17:00",
 "categories": [
 "happy hour",
-"drinks"
+"drinks",
+"appetizers"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -3537,39 +3636,15 @@
 "source_url": "https://elmeromerotacotruck.com/edmonton-el-mero-mero-taqueria-happy-hours-specials"
 },
 {
-"title": "Weekday lunch special",
-"description": "One order of tacos (tinga de pollo, carnitas or papa), a side of chips and chunky salsa, and a beverage (jamaica or horchata water), dine-in or take out.",
-"price": "$22",
-"price_unit": "lunch combo",
+"title": "Pozole and michelada deal",
+"description": "Save $5 on pozole, and get a michelada with your cerveza at no extra charge.",
+"price": "$5 off",
+"price_unit": "pozole",
 "days": [
-1,
-2,
-3,
-4,
-5
-],
-"start": "12:00",
-"end": "14:00",
-"categories": [
-"lunch",
-"tacos"
-],
-"valid_from": null,
-"valid_until": null,
-"dine_in_only": false,
-"applies_to": "all",
-"source_url": "https://elmeromerotacotruck.com/edmonton-el-mero-mero-taqueria-happy-hours-specials"
-},
-{
-"title": "Thursday margarita deal",
-"description": "Take $2 off all margaritas on Thursdays.",
-"price": "$2 off",
-"price_unit": "margaritas",
-"days": [
-4
+0
 ],
 "start": "11:00",
-"end": "21:00",
+"end": "20:00",
 "categories": [
 "drinks"
 ],
@@ -3580,18 +3655,18 @@
 "source_url": "https://elmeromerotacotruck.com/edmonton-el-mero-mero-taqueria-happy-hours-specials"
 },
 {
-"title": "Sunday pozole special",
-"description": "$5 off pozole, and get a Michelada with your cerveza at no extra charge.",
-"price": "$5 off",
-"price_unit": "pozole",
+"title": "Extra taco and amber cerveza",
+"description": "Get one extra taco per order, plus $2 off El Mero Mero amber cerveza by SYC.",
+"price": "$2 off",
+"price_unit": "amber cerveza",
 "days": [
-0
+2
 ],
 "start": "11:00",
 "end": "20:00",
 "categories": [
-"drinks",
-"appetizers"
+"tacos",
+"drinks"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -3600,8 +3675,8 @@
 "source_url": "https://elmeromerotacotruck.com/edmonton-el-mero-mero-taqueria-happy-hours-specials"
 },
 {
-"title": "Wednesday taco platters",
-"description": "Wednesday taco platters at $46, plus $2 off all Bulldogs.",
+"title": "Taco platters and Bulldogs",
+"description": "Taco platters for $46, plus $2 off all Bulldogs.",
 "price": "$2 off",
 "price_unit": "Bulldogs",
 "days": [
@@ -3620,17 +3695,16 @@
 "source_url": "https://elmeromerotacotruck.com/edmonton-el-mero-mero-taqueria-happy-hours-specials"
 },
 {
-"title": "Tuesday extra taco & cerveza",
-"description": "Get one extra taco per order and $2 off El Mero Mero amber cerveza by SYC on Tuesdays.",
+"title": "Margarita deal",
+"description": "Save $2 on all margaritas.",
 "price": "$2 off",
-"price_unit": "cerveza",
+"price_unit": "margaritas",
 "days": [
-2
+4
 ],
 "start": "11:00",
-"end": "20:00",
+"end": "21:00",
 "categories": [
-"tacos",
 "drinks"
 ],
 "valid_from": null,
@@ -4297,8 +4371,8 @@
 },
 "menchies.com": {
 "ok_at": "2026-11-20",
-"hash": "2016615bcb58475d1050dd00f5766527e8b34c04b9d9c1f4235f0ed807e803fe",
-"checked_at": "2026-11-16",
+"hash": "8da5b4c37b6f0facb0dfc4fdf706f68e8ae50d468e3ea930eba0dce0a455d564",
+"checked_at": "2026-11-20",
 "deals": [],
 "pv": 7
 },
@@ -4917,32 +4991,12 @@
 },
 "ragazzibistro.ca": {
 "ok_at": "2026-11-20",
-"hash": "c1e8f535a20c9d6f9fc30ac2bc588f756ea05e1028e7acc5500c760225de3f61",
-"checked_at": "2026-11-19",
+"hash": "2364251648ad872a9352db40427e74c90151d94c4d58a8546e96d54ade420653",
+"checked_at": "2026-11-20",
 "deals": [
 {
-"title": "House cocktails",
-"description": "House cocktails are $12 every Thursday from 11:30 AM to 9:00 PM.",
-"price": "$12",
-"price_unit": "cocktails",
-"days": [
-4
-],
-"start": "11:30",
-"end": "21:00",
-"categories": [
-"drinks",
-"happy hour"
-],
-"valid_from": null,
-"valid_until": null,
-"dine_in_only": false,
-"applies_to": "all",
-"source_url": "https://www.ragazzibistro.ca/specials"
-},
-{
 "title": "Martinis",
-"description": "Martinis are $12 every Friday from 11:30 AM to 9:30 PM.",
+"description": "Martinis are $12 every Friday, served from 11:30 AM to 9:30 PM.",
 "price": "$12",
 "price_unit": "martinis",
 "days": [
@@ -4962,9 +5016,9 @@
 },
 {
 "title": "Domestic beers",
-"description": "Domestic beers are $6 every Monday from 12:00 PM to 9:00 PM.",
+"description": "Domestic beers are $6 every Monday, from 12:00 PM to 9:00 PM.",
 "price": "$6",
-"price_unit": "beers",
+"price_unit": "domestic beers",
 "days": [
 1
 ],
@@ -4982,9 +5036,9 @@
 },
 {
 "title": "Imported beer",
-"description": "Imported beer is $7 every Tuesday from 11:30 AM to 9:00 PM.",
+"description": "Imported beers are $7 every Tuesday, from 11:30 AM to 9:00 PM.",
 "price": "$7",
-"price_unit": "beers",
+"price_unit": "imported beers",
 "days": [
 2
 ],
@@ -5001,12 +5055,32 @@
 "source_url": "https://www.ragazzibistro.ca/specials"
 },
 {
-"title": "Wine Wednesday",
-"description": "Enjoy 20% off bottles of wine every Wednesday from 11:30 AM to 9:00 PM.",
+"title": "Wine bottles",
+"description": "Enjoy 20% off bottles of wine every Wednesday, from 11:30 AM to 9:00 PM.",
 "price": "20% off",
 "price_unit": "wine bottles",
 "days": [
 3
+],
+"start": "11:30",
+"end": "21:00",
+"categories": [
+"drinks",
+"happy hour"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "https://www.ragazzibistro.ca/specials"
+},
+{
+"title": "House cocktails",
+"description": "House cocktails are $12 every Thursday, from 11:30 AM to 9:00 PM.",
+"price": "$12",
+"price_unit": "cocktails",
+"days": [
+4
 ],
 "start": "11:30",
 "end": "21:00",
@@ -5173,7 +5247,7 @@
 },
 "specialnoodlehouse.com": {
 "ok_at": "2026-11-20",
-"hash": "25d7473b61650872bcf73410c3aa48d7050ddba022fd9c0134aae18585df0a5e",
+"hash": "729ebfff7a04c78e0bb0f15772392084476df5955e44f62b2cc3665371eb5322",
 "checked_at": "2026-11-20",
 "deals": [],
 "pv": 7
@@ -5595,12 +5669,12 @@
 },
 "thebuckingham.ca": {
 "ok_at": "2026-11-20",
-"hash": "f70b0c743a82e8c3080c275ddafc5aec4e6b58eb9fce6346d97e31662f6a3212",
-"checked_at": "2026-11-19",
+"hash": "247d37368ff4821149bc43a743d97d167920e6f14ec75e753219f43c8b7fd71c",
+"checked_at": "2026-11-20",
 "deals": [
 {
-"title": "Burger day",
-"description": "Half off burgers every Thursday from 3 PM until 2 AM.",
+"title": "Burger discount",
+"description": "Half off burgers on Thursdays, starting at 3 PM until 2 AM.",
 "price": "50% off",
 "price_unit": "burgers",
 "days": [
@@ -5610,27 +5684,7 @@
 "end": "02:00",
 "categories": [
 "burgers",
-"lunch"
-],
-"valid_from": null,
-"valid_until": null,
-"dine_in_only": false,
-"applies_to": "all",
-"source_url": "https://thebuckingham.ca/specials"
-},
-{
-"title": "Corn dog all you can eat",
-"description": "All you can eat corn dogs on Mondays from 3 PM until 2 AM.",
-"price": "$10",
-"price_unit": "corn dogs",
-"days": [
-1
-],
-"start": "15:00",
-"end": "02:00",
-"categories": [
-"appetizers",
-"kids"
+"happy hour"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -5640,7 +5694,7 @@
 },
 {
 "title": "Appetizer discount",
-"description": "20% off appetizers on Tuesdays from 3 PM until 2 AM.",
+"description": "Take 20% off appetizers on Tuesdays from 3 PM to 2 AM.",
 "price": "20% off",
 "price_unit": "appetizers",
 "days": [
@@ -5649,7 +5703,8 @@
 "start": "15:00",
 "end": "02:00",
 "categories": [
-"appetizers"
+"appetizers",
+"happy hour"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -5658,8 +5713,8 @@
 "source_url": "https://thebuckingham.ca/specials"
 },
 {
-"title": "VVings special",
-"description": "VVings are featured on Wednesdays from 3 PM until 2 AM.",
+"title": "VVings night",
+"description": "VVings are $8 on Wednesdays from 3 PM to 2 AM.",
 "price": "$8",
 "price_unit": null,
 "days": [
@@ -5669,7 +5724,7 @@
 "end": "02:00",
 "categories": [
 "wings",
-"vegetarian"
+"happy hour"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -5678,18 +5733,18 @@
 "source_url": "https://thebuckingham.ca/specials"
 },
 {
-"title": "Sunday happy hour food",
-"description": "Happy hour food is $5 on Sundays from 3 PM until 2 AM, including mini poutine, mini mexi fries, grilled cheez and fries, fries and $2 popcorn (excluding special events).",
-"price": "$5",
-"price_unit": "per item",
+"title": "All-you-can-eat corn dogs",
+"description": "All you can eat corn dogs for $10 on Mondays from 3 PM to 2 AM.",
+"price": "$10",
+"price_unit": "all you can eat",
 "days": [
-0
+1
 ],
 "start": "15:00",
 "end": "02:00",
 "categories": [
-"happy hour",
-"appetizers"
+"appetizers",
+"late night"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -5698,10 +5753,10 @@
 "source_url": "https://thebuckingham.ca/specials"
 },
 {
-"title": "Sunday happy hour sleeves",
-"description": "Sea Change Blonde or Red sleeves are $5.25 on Sundays from 3 PM until 2 AM (excluding special events).",
+"title": "All-day happy hour",
+"description": "Sea Change Blonde or Red sleeves for $5.25 on Sundays from 3 PM to 2 AM, excluding special events.",
 "price": "$5.25",
-"price_unit": "sleeve",
+"price_unit": "sleeves",
 "days": [
 0
 ],
@@ -5710,6 +5765,27 @@
 "categories": [
 "happy hour",
 "drinks"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "https://thebuckingham.ca/specials"
+},
+{
+"title": "Prime time doubles",
+"description": "Well doubles for $10.50 on Fridays and Saturdays from 9 PM to 11 PM.",
+"price": "$10.50",
+"price_unit": "well doubles",
+"days": [
+5,
+6
+],
+"start": "21:00",
+"end": "23:00",
+"categories": [
+"drinks",
+"happy hour"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -6347,13 +6423,13 @@
 },
 "rockymountainicehouse.ca": {
 "ok_at": "2026-11-20",
-"hash": "b3ee12a432ba245ca54c17b766581519f58fccf1e3b3bf4ddbcdbcdc11538d26",
+"hash": "1532392764e3c25a04708b6110c9bf66f15ff55fb9a4350108b97e714e47770d",
 "pv": 7,
-"checked_at": "2026-11-19",
+"checked_at": "2026-11-20",
 "deals": [
 {
-"title": "Daily happy hour pints",
-"description": "Happy hour runs every day from 3 to 6 pm, with 20 oz pints of house lager, plus house wine and well highballs.",
+"title": "Happy hour pints",
+"description": "Enjoy 20 oz pints of house lager for $5.50 during daily happy hour from 3 to 6 pm.",
 "price": "$5.50",
 "price_unit": "pints",
 "days": [
@@ -6368,8 +6444,8 @@
 "start": "15:00",
 "end": "18:00",
 "categories": [
-"happy hour",
-"drinks"
+"drinks",
+"happy hour"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -6379,9 +6455,9 @@
 },
 {
 "title": "Happy hour wings",
-"description": "Wings are $8.50 during the daily 3 to 6 pm happy hour.",
+"description": "Wings are $8.50 during daily happy hour from 3 to 6 pm.",
 "price": "$8.50",
-"price_unit": "wings",
+"price_unit": null,
 "days": [
 0,
 1,
@@ -6404,18 +6480,18 @@
 "source_url": "https://rockymountainicehouse.ca/edmonton-downtown-rocky-mountain-icehouse-happy-hours-specials"
 },
 {
-"title": "Burger & Beer Sunday",
-"description": "Enjoy a burger and a 20 oz pint of house lager together for $15 on Sunday afternoons.",
-"price": "$15",
-"price_unit": "burger + pint",
+"title": "Power happy hour",
+"description": "Friday power happy hour offers 1 oz well highballs, 6 oz house wine and 20 oz house lager pints for $3.50 from 4 to 5 pm.",
+"price": "$3.50",
+"price_unit": "drinks",
 "days": [
-0
+5
 ],
-"start": "14:00",
-"end": "18:00",
+"start": "16:00",
+"end": "17:00",
 "categories": [
-"burgers",
-"drinks"
+"drinks",
+"happy hour"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -6425,7 +6501,7 @@
 },
 {
 "title": "Taps Tuesday",
-"description": "Domestic pints are $2 off on Tuesday evenings.",
+"description": "All domestic pints are $2 off on Tuesday evenings from 7 to 11 pm.",
 "price": "$2 off",
 "price_unit": "domestic pints",
 "days": [
@@ -6445,9 +6521,9 @@
 },
 {
 "title": "Whisky Wednesday",
-"description": "All whisky and bottled beer are $2 off on Wednesday evenings.",
+"description": "All whisky and bottled beer are $2 off on Wednesday evenings from 7 to 11 pm.",
 "price": "$2 off",
-"price_unit": "whisky/bottles",
+"price_unit": "whisky and bottled b",
 "days": [
 3
 ],
@@ -6464,18 +6540,18 @@
 "source_url": "https://rockymountainicehouse.ca/edmonton-downtown-rocky-mountain-icehouse-happy-hours-specials"
 },
 {
-"title": "Wined Up Thursdays",
-"description": "On Thursday evenings, 9 oz glasses of wine are priced at the cost of 6 oz pours.",
-"price": null,
-"price_unit": null,
+"title": "Burger & beer Sunday",
+"description": "Get a burger and a 20 oz pint of house lager for $15 on Sunday from 2 to 6 pm.",
+"price": "$15",
+"price_unit": "burger and pint",
 "days": [
-4
+0
 ],
-"start": "19:00",
-"end": "23:00",
+"start": "14:00",
+"end": "18:00",
 "categories": [
-"drinks",
-"happy hour"
+"burgers",
+"drinks"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -6623,13 +6699,13 @@
 },
 "stlouiswings.com": {
 "ok_at": "2026-11-20",
-"hash": "e9565b9cdf6bbc383ed4a72a5922f9b2692571162d5184ed4d905520a1247c56",
+"hash": "d6f974d5f7a493968878250dc2ae3b87942e1056371aab3b62fbe7a92834275c",
 "pv": 7,
 "checked_at": "2026-11-20",
 "deals": [
 {
-"title": "Daily happy hour",
-"description": "Happy hour every day, open until 5pm and from 9pm to close.",
+"title": "$4 happy hour",
+"description": "$4 happy hour every day.",
 "price": "$4",
 "price_unit": null,
 "days": [
@@ -6651,7 +6727,7 @@
 "valid_until": null,
 "dine_in_only": false,
 "applies_to": "all",
-"source_url": "https://www.stlouiswings.com"
+"source_url": "https://www.stlouiswings.com/"
 }
 ]
 },
@@ -7363,9 +7439,35 @@
 },
 "namasteindiaca.com": {
 "ok_at": "2026-11-20",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "95d0512e0b43462b15d547e083ae258ca6d50b67455345b870ed27f96e1f6da2",
 "pv": 7,
-"deals": [],
+"deals": [
+{
+"title": "Takeout order discount",
+"description": "Take 10% off takeout orders of $25 or more.",
+"price": "10% off",
+"price_unit": "takeout orders",
+"days": [
+0,
+1,
+2,
+3,
+4,
+5,
+6
+],
+"start": null,
+"end": null,
+"categories": [
+"family"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "http://www.namasteindiaca.com"
+}
+],
 "checked_at": "2026-11-20"
 },
 "nandos.ca": {
@@ -7747,15 +7849,40 @@
 "checked_at": "2026-11-13"
 },
 "olivegarden.com": {
-"ok_at": "2026-11-18",
-"hash": "7c682563c9aff68d95cd7327939e96c3c2abc7d4fc3f0011480173b225512985",
+"ok_at": "2026-11-20",
+"hash": "8108f0e00995ecbcc1bb22bd1e0c4f888456dd935fe3be5696fa97243fd04b24",
 "pv": 7,
 "deals": [
 {
-"title": "Take Home Entrée",
-"description": "Purchase any entrée online or in-restaurant and take home a freshly prepared, chilled classic for $6. Prices vary by location.",
+"title": "Never-Ending Pasta Bowl",
+"description": "Enjoy the Never-Ending Pasta Bowl with your favorite flavors plus new options, starting at just $14.99.",
+"price": "$14.99",
+"price_unit": "pasta bowl",
+"days": [
+0,
+1,
+2,
+3,
+4,
+5,
+6
+],
+"start": null,
+"end": null,
+"categories": [
+"pasta"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "https://www.olivegarden.com/specials"
+},
+{
+"title": "Take Home Entrées",
+"description": "Buy any entrée online or in-restaurant and take home a freshly prepared, chilled classic. Prices vary by location.",
 "price": "$6",
-"price_unit": "take-home entrée",
+"price_unit": "entrée",
 "days": [
 0,
 1,
@@ -7778,7 +7905,7 @@
 "source_url": "https://www.olivegarden.com/specials"
 }
 ],
-"checked_at": "2026-11-18"
+"checked_at": "2026-11-20"
 },
 "pitapit.ca": {
 "ok_at": "2026-11-20",
@@ -7996,9 +8123,9 @@
 },
 "rigolettos.com": {
 "ok_at": "2026-11-20",
-"hash": "96733d8ede76ac7a385573cda79ecb2e56d87925b1c5ff5d3cdede7129e210c1",
+"hash": "e6e481f24c353f0e0f9b070e4dcffbce11ca74288d40b313adf0c27e3b1c48d3",
 "pv": 7,
-"checked_at": "2026-11-14",
+"checked_at": "2026-11-20",
 "deals": []
 },
 "ripetomatopizza.com": {
@@ -8057,15 +8184,15 @@
 },
 "sicilianpastakitchen.com": {
 "ok_at": "2026-11-20",
-"hash": "d4a787f06f906336f5bb1f47263a6e91936b71b5b1f7abe327babcc864e37a67",
+"hash": "7361aed2cdd6749990678419831e05b0b2bd7825b83e91454590be16e4631e84",
 "pv": 7,
-"checked_at": "2026-11-19",
+"checked_at": "2026-11-20",
 "deals": [
 {
 "title": "Daily happy hour",
-"description": "Happy hour runs twice daily at Vinny's Bar, with draft beer, house wine and well drinks at reduced prices, plus a second happy hour from 9 pm to close.",
+"description": "Happy hour runs twice daily, 3-6pm and 9pm to close, with $4.50 Canadian draft and $5.00 wine by the glass, plus other drinks.",
 "price": "$4.50",
-"price_unit": "draft beer",
+"price_unit": "12 oz draft",
 "days": [
 0,
 1,
@@ -8089,7 +8216,7 @@
 },
 {
 "title": "Pasta Feast Sundays",
-"description": "A large family bowl of five great pastas, served per person, every Sunday.",
+"description": "A large family bowl with five great pastas, served per person on Sundays.",
 "price": "$17.95",
 "price_unit": "per person",
 "days": [
@@ -8108,10 +8235,30 @@
 "source_url": "http://www.sicilianpastakitchen.com/specials"
 },
 {
-"title": "Spirits special",
-"description": "Top shelf vodka, rye, gin and rum are $5 on Thursdays.",
+"title": "Tuesday beer special",
+"description": "Canadian, Coors Original, Coors Light, Belgian Moon and Rickard's Red for $4.50 each on Tuesday.",
+"price": "$4.50",
+"price_unit": "beer",
+"days": [
+2
+],
+"start": null,
+"end": null,
+"categories": [
+"drinks",
+"happy hour"
+],
+"valid_from": null,
+"valid_until": "2026-11-24",
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "http://www.sicilianpastakitchen.com/specials"
+},
+{
+"title": "Thursday spirits special",
+"description": "Top shelf vodka, rye, gin and rum are $5.00 each on Thursday.",
 "price": "$5.00",
-"price_unit": "spirits",
+"price_unit": null,
 "days": [
 4
 ],
@@ -8121,45 +8268,27 @@
 "drinks"
 ],
 "valid_from": null,
-"valid_until": null,
+"valid_until": "2026-11-26",
 "dine_in_only": false,
 "applies_to": "all",
 "source_url": "http://www.sicilianpastakitchen.com/specials"
 },
 {
-"title": "Friday beer special",
-"description": "Domestic bottled beer is $5 on Fridays, and premium and import bottled beer is $5.50.",
+"title": "Friday domestic beer special",
+"description": "Domestic bottled beer is $5.00 and lime margaritas are $2.00 off on Friday, November 20.",
 "price": "$5.00",
-"price_unit": "bottled beer",
+"price_unit": "bottle",
 "days": [
 5
 ],
 "start": null,
 "end": null,
 "categories": [
-"drinks"
+"drinks",
+"happy hour"
 ],
 "valid_from": null,
-"valid_until": null,
-"dine_in_only": false,
-"applies_to": "all",
-"source_url": "http://www.sicilianpastakitchen.com/specials"
-},
-{
-"title": "Monday cocktail specials",
-"description": "Bellinis are $3 off, Caesars are $5 and all super tins are $2 off on Mondays.",
-"price": "$2 off",
-"price_unit": "super tins",
-"days": [
-1
-],
-"start": null,
-"end": null,
-"categories": [
-"drinks"
-],
-"valid_from": null,
-"valid_until": null,
+"valid_until": "2026-11-20",
 "dine_in_only": false,
 "applies_to": "all",
 "source_url": "http://www.sicilianpastakitchen.com/specials"
@@ -8274,18 +8403,19 @@
 },
 "vonssteakhouse.com": {
 "ok_at": "2026-11-20",
-"hash": "e0805c57240b0b03b9a5bfcbb502a20e93dccf84525823ccfd4cb0326e96968c",
+"hash": "59ddc30cfd899defd0e37bce2eeae11c385dbde28bee4d733225603bd9de11f0",
 "pv": 7,
 "checked_at": "2026-11-20",
 "deals": [
 {
-"title": "Happy hour",
-"description": "Enjoy 20% off appetizers, oysters, wines by the glass, cocktails and draft beer during weekday happy hour.",
+"title": "Weekday happy hour",
+"description": "Enjoy 20% off appetizers, oysters, wines by the glass, cocktails and draft beer during happy hour, 4:00 PM to 6:30 PM.",
 "price": "20% off",
 "price_unit": "select items",
 "days": [
 2,
 3,
+4,
 5
 ],
 "start": "16:00",
@@ -8302,8 +8432,8 @@
 "source_url": "http://www.vonssteakhouse.com/edmonton-von-s-steakhouse-and-oyster-bar-happy-hours-specials"
 },
 {
-"title": "Weekend happy hour",
-"description": "Enjoy 20% off appetizers, oysters, wines by the glass, cocktails and draft beer during Saturday happy hour.",
+"title": "Saturday happy hour",
+"description": "Enjoy 20% off appetizers, oysters, wines by the glass, cocktails and draft beer during happy hour, 4:00 PM to 6:00 PM.",
 "price": "20% off",
 "price_unit": "select items",
 "days": [
@@ -8324,7 +8454,7 @@
 },
 {
 "title": "Sunday happy hour",
-"description": "Enjoy 20% off appetizers, oysters, wines by the glass, cocktails and draft beer during Sunday happy hour.",
+"description": "Enjoy 20% off appetizers, oysters, wines by the glass, cocktails and draft beer during happy hour, 4:00 PM to 9:00 PM.",
 "price": "20% off",
 "price_unit": "select items",
 "days": [
@@ -8793,10 +8923,10 @@
 },
 "bloomcookieco.ca": {
 "ok_at": "2026-11-20",
-"hash": "64430a78924531541ecd0d5119847692cbf64bca797624ae3d2f90b0f958ec2c",
+"hash": "ce906344eae68e4c2c955883012359ba6dcffa89931b7e38785324c0d81d48da",
 "pv": 7,
 "deals": [],
-"checked_at": "2026-11-13"
+"checked_at": "2026-11-20"
 },
 "bluechair.ca": {
 "ok_at": "2026-11-20",
@@ -9689,7 +9819,7 @@
 },
 "dreamdonairandpizza.ca": {
 "ok_at": "2026-11-20",
-"hash": "e6ed5d7e5be2c25582aa213a587236d92d517d1db15b14f323f4b0115d1b0846",
+"hash": "cdbe76478bfad8ffa06ca97cc2fcea73d6787bc93be7426ea3ab5fbffd1758e7",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-20"
@@ -9915,7 +10045,7 @@
 },
 "hakoneedmonton.gastrobars.com": {
 "ok_at": "2026-11-20",
-"hash": "57d5da0d89ea32c15680e4afea51f059e6c9ca583034b8ee7f668190be9a0ee0",
+"hash": "1a5abaf4ca3e93e6bc9e62a2d532306767477f52adcbd1fbf0d11fdd9d442c4b",
 "pv": 7,
 "checked_at": "2026-11-20",
 "deals": []
@@ -10113,13 +10243,13 @@
 },
 "jaybeesdiner.com": {
 "ok_at": "2026-11-20",
-"hash": "65506364c891011337dadbff636a93c583cff444f7d919a0455427747f9ad281",
+"hash": "d5e1dce28b896c8bc8afb2d001e811046fa69252fbbc18380a168bbea02d6473",
 "pv": 7,
-"checked_at": "2026-11-14",
+"checked_at": "2026-11-20",
 "deals": [
 {
-"title": "Jaybee's Pizza return",
-"description": "Buy one Jaybee's pizza and get the second one half off, take-out only.",
+"title": "Jaybee's Pizza is back",
+"description": "Buy one pizza, get one half off, takeout only.",
 "price": "BOGO",
 "price_unit": "pizza",
 "days": [
@@ -10131,7 +10261,7 @@
 "pizza"
 ],
 "valid_from": null,
-"valid_until": "2026-11-19",
+"valid_until": "2026-11-26",
 "dine_in_only": false,
 "applies_to": "all",
 "source_url": "https://jaybeesdiner.com/specials"
@@ -10388,7 +10518,7 @@
 },
 "kyoto-sushijapanese.com": {
 "ok_at": "2026-11-20",
-"hash": "5277124f3bee80bcb6eb101cc2b64b5d82f84d7202d265bf576426fdd1af9730",
+"hash": "b9b624883309ef76a723fb186bc69c8071ce4c5d904f9f297f981a78588cc0d7",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-20"
@@ -10504,12 +10634,12 @@
 },
 "swypepos.com": {
 "ok_at": "2026-11-20",
-"hash": "60b186085969b5fd146bb623dfb53aba1b8cc8b60e527a0fd6f26ef5eaa0c9f3",
+"hash": "bd496b88a4e46346816e5ad34c3a70c4dab241e36da5bde7cbb615f9c2c6f561",
 "pv": 7,
 "deals": [
 {
 "title": "Pick-up discount",
-"description": "Take away pick-up orders get 10% off.",
+"description": "Take-away and pick-up orders get 10% off.",
 "price": "10% off",
 "price_unit": null,
 "days": [
@@ -10524,7 +10654,7 @@
 "start": null,
 "end": null,
 "categories": [
-"pasta"
+"family"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -10537,12 +10667,12 @@
 },
 "maplepizzadonair.happidealsorders.ca": {
 "ok_at": "2026-11-20",
-"hash": "a91bcadef0e5f87d65c2be92d5f778dfc866a7c61dbd5359c34374a1455c78dc",
+"hash": "366f8c2eddc112577dddf0351071fc5e4622b57ad3d99c5ccd76f67c87a70173",
 "pv": 7,
 "deals": [
 {
-"title": "Pickup pizza special",
-"description": "A 10-inch pizza for pickup only, with free unlimited toppings included.",
+"title": "Pickup 10\" pizza special",
+"description": "10-inch pizza for pickup only, always with free unlimited toppings.",
 "price": "$22.99",
 "price_unit": "10\" pizza",
 "days": [
@@ -11143,14 +11273,14 @@
 },
 "phophat.ca": {
 "ok_at": "2026-11-20",
-"hash": "02373156e5cb91f4a6603176bbaebeceeb39df4c2a4f8a229a27d4ce3c857572",
+"hash": "6b56b1896a968934df8d7cfb182bef4f0ff400d2028536455887782708938370",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-20"
 },
 "phosonghuongvietnamese.com": {
 "ok_at": "2026-11-20",
-"hash": "15d12ef8df779a8667033e52e91b6255183ac78cd906a9d5bea25b46023490a4",
+"hash": "2b91948876bff6104febc9aed69ffb38e857cc9246aca715c0cd3faca3efbaf4",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-20"
@@ -11740,10 +11870,10 @@
 },
 "locations.sunsetgrill.ca": {
 "ok_at": "2026-11-20",
-"hash": "041f5c35f41ffb2895edf62f2d50c32a43c609b5cc7abde75fcc2173e01726a5",
+"hash": "aac815d4c06880d9e8538475ac29b61c04e0d815c320e6a92cf4546a1a762dca",
 "pv": 7,
 "deals": [],
-"checked_at": "2026-11-13"
+"checked_at": "2026-11-20"
 },
 "sushi-wasabi-canada.food96.com": {
 "ok_at": "2026-11-20",
@@ -11753,7 +11883,7 @@
 "checked_at": "2026-11-13"
 },
 "sushiyuzen.simdif.com": {
-"ok_at": "2026-11-19",
+"ok_at": "2026-11-20",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -12578,10 +12708,10 @@
 },
 "westernsandwich.com": {
 "ok_at": "2026-11-20",
-"hash": "e657785c131c079c516bcab78a3d6a6e7a0d3c93a26bcb3bd6420c8aa1be3bff",
+"hash": "41126f6f4f1aa7ef366d62da65d0108cbb21a800e2981fb4aba31b689f17bc02",
 "pv": 7,
 "deals": [],
-"checked_at": "2026-11-19"
+"checked_at": "2026-11-20"
 },
 "whitespot.ca": {
 "ok_at": "2026-11-14",
@@ -12915,36 +13045,13 @@
 },
 "aaachineserestaurant.com": {
 "ok_at": "2026-11-20",
-"hash": "54567ed5e2f14a7fe0a7f7b05cb6078152215497f488072dcacf6582b851d806",
+"hash": "54b477859c8d065dabf28c33cf7c2edf582fe84c886a78142b57abd8f665566e",
 "pv": 7,
 "checked_at": "2026-11-20",
 "deals": [
 {
-"title": "Weekday lunch combo special",
-"description": "A different combo special every weekday, available eat-in or take-out.",
-"price": "$16.95",
-"price_unit": "lunch combo",
-"days": [
-1,
-2,
-3,
-4,
-5
-],
-"start": "11:30",
-"end": "14:00",
-"categories": [
-"lunch"
-],
-"valid_from": null,
-"valid_until": null,
-"dine_in_only": false,
-"applies_to": "all",
-"source_url": "https://www.aaachineserestaurant.com"
-},
-{
 "title": "Daily happy hour drink specials",
-"description": "Daily drink specials in the lounge from 3 to 7 PM.",
+"description": "Daily drink specials during happy hour in the lounge, 3 to 7 PM, every day.",
 "price": null,
 "price_unit": null,
 "days": [
@@ -12967,12 +13074,62 @@
 "dine_in_only": true,
 "applies_to": "all",
 "source_url": "https://www.aaachineserestaurant.com"
+},
+{
+"title": "Weekday lunch combo special",
+"description": "A different lunch combo special each weekday, available eat-in or take-out from 11:30 am to 2 pm.",
+"price": null,
+"price_unit": null,
+"days": [
+1,
+2,
+3,
+4,
+5
+],
+"start": "11:30",
+"end": "14:00",
+"categories": [
+"lunch",
+"family"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "https://www.aaachineserestaurant.com"
+},
+{
+"title": "Daily lunch special cheese pizza",
+"description": "Mozzarella cheese pizza is offered as a daily lunch special in 8-inch, 10-inch and 12-inch sizes.",
+"price": "$15.00",
+"price_unit": "8-inch pizza",
+"days": [
+0,
+1,
+2,
+3,
+4,
+5,
+6
+],
+"start": null,
+"end": null,
+"categories": [
+"pizza",
+"lunch"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "https://www.aaachineserestaurant.com/menu/"
 }
 ]
 },
 "caffetech.com": {
 "ok_at": "2026-11-20",
-"hash": "73b8a7580710c884c89954d1b1ce906a8ca54bfa2078a50081adf3596e8e9199",
+"hash": "0cba53c87f053a5cd5f2c78f1a0d13842eb33d814729fb6edbc4019581928926",
 "pv": 7,
 "checked_at": "2026-11-20",
 "deals": []
@@ -14088,15 +14245,15 @@
 },
 "crustkingpizza.com": {
 "ok_at": "2026-11-20",
-"hash": "6181ccf4c3c303293d046efd60201932dee0115582d9b561ca3ba28ac0c79221",
+"hash": "b9f481751097cd8be94c2a10e72bc5e4f88f85c6c878e88281a86f89d0d8ec42",
 "pv": 7,
 "checked_at": "2026-11-20",
 "deals": [
 {
-"title": "Monday chicken burger special",
-"description": "Chicken burger on Mondays, regularly $10.77.",
+"title": "Chicken burger special",
+"description": "Chicken burger at the Monday special price, available for pickup.",
 "price": "$4.77",
-"price_unit": "per burger",
+"price_unit": "chicken burger",
 "days": [
 1
 ],
@@ -14113,17 +14270,18 @@
 "source_url": "https://crustkingpizza.com/deals"
 },
 {
-"title": "Tuesday chicken shawarma special",
-"description": "Chicken shawarma wrap on Tuesdays, regularly $13.77.",
+"title": "Chicken shawarma special",
+"description": "Chicken shawarma at the Tuesday special price, available for pickup.",
 "price": "$9.77",
-"price_unit": "per wrap",
+"price_unit": "shawarma",
 "days": [
 2
 ],
 "start": null,
 "end": null,
 "categories": [
-"chicken"
+"chicken",
+"lunch"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -14132,10 +14290,10 @@
 "source_url": "https://crustkingpizza.com/deals"
 },
 {
-"title": "Thursday fried chicken special",
-"description": "5 piece fried chicken on Thursdays, regularly $13.77.",
+"title": "Fried chicken special",
+"description": "5 pieces of fried chicken at the Thursday special price, available for pickup.",
 "price": "$9.77",
-"price_unit": "5 pieces",
+"price_unit": "5 pc chicken",
 "days": [
 4
 ],
@@ -14586,7 +14744,7 @@
 },
 "hidozosushiedmonton.com": {
 "ok_at": "2026-11-20",
-"hash": "7fb36b249d93a2e9548d0808764e37db9c05962eb2405ac37e23a5d456ab5c3d",
+"hash": "abd00963bc0a56f5df1b400347621302a4e09e63444195ed82a5b048de7ce74c",
 "pv": 7,
 "checked_at": "2026-11-20",
 "deals": []
@@ -14715,17 +14873,17 @@
 },
 "kinshirinji.ca": {
 "ok_at": "2026-11-20",
-"hash": "91230544be9f7cc7254a958b53056bdedbc803cd900d591e54b51c5b0d128c0f",
+"hash": "22a6a0b5e6b7f2f3078dc6148eeebf4fbe756f364399aed35ee050d7c41b241e",
 "pv": 7,
-"checked_at": "2026-11-18",
+"checked_at": "2026-11-20",
 "deals": [
 {
-"title": "Pho Thursday",
-"description": "Enjoy a bowl of pho for $5.95 every Thursday from 4 PM to 11 PM.",
+"title": "Ramen Tuesday",
+"description": "Enjoy a $5.95 bowl of ramen every Tuesday from 4 PM to 11 PM.",
 "price": "$5.95",
-"price_unit": "per pho",
+"price_unit": "per ramen",
 "days": [
-4
+2
 ],
 "start": "16:00",
 "end": "23:00",
@@ -14739,12 +14897,12 @@
 "source_url": "http://www.kinshirinji.ca/specials"
 },
 {
-"title": "Ramen Tuesday",
-"description": "Enjoy a bowl of ramen for $5.95 every Tuesday from 4 PM to 11 PM.",
+"title": "Pho Thursday",
+"description": "Enjoy a $5.95 bowl of pho every Thursday from 4 PM to 11 PM.",
 "price": "$5.95",
-"price_unit": "per ramen",
+"price_unit": "per pho",
 "days": [
-2
+4
 ],
 "start": "16:00",
 "end": "23:00",
@@ -14931,9 +15089,9 @@
 },
 "saigontasteedmonton.com": {
 "ok_at": "2026-11-20",
-"hash": "0af7951cd1814e3eda39e1156ad2fe0472cd39e4543d8483cf0aceb7f05843f7",
+"hash": "cfd1fe3fbfe2d2f99d7418c7d5cc54a1befa92bc344d793f167d2221c532c5f6",
 "pv": 7,
-"checked_at": "2026-11-19",
+"checked_at": "2026-11-20",
 "deals": []
 },
 "snowyvillages.ca": {
