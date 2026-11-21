@@ -1,6 +1,6 @@
 {
 "_usage": {
-"2026-11": 4069
+"2026-11": 4146
 },
 "locations.timhortons.ca": {
 "ok_at": "2026-11-21",
@@ -771,10 +771,10 @@
 },
 "firehousesubs.ca": {
 "ok_at": "2026-11-21",
-"hash": "cbde5b5df45b465ecb7a34c2347fa3fb95c7f989a57da39ccb6ae0ba939c3724",
+"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
-"checked_at": "2026-11-17"
+"checked_at": "2026-11-21"
 },
 "barburrito.ca": {
 "ok_at": "2026-11-21",
@@ -1267,39 +1267,54 @@
 },
 "dennys.ca": {
 "ok_at": "2026-11-21",
-"hash": "9ea3fbfd236076750aebf3ad88aab5edaadb9d3ae63ca716a0b104c16ee4618c",
+"hash": "a2b652a214593c179f9520a059c8df870a12b9cca035dbbd7ee8e921046e820c",
 "pv": 7,
-"checked_at": "2026-11-19",
+"checked_at": "2026-11-21",
 "deals": [
 {
-"title": "Lunch Club entrée",
-"description": "Enjoy a Club Sandwich or Oven Baked Lasagna with the purchase of any regular-priced beverage, dine-in only, on weekdays from 11am to 4pm.",
-"price": "$10.99",
-"price_unit": "lunch entrée",
+"title": "Family Night",
+"description": "Family Night runs Wednesdays from 3pm to 10pm, with some restrictions applying.",
+"price": null,
+"price_unit": null,
 "days": [
-1,
-2,
-3,
-4,
-5
+3
 ],
-"start": "11:00",
-"end": "16:00",
+"start": "15:00",
+"end": "22:00",
 "categories": [
-"lunch",
-"burgers"
+"family",
+"kids"
 ],
 "valid_from": null,
 "valid_until": null,
-"dine_in_only": true,
+"dine_in_only": false,
 "applies_to": "all",
-"source_url": "https://www.dennys.ca/promotions/lunch-club/"
+"source_url": "https://www.dennys.ca/restaurant/ontario/toronto-bay-dundas"
 },
 {
-"title": "Lunch Club soup add-on",
-"description": "Add a bowl of Tomato or Chicken Noodle soup to a Lunch Club entrée, dine-in only, on weekdays from 11am to 4pm.",
-"price": "$4.99",
-"price_unit": "soup add-on",
+"title": "Thursday 55+ discount",
+"description": "Guests 55 and older get 15% off on Thursdays from 2pm to 10pm.",
+"price": "15% off",
+"price_unit": null,
+"days": [
+4
+],
+"start": "14:00",
+"end": "22:00",
+"categories": [
+"family"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "https://www.dennys.ca/restaurant/ontario/toronto-bay-dundas"
+},
+{
+"title": "Lunch Club entrée deal",
+"description": "Club Sandwich or Oven Baked Lasagna for $10.99 with the purchase of any regular-priced beverage, dine-in only, while supplies last.",
+"price": "$10.99",
+"price_unit": "lunch entrée",
 "days": [
 1,
 2,
@@ -1319,42 +1334,28 @@
 "source_url": "https://www.dennys.ca/promotions/lunch-club/"
 },
 {
-"title": "Family Night",
-"description": "Family Night feature every Wednesday from 3pm to 10pm.",
-"price": null,
-"price_unit": null,
+"title": "Lunch Club soup add-on",
+"description": "Add a bowl of Tomato or Chicken Noodle soup to your Lunch Club entrée, dine-in only, with a regular-priced beverage.",
+"price": "$4.99",
+"price_unit": "soup bowl",
 "days": [
-3
+1,
+2,
+3,
+4,
+5
 ],
-"start": "15:00",
-"end": "22:00",
+"start": "11:00",
+"end": "16:00",
 "categories": [
-"family"
+"lunch",
+"appetizers"
 ],
 "valid_from": null,
 "valid_until": null,
-"dine_in_only": false,
+"dine_in_only": true,
 "applies_to": "all",
-"source_url": "https://www.dennys.ca/restaurant/ontario/toronto-bay-dundas"
-},
-{
-"title": "55+ Deals",
-"description": "Deals for guests 55 and over every Thursday from 2pm to 10pm.",
-"price": null,
-"price_unit": null,
-"days": [
-4
-],
-"start": "14:00",
-"end": "22:00",
-"categories": [
-"family"
-],
-"valid_from": null,
-"valid_until": null,
-"dine_in_only": false,
-"applies_to": "all",
-"source_url": "https://www.dennys.ca/restaurant/ontario/toronto-bay-dundas"
+"source_url": "https://www.dennys.ca/promotions/lunch-club/"
 }
 ]
 },
@@ -3138,13 +3139,13 @@
 },
 "stlouiswings.com": {
 "ok_at": "2026-11-21",
-"hash": "eef7897fba8edb7824f7a44342517b597f9b6204c8e8e711d65a9c31113f283b",
+"hash": "9af1d1f3b012083c0792afb87adc06c96d9e2dc69fe822e409f7d975a26fb43a",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": [
 {
-"title": "$4 happy hour",
-"description": "Happy hour every day, open until 5pm and from 9pm until close.",
+"title": "Daily happy hour",
+"description": "$4 happy hour every day at St. Louis Bar & Grill.",
 "price": "$4",
 "price_unit": null,
 "days": [
@@ -3159,8 +3160,7 @@
 "start": null,
 "end": null,
 "categories": [
-"happy hour",
-"drinks"
+"happy hour"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -4684,7 +4684,7 @@
 },
 "macnwings.ca": {
 "ok_at": "2026-11-21",
-"hash": "d1e6d63adc84cd6100b972e770be86f7bb670e2eca3918293016dc622a8fe135",
+"hash": "d09b67c99c7e58a18e143413bc0517e0c620380a773132e13a194fab45126b65",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -6268,7 +6268,7 @@
 },
 "adrianos-pizza.com": {
 "ok_at": "2026-11-21",
-"hash": "f843ef124b1465f5b1e134175bfddb12e00871cd7c1a9fc827e81bebdd3edec7",
+"hash": "c551b2991dc769e2b514de1788c0f3a2a2a784187fc0f84215450aa1f062ffff",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -6328,10 +6328,10 @@
 "deals": []
 },
 "aisle3bar.ca": {
-"ok_at": "2026-11-19",
-"hash": "2e0698873531ad1535ab8bc55082413b60a95ff413f418be26fab4ccd37df0ce",
+"ok_at": "2026-11-21",
+"hash": "abbfea0a5693b46923cc3ef8ec379c835031bd14eb52491c4ab30690d9e7b768",
 "pv": 7,
-"checked_at": "2026-11-19",
+"checked_at": "2026-11-21",
 "deals": []
 },
 "aitaikercanada.com": {
@@ -6627,9 +6627,36 @@
 },
 "ambagel.com": {
 "ok_at": "2026-11-21",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "9eb7695f49d2bd7c96468aefede1cce77377130a5f8aabee24df39173b111171",
 "pv": 7,
-"deals": [],
+"deals": [
+{
+"title": "Free 12oz coffee with beans",
+"description": "Take home a 12 oz bag of Sam James coffee beans and get a free 12oz coffee, with in-store pickup only.",
+"price": "Free",
+"price_unit": "12oz coffee",
+"days": [
+0,
+1,
+2,
+3,
+4,
+5,
+6
+],
+"start": null,
+"end": null,
+"categories": [
+"coffee",
+"drinks"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "https://www.ambagel.com"
+}
+],
 "checked_at": "2026-11-21"
 },
 "amaltoronto.com": {
@@ -6718,7 +6745,7 @@
 },
 "amatogyro.com": {
 "ok_at": "2026-11-21",
-"hash": "de44927d413be701b6dd1eaec363364a078c3e721a6b66d4b87bbdbc90bc6e60",
+"hash": "a12c018d92e5b15d3969f1812b1a4a4bdce2e7bb3ee3476f5b445d4656408c1e",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -6902,7 +6929,7 @@
 },
 "ariaristorante.ca": {
 "ok_at": "2026-11-21",
-"hash": "00a4b684365655b3daf3cb4f831f162e849ed16a4703cb65a94ae37c7fb4da68",
+"hash": "fe8330a8e4b7755ef91e3832ee65ea4a007ab9d4e35d82ecb579f89529c8bef0",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -7032,9 +7059,9 @@
 },
 "azariasrestaurant.com": {
 "ok_at": "2026-11-21",
-"hash": "aa06ae6c8afabf661f42654dddc4847fa9eda96e13cc427168ee5b7b4ec11ee8",
+"hash": "c5c07cc6f30feda161e4721c29894228c9ac6e02b3c49d340cb5998c5d714d88",
 "pv": 7,
-"checked_at": "2026-11-20",
+"checked_at": "2026-11-21",
 "deals": []
 },
 "bboyz.ca": {
@@ -7842,7 +7869,7 @@
 },
 "bindisburgers.com": {
 "ok_at": "2026-11-21",
-"hash": "f3e5f7424596b88256c014bf9d8a671d1b7a2a51dc3a4d06e41e49c00ee21803",
+"hash": "b396e1b2d53880452fc3a30a28e24c546e1382c9fac8b75c2317cafb13e681c3",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -8025,7 +8052,7 @@
 },
 "bom-bibimbap.com": {
 "ok_at": "2026-11-21",
-"hash": "0be9f2aa5e3f1617a8bd3451d6c4707d373584dd7449ddf5c5a6b53a5f441dc7",
+"hash": "e815d4d96c92ea4a95e8db1276bbea44349f0ea8cf6b14a666613520f0ce5e0c",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -8985,7 +9012,7 @@
 "deals": []
 },
 "chacheeschai.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "736f5450abe36af545939863bd5a135508e978920074dc8c9a30c93847ca2cdf",
 "pv": 7,
 "checked_at": "2026-11-13",
@@ -10035,7 +10062,7 @@
 },
 "comedybar.ca": {
 "ok_at": "2026-11-21",
-"hash": "4faa6bd63a6724a27cb11c9b9b744194440e0db78ecfb3846bfbca5fb00815a2",
+"hash": "4af0ca46ac64e2d0636a71f187e4b6f253e28d6bf9e157ed584a95a4fe40d3f1",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -10580,7 +10607,7 @@
 },
 "damdarestaurant.com": {
 "ok_at": "2026-11-21",
-"hash": "15860e5c626079be7b8703181f7ac1f81c78afbabdb798ae4e9748a13d2e2bb5",
+"hash": "2852a26522a628d4466e1d9726d81050e41ac1c8e6f4dee0b2884113310edd2d",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -10717,7 +10744,7 @@
 "deals": []
 },
 "deluxegrillandcafe.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "8862114372eeaf9c9b855842cee97f617ac735d04be3fb5cbb02f01dc69c2581",
 "pv": 7,
 "deals": [],
@@ -10778,7 +10805,7 @@
 ]
 },
 "detroitpizzeria.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -10971,7 +10998,7 @@
 "checked_at": "2026-11-13"
 },
 "doubledoublepizzascarborough.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -12197,7 +12224,7 @@
 },
 "flavaceen.com": {
 "ok_at": "2026-11-21",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "d16a2ee636a198a5bb82cf816217c1d1838d9a08ee656f915a9a571c6f301976",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -12422,14 +12449,14 @@
 },
 "fuelplus.ca": {
 "ok_at": "2026-11-21",
-"hash": "af3a4e010c0acdba850209ab4687655d43fd69009a840ad4d9410dd8dac70081",
+"hash": "92d7b2753f6fd400df4f88b781222d5b20fc6e497d8311673c06ca806d16ac3c",
 "pv": 7,
 "deals": [
 {
-"title": "5 healthy shots for 4",
-"description": "Buy any four Healthy Shots and get a fifth one free.",
-"price": "Free",
-"price_unit": "5th shot",
+"title": "Healthy shots 5 for 4",
+"description": "Get five of any Healthy Shot for the price of four.",
+"price": "5 for 4",
+"price_unit": "shots",
 "days": [
 0,
 1,
@@ -12451,7 +12478,7 @@
 "source_url": "https://www.fuelplus.ca"
 }
 ],
-"checked_at": "2026-11-20"
+"checked_at": "2026-11-21"
 },
 "functionbar.ca": {
 "ok_at": "2026-11-21",
@@ -12595,7 +12622,7 @@
 "deals": []
 },
 "gasparcafe.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "4e29f84242ce1d6c83ce227c671f14af1e4011e27815d0356474ac4a1824fc14",
 "pv": 7,
 "checked_at": "2026-11-14",
@@ -12842,7 +12869,7 @@
 },
 "goldenhorseshoebbq.com": {
 "ok_at": "2026-11-21",
-"hash": "f661cf5439028eac757e033a706a00cd2a3b6c0d652b31a82fb0abaf501a30de",
+"hash": "ec545ebbe17bd3f9b9649bd05e0173d0dec476950692eaf8f2e5f73f53db397e",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -12883,7 +12910,7 @@
 "checked_at": "2026-11-13"
 },
 "thegospelcafe.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "7c9552bde6eb54945fdda733ac70df6f38d3490f2c091df187df3fa5462ae925",
 "pv": 7,
 "deals": [
@@ -13362,7 +13389,7 @@
 },
 "hemsocial.square.site": {
 "ok_at": "2026-11-21",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "aa22dddc7f955da23789d59375af3b9ba74d495d6e5ab01d1c3187e0a69ba72c",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -13417,7 +13444,7 @@
 "checked_at": "2026-11-13"
 },
 "herbyrestaurant.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -13432,9 +13459,9 @@
 },
 "heyiamyogost.com": {
 "ok_at": "2026-11-21",
-"hash": "e1097f074828a1fbec4dd14f2d9fc8d2fbf0a3be4dd0fdb90673d3a7137048e9",
+"hash": "70a60ead2e217834d56b0d2ef51d889878ef9569673d2ed305f171aa6d6fd9a8",
 "pv": 7,
-"checked_at": "2026-11-18",
+"checked_at": "2026-11-21",
 "deals": []
 },
 "heylucy.ca": {
@@ -13809,10 +13836,10 @@
 },
 "houseonparliament.com": {
 "ok_at": "2026-11-21",
-"hash": "d11544c32fed85868e788bb275f2ba5a8b03c7f833daa1808318553185733519",
+"hash": "31d62210e9f9433ac877bbbe5df1d75d554c3cd78572b467a96b78e66e8e142f",
 "pv": 7,
 "deals": [],
-"checked_at": "2026-11-20"
+"checked_at": "2026-11-21"
 },
 "eathoyra.com": {
 "ok_at": "2026-11-21",
@@ -14281,7 +14308,7 @@
 },
 "javahousetoronto.com": {
 "ok_at": "2026-11-21",
-"hash": "94a2147a9d0b48d2a17a615230342bad9994329079fa9905e8d944b1f28ee9d0",
+"hash": "85b0a5cb3c070a344c910ad879773850ba1e0d29aae84433a8203dd1d9f8fcc2",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -14735,9 +14762,35 @@
 },
 "kawasushi.ca": {
 "ok_at": "2026-11-21",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "3f411bbc788d35a24d35550650ddf6fb6417ecb5a2172cf7623ec617295a8133",
 "pv": 7,
-"deals": [],
+"deals": [
+{
+"title": "Sushi combo BOGO",
+"description": "Buy one, get one offer on sushi combos.",
+"price": "BOGO",
+"price_unit": "sushi combos",
+"days": [
+0,
+1,
+2,
+3,
+4,
+5,
+6
+],
+"start": null,
+"end": null,
+"categories": [
+"sushi"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "https://kawasushi.ca"
+}
+],
 "checked_at": "2026-11-21"
 },
 "kayamono.ca": {
@@ -14781,7 +14834,7 @@
 "deals": []
 },
 "kellyslanding.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "dab28caf2c66bddc061e7df95f9fefc1000fe9a8fec6c0676a8aff455a706e55",
 "pv": 7,
 "checked_at": "2026-11-14",
@@ -14920,10 +14973,10 @@
 },
 "kiyojapanesecuisine.com": {
 "ok_at": "2026-11-21",
-"hash": "65956acfd1a038898642116081b89f2b45269773ed1d4fb3354f631035efddd3",
+"hash": "2698d0b52fc76624d5c13bcff7cd98bc2cd54a9444f457f9a9f9cf919d5f983e",
 "pv": 7,
 "deals": [],
-"checked_at": "2026-11-17"
+"checked_at": "2026-11-21"
 },
 "kiyomiomakase.ca": {
 "ok_at": "2026-11-21",
@@ -14955,7 +15008,7 @@
 },
 "koreahouse.ca": {
 "ok_at": "2026-11-21",
-"hash": "5a5caa060f3218b50798188f74554506c523ec883c6c9862c4549bfe9c5177ab",
+"hash": "49a7deb570b193151a88cfad729e8760843d7cf4209ae9611f72e5b47729a327",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -15052,7 +15105,7 @@
 "checked_at": "2026-11-13"
 },
 "labettola.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "19caad0affd6fc55c0753adcc4fab1c2edafbf05f8aecd29de873367d0c2f666",
 "pv": 7,
 "checked_at": "2026-11-17",
@@ -15869,7 +15922,7 @@
 "checked_at": "2026-11-13"
 },
 "lisbonbynightrestaurant.com": {
-"ok_at": "2026-11-19",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "checked_at": "2026-11-13",
@@ -15904,11 +15957,55 @@
 "checked_at": "2026-11-11"
 },
 "littleindia.ca": {
-"ok_at": "2026-11-20",
-"hash": "d403492f8e81900da6e5600808f56b55e135076554eec705e2a138d90d9c7407",
+"ok_at": "2026-11-21",
+"hash": "93655c6a16b5adb7abbfa7979d7f7f3d3678abdc3a158993aea98127ee0014f3",
 "pv": 7,
-"checked_at": "2026-11-19",
-"deals": []
+"checked_at": "2026-11-21",
+"deals": [
+{
+"title": "Weekday lunch buffet",
+"description": "All-you-can-eat lunch buffet served 11:30 am to 2:30 pm on weekdays.",
+"price": "$22.95",
+"price_unit": "buffet",
+"days": [
+1,
+2,
+3,
+4,
+5
+],
+"start": "11:30",
+"end": "14:30",
+"categories": [
+"lunch"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": true,
+"applies_to": "all",
+"source_url": "https://www.littleindia.ca"
+},
+{
+"title": "Weekend lunch buffet",
+"description": "All-you-can-eat lunch buffet served 11:30 am to 2:30 pm on weekends.",
+"price": "$24.95",
+"price_unit": "buffet",
+"days": [
+0,
+6
+],
+"start": "11:30",
+"end": "14:30",
+"categories": [
+"lunch"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": true,
+"applies_to": "all",
+"source_url": "https://www.littleindia.ca"
+}
+]
 },
 "thelittlejerry.com": {
 "ok_at": "2026-11-21",
@@ -15954,9 +16051,9 @@
 },
 "loomipita.ca": {
 "ok_at": "2026-11-21",
-"hash": "961d77431829d8c56b2bd3165d01d171172f8902cd64ee5a19bfc8a2951f30ce",
+"hash": "78cf4564203994963fdb974d84943833d68b73c9d941a148545be0f19a436fb2",
 "pv": 7,
-"checked_at": "2026-11-20",
+"checked_at": "2026-11-21",
 "deals": []
 },
 "loonspub.com": {
@@ -15989,13 +16086,13 @@
 },
 "louiecoffee.com": {
 "ok_at": "2026-11-21",
-"hash": "d09bef2d026df90158578f102712f9807b4e4332a48a7ae2de62998360449b1f",
+"hash": "023de97c148a1de61c80a01e512424c43ef034837eec8235301e83b33ae91195",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": [
 {
 "title": "Free drink with bean purchase",
-"description": "Get a complimentary drink when you buy coffee beans at the cafe.",
+"description": "Get a complimentary drink with your purchase of coffee beans at the cafe.",
 "price": "Free",
 "price_unit": "drink",
 "days": [
@@ -16023,13 +16120,13 @@
 },
 "classicolouiespizza.ca": {
 "ok_at": "2026-11-21",
-"hash": "cbb7eac8a76a9308dbe2a07c0bcce61662bb79c02ddd96642c5cfc3d60057b1a",
+"hash": "7bf9ec78ab13f4ffb7431ab383b3b8558f039702af87762355ce800e76b52d35",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": [
 {
-"title": "Linguine Alfredo Feature",
-"description": "Linguine chicken alfredo is featured today, dine-in only, from 11:00 AM.",
+"title": "Linguine chicken alfredo special",
+"description": "Dine-in only daily special, available from 11:00 AM to 11:30 PM.",
 "price": null,
 "price_unit": null,
 "days": [
@@ -16039,17 +16136,18 @@
 "end": "23:30",
 "categories": [
 "pasta",
-"chicken"
+"chicken",
+"dessert"
 ],
 "valid_from": null,
-"valid_until": "2026-11-21",
+"valid_until": "2026-11-27",
 "dine_in_only": true,
 "applies_to": "all",
 "source_url": "https://classicolouiespizza.ca/toronto-north-toronto-classico-louie-s-pizzeria-happy-hours-specials"
 },
 {
-"title": "Spaghetti Bolognese Special",
-"description": "Spaghetti Bolognese is on special for $8.95, dine-in only.",
+"title": "Spaghetti Bolognese special",
+"description": "Dine-in only daily special, available from 11:00 AM to 11:30 PM.",
 "price": "$8.95",
 "price_unit": null,
 "days": [
@@ -16061,14 +16159,14 @@
 "pasta"
 ],
 "valid_from": null,
-"valid_until": "2026-11-22",
+"valid_until": "2026-11-27",
 "dine_in_only": true,
 "applies_to": "all",
 "source_url": "https://classicolouiespizza.ca/toronto-north-toronto-classico-louie-s-pizzeria-happy-hours-specials"
 },
 {
-"title": "Penne Rosé Special",
-"description": "Penne rosé is on special for $6.95, dine-in only.",
+"title": "Penne rose special",
+"description": "Dine-in only daily special, available from 11:00 AM to 11:30 PM.",
 "price": "$6.95",
 "price_unit": null,
 "days": [
@@ -16077,18 +16175,17 @@
 "start": "11:00",
 "end": "23:30",
 "categories": [
-"pasta",
-"vegetarian"
+"pasta"
 ],
 "valid_from": null,
-"valid_until": "2026-11-23",
+"valid_until": "2026-11-27",
 "dine_in_only": true,
 "applies_to": "all",
 "source_url": "https://classicolouiespizza.ca/toronto-north-toronto-classico-louie-s-pizzeria-happy-hours-specials"
 },
 {
-"title": "Spaghetti Bolognese Special",
-"description": "Spaghetti Bolognese is on special for $8.95, dine-in only.",
+"title": "Spaghetti Bolognese special",
+"description": "Dine-in only daily special, available from 11:00 AM to 11:30 PM.",
 "price": "$8.95",
 "price_unit": null,
 "days": [
@@ -16100,14 +16197,14 @@
 "pasta"
 ],
 "valid_from": null,
-"valid_until": "2026-11-24",
+"valid_until": "2026-11-27",
 "dine_in_only": true,
 "applies_to": "all",
 "source_url": "https://classicolouiespizza.ca/toronto-north-toronto-classico-louie-s-pizzeria-happy-hours-specials"
 },
 {
-"title": "Pesto Linguine Special",
-"description": "Pesto linguine is on special for $7.95, dine-in only.",
+"title": "Pesto linguine special",
+"description": "Dine-in only daily special, available from 11:00 AM to 11:30 PM.",
 "price": "$7.95",
 "price_unit": null,
 "days": [
@@ -16116,18 +16213,17 @@
 "start": "11:00",
 "end": "23:30",
 "categories": [
-"pasta",
-"vegetarian"
+"pasta"
 ],
 "valid_from": null,
-"valid_until": "2026-11-25",
+"valid_until": "2026-11-27",
 "dine_in_only": true,
 "applies_to": "all",
 "source_url": "https://classicolouiespizza.ca/toronto-north-toronto-classico-louie-s-pizzeria-happy-hours-specials"
 },
 {
-"title": "10\" Margherita Pizza Special",
-"description": "A 10-inch Margherita pizza is on special for $8.95, dine-in only.",
+"title": "10\" Margherita pizza special",
+"description": "Dine-in only daily special, available from 11:00 AM to 11:30 PM.",
 "price": "$8.95",
 "price_unit": null,
 "days": [
@@ -16140,7 +16236,7 @@
 "vegetarian"
 ],
 "valid_from": null,
-"valid_until": "2026-11-26",
+"valid_until": "2026-11-27",
 "dine_in_only": true,
 "applies_to": "all",
 "source_url": "https://classicolouiespizza.ca/toronto-north-toronto-classico-louie-s-pizzeria-happy-hours-specials"
@@ -16772,7 +16868,7 @@
 },
 "masa-deli.square.site": {
 "ok_at": "2026-11-21",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "561b751ac590ff72729db60a38690ea190b1cf086fddefcca1e92e9fa322c547",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -16800,9 +16896,9 @@
 },
 "matsuteisukiyaki.com": {
 "ok_at": "2026-11-21",
-"hash": "0318cd65b9807792ba46f71e7b7ed64c9168a75b5676322b396bcc40ee7b4b60",
+"hash": "00148359aeed9a94873ddf7ac37571fd511c979164ef99e845a5cd1959b9c5b1",
 "pv": 7,
-"checked_at": "2026-11-20",
+"checked_at": "2026-11-21",
 "deals": []
 },
 "mattachioni.com": {
@@ -17060,7 +17156,7 @@
 "checked_at": "2026-11-15"
 },
 "mexitaco.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "ec848d1070b21219fa15b0628db23f9279f2a5775ac5ad3cc0688768ba0dde1e",
 "pv": 7,
 "checked_at": "2026-11-13",
@@ -17126,14 +17222,14 @@
 "deals": []
 },
 "mezgouf.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-13"
 },
 "mezzettarestaurant.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "11e24b15cbfb28328851af5dfa681ce379a3741577807d0fec338f1cfeff95b4",
 "pv": 7,
 "checked_at": "2026-11-14",
@@ -17244,7 +17340,7 @@
 },
 "missionworks.ca": {
 "ok_at": "2026-11-21",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "de18e38a7dfa9fd1d1ae4c25ea75797bff522e4922cba729722ebcbd2c52764d",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -17457,7 +17553,7 @@
 },
 "musoshin.com": {
 "ok_at": "2026-11-21",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "a7f512394af13473785910051ef1608b1f542e51b870e8e77fa810c67b6c87a1",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -17582,7 +17678,7 @@
 },
 "hongfattbbq.com": {
 "ok_at": "2026-11-21",
-"hash": "11b6a2daec8f51c351972b51ba768d7c1ff8176e867d8d1d8631007ef08fd85f",
+"hash": "023a0bf629f4037f8bcb941428a5731cf9bd973632b3ecedf929916c88f7f257",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -17750,7 +17846,7 @@
 "deals": []
 },
 "opatiochurrasqueira.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "61a918daa60162916cefd3eb144f00af31a848515d699eb62a47fbcb6649008e",
 "pv": 7,
 "deals": [],
@@ -18487,10 +18583,37 @@
 },
 "perkinsrestaurants.com": {
 "ok_at": "2026-11-21",
-"hash": "141cbdb2f90b83e2bce619a94a24c67cca982601439b71070afcce9047faaa7f",
+"hash": "f3944754e03e4d046879a986407cb40fd44472d58957e4e1348e69dbfdfd9434",
 "pv": 7,
 "checked_at": "2026-11-21",
-"deals": []
+"deals": [
+{
+"title": "Limited-time specials",
+"description": "Seasonal menu items like the Holiday Turkey Dinner, Turkey Gobbler Sandwich, and French Toast Platters are available for a limited time.",
+"price": null,
+"price_unit": null,
+"days": [
+0,
+1,
+2,
+3,
+4,
+5,
+6
+],
+"start": null,
+"end": null,
+"categories": [
+"breakfast",
+"brunch"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "https://www.perkinsrestaurants.com"
+}
+]
 },
 "petergs.ca": {
 "ok_at": "2026-11-21",
@@ -18625,7 +18748,7 @@
 },
 "pilotcoffeeroasters.com": {
 "ok_at": "2026-11-21",
-"hash": "dc0372ff12619491967fa01639384171ba73b6a36768b2c3cccfe88090e924b5",
+"hash": "ffa34ef2a506b15e16abd590313e6616007b6fbb3e97a76c1b13caf99b0b4874",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -18847,7 +18970,7 @@
 },
 "purplepenguincafe.square.site": {
 "ok_at": "2026-11-21",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "4f663b6f7773a8214de0bb7548f50e9782d6ea93d1ed47adfd88b661f50c9e56",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -19098,7 +19221,7 @@
 "checked_at": "2026-11-13"
 },
 "saporebyzafferano.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "a038378efd40cd284958a544537bb02c5e9f8de1a302c6946e7fecfb0ea5bc74",
 "pv": 7,
 "deals": [],
@@ -19528,7 +19651,7 @@
 "checked_at": "2026-11-13"
 },
 "theabbot.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "b3f35b7f8622e237e8a94208b78d09d1878e549256fdce5053e3ff3deee671b5",
 "pv": 7,
 "deals": [],
@@ -19858,10 +19981,10 @@
 },
 "tomsdairyfreeze.ca": {
 "ok_at": "2026-11-21",
-"hash": "1434cfa0a9178c9f869bfce6dad80f4b842a3bc07a53f081f409d31a99fdaba9",
+"hash": "963298a597b02f2176df0ad1b2ca1f60f3ba6582010f9b7945209ba6a29338f0",
 "pv": 7,
 "deals": [],
-"checked_at": "2026-11-20"
+"checked_at": "2026-11-21"
 },
 "tontonmatcha.com": {
 "ok_at": "2026-11-21",
@@ -19892,7 +20015,7 @@
 "checked_at": "2026-11-13"
 },
 "tavernitis.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -20187,15 +20310,15 @@
 },
 "pizzaville.ca": {
 "ok_at": "2026-11-21",
-"hash": "e0c38b07426fd892dd87bee39596a75961793f1c03d3321224264a3a91917a1d",
+"hash": "a791df5f3cbe437ce3504ce0c0dd10dded5cacd35f3739a1f550b4facd9e8d8c",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": [
 {
-"title": "Free bottle with online order",
-"description": "Choose a 500mL bottle of select pop with any order of $25.99 subtotal or more placed by phone or online, subject to product availability.",
+"title": "Bottles with any order",
+"description": "Get a 500mL bottle of selected pop with any phone or online order of $25.99 subtotal or more at participating locations.",
 "price": null,
-"price_unit": null,
+"price_unit": "bottles",
 "days": [
 0,
 1,
@@ -20283,13 +20406,13 @@
 },
 "moxies.com": {
 "ok_at": "2026-11-21",
-"hash": "560b1011a7cdd334d284779f1570ca411f16721f7fb920c09a2869c89e1518a3",
+"hash": "fdeb472fbd729f393b79c55ed95994d8eb41908f865ef641691558d3ac398136",
 "pv": 7,
-"checked_at": "2026-11-19",
+"checked_at": "2026-11-21",
 "deals": [
 {
 "title": "Half-price wine bottles",
-"description": "Enjoy half-price bottles of wine all day every Wednesday.",
+"description": "Enjoy half-price bottles of wine all day, every Wednesday.",
 "price": "1/2 Price",
 "price_unit": "wine bottles",
 "days": [
@@ -20298,7 +20421,8 @@
 "start": null,
 "end": null,
 "categories": [
-"drinks"
+"drinks",
+"happy hour"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -20742,7 +20866,7 @@
 "checked_at": "2026-11-13"
 },
 "treats.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -21293,7 +21417,7 @@
 },
 "alexandrostakeout.com": {
 "ok_at": "2026-11-21",
-"hash": "73b5018c9b5494c159e3787fb466e19d1d4a42421302c3f730a567dceb90b972",
+"hash": "139922dafa5efbc6c9dab426cf0ec20cb35304b8ce387b8cc8eff9d8113689be",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -21429,10 +21553,10 @@
 },
 "avenuecafe.ca": {
 "ok_at": "2026-11-21",
-"hash": "0bab2fba2fba36e04293e23f2cda2b21783784aeaee92c1934f004b30e726510",
+"hash": "c5761b213b3062847f88b4ef9a02a34b205831f88a0a2904b17eec07f02d242f",
 "pv": 7,
 "deals": [],
-"checked_at": "2026-11-20"
+"checked_at": "2026-11-21"
 },
 "bbcafe.ca": {
 "ok_at": "2026-11-21",
@@ -21974,7 +22098,7 @@
 },
 "ferrobarcafe.ca": {
 "ok_at": "2026-11-21",
-"hash": "c4caf4cf0d9a7dfb83175a030d56ec6648301655d2a06f96bdfe5a54ba39d55a",
+"hash": "1c1fcda260fc9bdfbe21e84db008d3fbad3028b75eb378a1246c5e4bc473493b",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -22450,7 +22574,7 @@
 "checked_at": "2026-11-13"
 },
 "mauryaeastindianroti.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "b2b46b59e2d167a860453a8f31a9886eab7a76605ff0b820ffd482be5d8f9bd5",
 "pv": 7,
 "deals": [],
@@ -23045,7 +23169,7 @@
 "checked_at": "2026-11-13"
 },
 "georgestastee.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -24026,7 +24150,7 @@
 "deals": []
 },
 "almadinabistro.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "0dc4c91ee70b5a0bc9e2c59b9da803caed83ccaacd2f105d4d034e418f9c4099",
 "pv": 7,
 "checked_at": "2026-11-13",
@@ -24142,7 +24266,7 @@
 "checked_at": "2026-11-13"
 },
 "angies.us": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -24409,10 +24533,10 @@
 },
 "atorigin.square.site": {
 "ok_at": "2026-11-21",
-"hash": "f2218c7b221f23fe150655f37437ea3c5f5a8419d72593a51fc0f914b7fdf94a",
+"hash": "5bab0229817f1ef28bb7f090b3a7e28ad38f419401aa658a75c14a91e65bfa57",
 "pv": 7,
 "deals": [],
-"checked_at": "2026-11-20"
+"checked_at": "2026-11-21"
 },
 "atchayam.com": {
 "ok_at": "2026-11-21",
@@ -25317,7 +25441,7 @@
 "checked_at": "2026-11-13"
 },
 "blackdogpub.tv": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -25820,7 +25944,7 @@
 "checked_at": "2026-11-13"
 },
 "brickncheese.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "b52512834213d19ff79d150598752263635505d706a2f9d2968258f2fb9db550",
 "pv": 7,
 "checked_at": "2026-11-13",
@@ -25901,7 +26025,7 @@
 },
 "burritoplace.ca": {
 "ok_at": "2026-11-21",
-"hash": "c5266a90344075f2b809fcdbf614ef3fa07e3ce8b4c4063104b9c59abeb2c631",
+"hash": "b909cdfdd49b8d2f7aab6fba9d201b2df37e0ba68a032ed93f53e864d8db82aa",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -26328,7 +26452,7 @@
 },
 "thecaribbeanqueenofpattiestoronto2.gastrobars.com": {
 "ok_at": "2026-11-21",
-"hash": "708966bc90f8198a3ca4657d509d2a93c57ea74feeb4d8bc13acfbe64e50cb47",
+"hash": "09badeb4b9b3a422cda58b1613edca0d0ed40e90c68af190d6bbd4c42537ee21",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -26398,7 +26522,7 @@
 "deals": []
 },
 "casadeluzbanquethall.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "b1893720836f5a4520d1cf46c33833a0973dff19c0808777dd2bf79d5d773099",
 "pv": 7,
 "deals": [],
@@ -26551,7 +26675,7 @@
 },
 "chinesehalalrestaurant.com": {
 "ok_at": "2026-11-21",
-"hash": "dac8c5c41ade3497fbfdff0629444926dd46b5a2778da52d13e0d2b224d010d7",
+"hash": "9269cf1470a88a1565b847d5bb819e865cdaf8e29543495bb157af316fd0eb01",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -26565,9 +26689,35 @@
 },
 "chocollata.com": {
 "ok_at": "2026-11-21",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "87404955d2418a58f1c1ef2f01719cad30986f3ebe6b90587235ae0aeabdfc17",
 "pv": 7,
-"deals": [],
+"deals": [
+{
+"title": "Brigadeiro combo sale",
+"description": "The Brigadeiro combo is on sale for CAD$99.95, down from CAD$107.00 - CAD$165.00 regular price.",
+"price": "$99.95",
+"price_unit": "combo",
+"days": [
+0,
+1,
+2,
+3,
+4,
+5,
+6
+],
+"start": null,
+"end": null,
+"categories": [
+"dessert"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "http://www.chocollata.com"
+}
+],
 "checked_at": "2026-11-21"
 },
 "chodang-soon-tofu-canada.food96.com": {
@@ -26600,7 +26750,7 @@
 },
 "chopstickfoods.com": {
 "ok_at": "2026-11-21",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "1bb7cd800649761fdc6fd53511ed7000aebc6ebde0e3b0f39b7e7a9fd348fa48",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -27230,7 +27380,7 @@
 "checked_at": "2026-11-13"
 },
 "curvanordbar.placeweb.site": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -27539,7 +27689,7 @@
 "deals": []
 },
 "debesroti.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "295af3204a475bda917055a7c82500c4ace987b31f7d1b7c0823bc638955a755",
 "pv": 7,
 "deals": [],
@@ -27588,14 +27738,14 @@
 "checked_at": "2026-11-13"
 },
 "delinarestaurant.placeweb.site": {
-"ok_at": "2026-11-18",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-13"
 },
 "deltasportsbar.placeweb.site": {
-"ok_at": "2026-11-18",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -27603,10 +27753,10 @@
 },
 "desitaste.ca": {
 "ok_at": "2026-11-21",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "d4b4cc2d470e31c6de2b174c82c62570a93510e28a17ff88b9bdd3db063a707c",
 "pv": 7,
 "deals": [],
-"checked_at": "2026-11-17"
+"checked_at": "2026-11-21"
 },
 "dimannobakery.com": {
 "ok_at": "2026-11-21",
@@ -27638,7 +27788,7 @@
 },
 "dolphingaming.ca": {
 "ok_at": "2026-11-21",
-"hash": "4b50f01e8175a2cdbc7315811a8c27b564c3cd01afc06538267cfe2da288e75c",
+"hash": "9ef6fb98173a24e47ac63e2ba8a407fd1cf93ce6031c44cce38c70f956415d34",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -27791,7 +27941,7 @@
 "deals": []
 },
 "duckysroti.placeweb.site": {
-"ok_at": "2026-11-17",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -28570,7 +28720,7 @@
 "checked_at": "2026-11-13"
 },
 "flordoaverestaurant.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "7c91b08f6bce2be6a78cc7b44cb95965513fcd1b5e5b430c14b7e94f393a127b",
 "pv": 7,
 "deals": [],
@@ -28584,7 +28734,7 @@
 "checked_at": "2026-11-13"
 },
 "foodmonks.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -28834,7 +28984,7 @@
 },
 "gallerysushi-toronto.com": {
 "ok_at": "2026-11-21",
-"hash": "188d418a3052ba20ae00d695d2e5f464340915306af0205c3fd6d4cb9f45dc75",
+"hash": "944981d8f960780f7845858b3d666bffc3f5d739323fb9d8aa09fd9be95bf147",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -29077,14 +29227,14 @@
 "checked_at": "2026-11-13"
 },
 "georgyporgys.ca": {
-"ok_at": "2026-11-20",
-"hash": "a2bb5cb75f31d6c563d4941b9ad862cd4ddb1804f52b1fb10d948e36970bdc49",
+"ok_at": "2026-11-21",
+"hash": "a140d4615b132040bcf96c29dd59e791a7f4db282d8a9e121f735bd74969b632",
 "pv": 7,
-"checked_at": "2026-11-20",
+"checked_at": "2026-11-21",
 "deals": [
 {
-"title": "Tall boys special",
-"description": "Tall boys are priced at $5.98 on Mondays.",
+"title": "Tall boy special",
+"description": "Tall boys are featured at a special price every Monday.",
 "price": "$5.98",
 "price_unit": "tall boys",
 "days": [
@@ -29093,19 +29243,38 @@
 "start": null,
 "end": null,
 "categories": [
-"drinks"
+"drinks",
+"happy hour"
 ],
 "valid_from": null,
 "valid_until": null,
 "dine_in_only": false,
-"applies_to": [
-"1448 Lawrence Ave. E, North York"
+"applies_to": "all",
+"source_url": "http://www.georgyporgys.ca/specials/"
+},
+{
+"title": "Domestic draught special",
+"description": "Domestic draught is featured at a special price every Tuesday.",
+"price": "$5.98",
+"price_unit": "draught",
+"days": [
+2
 ],
+"start": null,
+"end": null,
+"categories": [
+"drinks",
+"happy hour"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
 "source_url": "http://www.georgyporgys.ca/specials/"
 },
 {
 "title": "House wine special",
-"description": "House red or white wine is $5.98 on Wednesdays.",
+"description": "House red or white wine is featured at a special price every Wednesday.",
 "price": "$5.98",
 "price_unit": "house wine",
 "days": [
@@ -29114,82 +29283,18 @@
 "start": null,
 "end": null,
 "categories": [
-"drinks"
+"drinks",
+"happy hour"
 ],
 "valid_from": null,
 "valid_until": null,
 "dine_in_only": false,
-"applies_to": [
-"1448 Lawrence Ave. E, North York"
-],
-"source_url": "http://www.georgyporgys.ca/specials/"
-},
-{
-"title": "Domestic bucket special",
-"description": "A bucket of 5 domestic beers is $23.09 on Thursdays.",
-"price": "$23.09",
-"price_unit": "5-beer bucket",
-"days": [
-4
-],
-"start": null,
-"end": null,
-"categories": [
-"drinks"
-],
-"valid_from": null,
-"valid_until": null,
-"dine_in_only": false,
-"applies_to": [
-"1448 Lawrence Ave. E, North York"
-],
-"source_url": "http://www.georgyporgys.ca/specials/"
-},
-{
-"title": "32oz domestic draught",
-"description": "A 32oz domestic draught is $10.97 on Fridays.",
-"price": "$10.97",
-"price_unit": "32oz draught",
-"days": [
-5
-],
-"start": null,
-"end": null,
-"categories": [
-"drinks"
-],
-"valid_from": null,
-"valid_until": null,
-"dine_in_only": false,
-"applies_to": [
-"1448 Lawrence Ave. E, North York"
-],
-"source_url": "http://www.georgyporgys.ca/specials/"
-},
-{
-"title": "Domestic pitcher special",
-"description": "A domestic pitcher is $19.47 on Saturdays.",
-"price": "$19.47",
-"price_unit": "pitcher",
-"days": [
-6
-],
-"start": null,
-"end": null,
-"categories": [
-"drinks"
-],
-"valid_from": null,
-"valid_until": null,
-"dine_in_only": false,
-"applies_to": [
-"1448 Lawrence Ave. E, North York"
-],
+"applies_to": "all",
 "source_url": "http://www.georgyporgys.ca/specials/"
 },
 {
 "title": "Caesar special",
-"description": "A Caesar is $6.42 on Sundays.",
+"description": "Caesar is featured at a special price every Sunday.",
 "price": "$6.42",
 "price_unit": "caesar",
 "days": [
@@ -29203,9 +29308,47 @@
 "valid_from": null,
 "valid_until": null,
 "dine_in_only": false,
-"applies_to": [
-"1448 Lawrence Ave. E, North York"
+"applies_to": "all",
+"source_url": "http://www.georgyporgys.ca/specials/"
+},
+{
+"title": "Domestic bucket special",
+"description": "A bucket of five domestic beers is featured at a special price every Thursday.",
+"price": "$23.09",
+"price_unit": "5-beer bucket",
+"days": [
+4
 ],
+"start": null,
+"end": null,
+"categories": [
+"drinks",
+"happy hour"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "http://www.georgyporgys.ca/specials/"
+},
+{
+"title": "Domestic pitcher special",
+"description": "Domestic pitcher is featured at a special price every Saturday.",
+"price": "$19.47",
+"price_unit": "pitcher",
+"days": [
+6
+],
+"start": null,
+"end": null,
+"categories": [
+"drinks",
+"happy hour"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
 "source_url": "http://www.georgyporgys.ca/specials/"
 }
 ]
@@ -29647,7 +29790,7 @@
 "checked_at": "2026-11-17"
 },
 "halalyum.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "54cf3c18c59a737b687ea4721cb5ffc3f1543175faf91a44c5a7e430d6d44e5e",
 "pv": 7,
 "deals": [
@@ -29744,7 +29887,7 @@
 "deals": []
 },
 "thehandlebar.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e76bf7d14badcd2cb60b3bdd8b98956c02d3367ca074f822494040cc1a8890eb",
 "pv": 7,
 "checked_at": "2026-11-14",
@@ -29773,7 +29916,7 @@
 },
 "harbourfishandchipstoronto.gastrobars.com": {
 "ok_at": "2026-11-21",
-"hash": "f95e43dff02ad7063f5e40a4a54d6ce4a8d22c91e96393d3a3b2ce652e4f478b",
+"hash": "6bf8c9659a0fc40f206ad252661f1141df255904c15a4e83756c05f009d9df3d",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -30049,7 +30192,7 @@
 },
 "horseshoetavern.com": {
 "ok_at": "2026-11-21",
-"hash": "60cdb3f713c4b74a0a0a5c39b379ca964df36c4b0e3fb45249646ebd4b6d0f55",
+"hash": "42e0a6e331cd54faba387d0871df9afaaab8e8c109038570ed27fbef4ed3b123",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -30237,7 +30380,7 @@
 "checked_at": "2026-11-18"
 },
 "italvitalrastarant.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -30378,10 +30521,10 @@
 },
 "juicetogo.ca": {
 "ok_at": "2026-11-21",
-"hash": "fd826e3e4b14095657ecad6fb6cc89f3e239b72df34bdebf57031668b33a5439",
+"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
-"checked_at": "2026-11-19"
+"checked_at": "2026-11-21"
 },
 "jumboempanadas.ca": {
 "ok_at": "2026-11-21",
@@ -30761,14 +30904,14 @@
 "checked_at": "2026-11-13"
 },
 "kingsdrivein.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-13"
 },
 "kinka.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "4f94ad74ce8b03628f834ff5500ec16ee3f2695574a32bf204a59d2dc136bb4e",
 "pv": 7,
 "deals": [],
@@ -30928,7 +31071,7 @@
 },
 "kumhongbbqrestaurantrichmondhill.gastrobars.com": {
 "ok_at": "2026-11-21",
-"hash": "74353c0316183a8796fec92df012104d32371f471b901bdda91576255090acb3",
+"hash": "4be29c2417203d42b27debee216ac3b9c6fa2f7616b8387c58cb0e341e4dd50f",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -31004,7 +31147,7 @@
 "deals": []
 },
 "lascogliera.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -31046,7 +31189,7 @@
 "checked_at": "2026-11-13"
 },
 "lageez.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "d5112bc1466171a6f7adf2508f732f65a265208f801d1f6f23a0a41bd4f5eda3",
 "pv": 7,
 "checked_at": "2026-11-14",
@@ -31478,7 +31621,7 @@
 },
 "loxandschmear.com": {
 "ok_at": "2026-11-21",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "5d644b8777e9cbe177c1c9dffa83888a8a01460f4ed3456a63810a63ca32a97a",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -31922,7 +32065,7 @@
 "checked_at": "2026-11-13"
 },
 "georgyporgys.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -31930,29 +32073,26 @@
 },
 "megumimazesoba.com": {
 "ok_at": "2026-11-21",
-"hash": "0c2587c3d365aa1e502c8fe54a3a29e7bb6e74a820b71c5e441aa1bf2743f4ce",
+"hash": "28408576fe985f4808c7435fcadc70a85ea779893dadf1c9d16dfd96bba3f74d",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": [
 {
 "title": "King West lunch combos",
-"description": "Lunch combo at the King West location, pairing your favourite bowl with tasty sides and hot ocha at a special combo price.",
+"description": "Lunch combo with your favourite bowl, tasty sides and hot ocha at our King West location, at a special combo price.",
 "price": null,
 "price_unit": null,
 "days": [
-0,
 1,
 2,
 3,
 4,
-5,
-6
+5
 ],
-"start": null,
-"end": null,
+"start": "11:30",
+"end": "15:30",
 "categories": [
-"lunch",
-"pasta"
+"lunch"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -31961,31 +32101,6 @@
 "367 King St W"
 ],
 "source_url": "https://www.megumimazesoba.com/post/king-west-your-lunch-break-just-got-a-better-deal"
-},
-{
-"title": "Winter special",
-"description": "A limited winter special bowl at both the St. Clair and King West locations.",
-"price": null,
-"price_unit": null,
-"days": [
-0,
-1,
-2,
-3,
-4,
-5,
-6
-],
-"start": null,
-"end": null,
-"categories": [
-"pasta"
-],
-"valid_from": null,
-"valid_until": "2027-03-20",
-"dine_in_only": false,
-"applies_to": "all",
-"source_url": "https://www.megumimazesoba.com/post/winter-special-is-here"
 }
 ]
 },
@@ -32869,10 +32984,10 @@
 },
 "noctuabakery.com": {
 "ok_at": "2026-11-21",
-"hash": "22e4fb4ffd0887ace8425c4cbf249f86b6f5accd35b6d86dced4dfce9a97e47f",
+"hash": "08622e4b5de44e329c588b84b7e849774f8c04ba3d106820a61bcfd81c210a6d",
 "pv": 7,
 "deals": [],
-"checked_at": "2026-11-18"
+"checked_at": "2026-11-21"
 },
 "nodoliberty.ca": {
 "ok_at": "2026-11-21",
@@ -33128,7 +33243,7 @@
 },
 "osakacuisine.ca": {
 "ok_at": "2026-11-21",
-"hash": "0ccae07414e12748965f5190cad7804d9758eda9449b9d729adbca518d1ce1b8",
+"hash": "4084f33e72beb88153e1ca165618bb48631b328ad4efbd5abf9ae6b06334869a",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -33205,7 +33320,7 @@
 },
 "pandawokscarborough.com": {
 "ok_at": "2026-11-21",
-"hash": "792ffde8f12fb07fd5eae0d23ff17711e820bc6419501467e1a6038165a26d81",
+"hash": "157fb5fcc1625ad055b6f889e74ee8f59907afdcf886c411ac80eb11183aece2",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -33439,7 +33554,7 @@
 "checked_at": "2026-11-14"
 },
 "pennysbar.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -33447,7 +33562,7 @@
 },
 "pepperfry.ca": {
 "ok_at": "2026-11-21",
-"hash": "970428fbcbcc274bec1a0deb01ea650d01f2806ca178a27ceeea0744d8591daf",
+"hash": "8a01a60d875d9abcc75af86a6af2069a7d9806f874ad1424dd1cc4f3a6e88e7a",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -33852,7 +33967,7 @@
 "checked_at": "2026-11-14"
 },
 "pizzabreak.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -34034,7 +34149,7 @@
 "deals": []
 },
 "666manning.pourboy.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -34042,9 +34157,9 @@
 },
 "the-replace.ca": {
 "ok_at": "2026-11-21",
-"hash": "43b6e9896dd839ed1cf799e64d0274f625444201382086b6f09fc64159c9c349",
+"hash": "7acd42e65632163ba007c93c0220a0faea170027a4729c287227bb9ddc03d7c0",
 "pv": 7,
-"checked_at": "2026-11-14",
+"checked_at": "2026-11-21",
 "deals": []
 },
 "poutini.com": {
@@ -34070,7 +34185,7 @@
 },
 "vinylrecords.fyi": {
 "ok_at": "2026-11-21",
-"hash": "78cc377ad6aead8c910564962af2b4ddc341898842dfec57d65307f55ab2491e",
+"hash": "32ce5e4d6977fdb388d074c139b67c9c32f7641ad8aaf315c51c6e0225255841",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -34167,7 +34282,7 @@
 },
 "qoola.square.site": {
 "ok_at": "2026-11-21",
-"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+"hash": "15a36b2fd1fb24035f689e2492d456c3a1f9b454f9ddde16e30e808f212ab242",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -35004,7 +35119,7 @@
 },
 "rol-san-restaurant.foodyvo.com": {
 "ok_at": "2026-11-21",
-"hash": "db9d85ac7f34cdaaf5b790a4054a26827be0811f32b3241f09a853de988c5a7c",
+"hash": "6f4b2bdf386837d4e557450fd9466604e39195539db503e5df01d5f79bbb554f",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -35518,9 +35633,9 @@
 },
 "sassafraz.ca": {
 "ok_at": "2026-11-21",
-"hash": "2fe5f9c5acfd5dc20e21535133f197180deed7ce6d2b65ef199a46fbbb1b71c6",
+"hash": "a144e4371776034e005e8f494961c62177f202c4d88b60fd5a19c9d22b420b37",
 "pv": 7,
-"checked_at": "2026-11-19",
+"checked_at": "2026-11-21",
 "deals": []
 },
 "sauvignonbistro.com": {
@@ -35609,7 +35724,7 @@
 ]
 },
 "saveraindiancuisine.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -35975,7 +36090,7 @@
 "checked_at": "2026-11-16"
 },
 "shadishawarma.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "af2b9223d518310361a507e7d35683bfe82d397c11669f7b310507903ad6dc78",
 "pv": 7,
 "deals": [],
@@ -36101,12 +36216,12 @@
 },
 "sherylscaribbeancuisine.com": {
 "ok_at": "2026-11-21",
-"hash": "4edaaa0a98e0c54136d243347032200943f440be9c08665681c648112d5e6e6f",
+"hash": "ccede1ae80f34d848f22f06268656ecd24e8dbe3f893158324b0da438386bec1",
 "pv": 7,
 "deals": [
 {
-"title": "Chicken lunch special",
-"description": "Chicken meal lunch special offered on Mondays and Wednesdays.",
+"title": "Lunch Special Chicken Meal",
+"description": "Chicken meal for $7.90 on Mondays and Wednesdays as part of the lunch special.",
 "price": "$7.90",
 "price_unit": "chicken meal",
 "days": [
@@ -36692,7 +36807,7 @@
 },
 "sozoramensushi.com": {
 "ok_at": "2026-11-21",
-"hash": "9b92f2541f80157857f0786cf9529aae6832a649c737408f53f8359b6d273943",
+"hash": "727f7216940eb06cdff61c0d08171db0505934cf38282ec61f33049eb73ad732",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -37075,14 +37190,38 @@
 },
 "stonecottagepub.com": {
 "ok_at": "2026-11-21",
-"hash": "4e0ac3e0e00d73ad7be33f44b4f31f17e105b1d499a2a81fb67133d8b00cd857",
+"hash": "33a9432a44436bd73d8a6dff1e28eb62d505f564eea0127405910d67664a8232",
 "pv": 7,
 "deals": [
 {
-"title": "Friday fish & chips 2-for-1",
-"description": "Two pieces of fish and chips for the price of one on Fridays.",
+"title": "Happy hour pints",
+"description": "$1 off pints during happy hour, Monday to Friday from 3 to 5 PM. Excludes Guinness. Not available on holidays or special events.",
+"price": "$1 off",
+"price_unit": "pints",
+"days": [
+1,
+2,
+3,
+4,
+5
+],
+"start": "15:00",
+"end": "17:00",
+"categories": [
+"drinks",
+"happy hour"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "http://www.stonecottagepub.com"
+},
+{
+"title": "Fish & chips deal",
+"description": "Two pieces of fish for the price of one with fish and chips on Fridays.",
 "price": "2 for 1",
-"price_unit": "fish & chips",
+"price_unit": "fish pieces",
 "days": [
 5
 ],
@@ -37098,21 +37237,16 @@
 "source_url": "http://www.stonecottagepub.com"
 },
 {
-"title": "Happy hour pint savings",
-"description": "$1 off pints during weekday happy hour, Monday to Friday 3 to 5 PM, excluding Guinness. Not available on holidays or special events.",
-"price": "$1 off",
-"price_unit": "pints",
+"title": "Lime margarita",
+"description": "Saturday signature lime margarita for $9.",
+"price": "$9",
+"price_unit": "margarita",
 "days": [
-1,
-2,
-3,
-4,
-5
+6
 ],
-"start": "15:00",
-"end": "17:00",
+"start": null,
+"end": null,
 "categories": [
-"happy hour",
 "drinks"
 ],
 "valid_from": null,
@@ -37201,7 +37335,7 @@
 },
 "subhanpizza.com": {
 "ok_at": "2026-11-21",
-"hash": "6c87f57d48da5e39eb07e2a6cc925cc382b194d2b15676d90f153309277719cc",
+"hash": "5a99fb0263fd6741b0cb145310293eb8bdc69053b5c3a536b0f56477e04b12d3",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -37306,7 +37440,7 @@
 },
 "superburgeretobicoke.com": {
 "ok_at": "2026-11-21",
-"hash": "4906fd89e4e93b6c5f6db8042187d9440b79b1457ee62408df375ae9718900c1",
+"hash": "200dd710109da587c821987697b9e31387fae3d38eddbed574b1f3fc1ce69272",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -37893,7 +38027,7 @@
 "deals": []
 },
 "talineto.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -38002,7 +38136,7 @@
 },
 "taotealeaf.com": {
 "ok_at": "2026-11-21",
-"hash": "1057d0cfa4978266238e87be160cf07d139d4bac46d5a15326bc35f91cd9e348",
+"hash": "61397148e2df4761f6807c982e7a669557d12f06b5c00a6ac02f816850c4111f",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -38062,7 +38196,7 @@
 ]
 },
 "tasteofmalayalees.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "d838a4ecc593f40f7d9a59b603ae96c29a444dbe4e24106fdb57fa48543ef996",
 "pv": 7,
 "checked_at": "2026-11-15",
@@ -38091,7 +38225,7 @@
 },
 "tastyshawarmamarkham.gastrobars.com": {
 "ok_at": "2026-11-21",
-"hash": "0141ed38563ad69b6b332af8de8f68d289564528bd6b52e77b298ed5d195f550",
+"hash": "6630e06ff66a02984a82d439147fdcfbf94a48c7cca86e1940e8bf4a91d96a21",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -38118,7 +38252,7 @@
 "checked_at": "2026-11-15"
 },
 "tdpizza.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -38848,10 +38982,10 @@
 },
 "sundaymorningpies.com": {
 "ok_at": "2026-11-21",
-"hash": "3d0b905301334475858d513d2afb59168b54da3e9d11f3ff73ad9a43932311b3",
+"hash": "ce2d2a58e55ad7700424b4132e02deededc0a0d087b76faf0d9e054af8e74964",
 "pv": 7,
 "deals": [],
-"checked_at": "2026-11-20"
+"checked_at": "2026-11-21"
 },
 "the-copper-chimney.com": {
 "ok_at": "2026-11-21",
@@ -38983,7 +39117,7 @@
 "checked_at": "2026-11-13"
 },
 "theduketoronto.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "5004c96b6e14a76ab54a38dd63d21c4cf6d5a712750672bf6742a4f06e10558e",
 "pv": 7,
 "checked_at": "2026-11-15",
@@ -39717,16 +39851,15 @@
 },
 "rebelhouse.ca": {
 "ok_at": "2026-11-21",
-"hash": "46bbaa9689ccd9754498efcbe687c5fd949a1ce9d9f9934259c1a042ad412ea1",
+"hash": "c8e168ac102763740354ce8b436e2236eacd14f896889f794511227d710affb2",
 "pv": 7,
 "deals": [
 {
 "title": "Happy hour pints",
-"description": "Happy hour draught special: 20 oz premium draught of Amsterdam 3 Speed, Steamwhistle or Henderson's Best for a set price.",
+"description": "Premium 20 oz draughts for $8.25 from 4 to 6 PM, including Amsterdam 3 Speed, Steamwhistle and Henderson's Best.",
 "price": "$8.25",
-"price_unit": "20 oz draught",
+"price_unit": "20 oz pints",
 "days": [
-0,
 2,
 3,
 4,
@@ -39747,14 +39880,14 @@
 },
 {
 "title": "Friday dinner specials",
-"description": "Weekly Friday dinner specials, including soup, dill pickle hummus, mussels, lamb burger, fish and chips and more.",
+"description": "Friday dinner specials include Rebel Moules, Rebel Fish and Chips, the Lamb Burger and the Rebel Roti.",
 "price": null,
 "price_unit": null,
 "days": [
 5
 ],
-"start": "16:00",
-"end": "21:00",
+"start": null,
+"end": null,
 "categories": [
 "seafood",
 "burgers"
@@ -39767,7 +39900,7 @@
 },
 {
 "title": "Weekend brunch specials",
-"description": "Brunch specials served Saturday and Sunday, including the omelette of the day, daily salad and French toast, with a mimosa or spicy Caesar to start.",
+"description": "Weekend brunch specials feature mimosas, spicy Caesars and hot apple cider to start your brunch.",
 "price": null,
 "price_unit": null,
 "days": [
@@ -39778,7 +39911,7 @@
 "end": null,
 "categories": [
 "brunch",
-"breakfast"
+"drinks"
 ],
 "valid_from": null,
 "valid_until": null,
@@ -39849,36 +39982,16 @@
 },
 "theredcardinaltavern.com": {
 "ok_at": "2026-11-21",
-"hash": "941ccbabc4f7c928bf6f5ecdd5b0770f7ceb19832dcbc949c7ba28163c51950d",
+"hash": "633648231d03a3e3d988b67d68c8b9de2cd1f96158a6b8fcd48e9b6205b6ddb8",
 "pv": 7,
 "deals": [
 {
-"title": "Friday food specials",
-"description": "Daily food specials on Friday, including cream of mushroom soup, butter chicken, BBQ pork chops, and battered haddock.",
-"price": null,
-"price_unit": null,
+"title": "Domestic & premium bottles",
+"description": "Domestic and premium bottles on Saturday's drink specials.",
+"price": "$5.50",
+"price_unit": "bottles",
 "days": [
-5
-],
-"start": null,
-"end": null,
-"categories": [
-"chicken",
-"seafood"
-],
-"valid_from": null,
-"valid_until": null,
-"dine_in_only": false,
-"applies_to": "all",
-"source_url": "http://www.theredcardinaltavern.com"
-},
-{
-"title": "Friday pint special",
-"description": "Pints of Coors Light or Canadian are available all day on Friday.",
-"price": "$6.95",
-"price_unit": "pints",
-"days": [
-5
+6
 ],
 "start": null,
 "end": null,
@@ -39890,9 +40003,29 @@
 "dine_in_only": false,
 "applies_to": "all",
 "source_url": "http://www.theredcardinaltavern.com"
+},
+{
+"title": "Saturday food specials",
+"description": "Daily food specials include minestrone soup with rice, chicken quesadilla with Greek salad, steak wrap with sweet potato fries, and breaded sole with Caesar salad.",
+"price": null,
+"price_unit": null,
+"days": [
+6
+],
+"start": null,
+"end": null,
+"categories": [
+"lunch",
+"appetizers"
+],
+"valid_from": null,
+"valid_until": null,
+"dine_in_only": false,
+"applies_to": "all",
+"source_url": "http://www.theredcardinaltavern.com"
 }
 ],
-"checked_at": "2026-11-20"
+"checked_at": "2026-11-21"
 },
 "reservoirlounge.com": {
 "ok_at": "2026-11-21",
@@ -40102,12 +40235,12 @@
 },
 "stonelionpub.com": {
 "ok_at": "2026-11-21",
-"hash": "12ce44a30b705c615dff717c05fb2be8fde35275743bb4872f02f0f077e2d8ff",
+"hash": "fc2e005471d35fc044a67222baddee347a17f9dc3ac976d657f5880b643a3991",
 "pv": 7,
 "deals": [
 {
 "title": "Weekday happy hour margaritas",
-"description": "Happy hour margaritas for $8 on weekdays from 3 to 5 PM.",
+"description": "$8 margaritas during weekday happy hour from 3 to 5 PM. Not available on holidays.",
 "price": "$8",
 "price_unit": "margaritas",
 "days": [
@@ -40130,12 +40263,12 @@
 "source_url": "http://www.stonelionpub.com"
 },
 {
-"title": "Saturday margarita special",
-"description": "$12 margaritas on Saturdays.",
-"price": "$12",
-"price_unit": "margaritas",
+"title": "Thursday Amsterdam Blonde",
+"description": "Amsterdam Blonde beer for $7 on Thursdays.",
+"price": "$7",
+"price_unit": "beer",
 "days": [
-6
+4
 ],
 "start": null,
 "end": null,
@@ -40149,12 +40282,12 @@
 "source_url": "http://www.stonelionpub.com"
 },
 {
-"title": "Thursday beer special",
-"description": "$7 Amsterdam Blonde on Thursdays.",
-"price": "$7",
-"price_unit": "beer",
+"title": "Saturday margaritas",
+"description": "$12 margaritas on Saturdays.",
+"price": "$12",
+"price_unit": "margaritas",
 "days": [
-4
+6
 ],
 "start": null,
 "end": null,
@@ -40265,10 +40398,10 @@
 },
 "thesydneygrind.com": {
 "ok_at": "2026-11-21",
-"hash": "8346bc4a1121c7df72ed828c4c3b4e24d5c3969bab2368d154a70e0ec82d2844",
+"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
-"checked_at": "2026-11-18"
+"checked_at": "2026-11-21"
 },
 "thethamelexpress.com": {
 "ok_at": "2026-11-21",
@@ -40321,7 +40454,7 @@
 },
 "thewestcork.ca": {
 "ok_at": "2026-11-21",
-"hash": "16becd17190900f00b48a13871f155aef576202abc05196ab3af7e1ca927a53a",
+"hash": "69298a14bcd6f0e703e00f25d543bc058c5c9daff665b613bf9056f496c7bb3d",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
@@ -40704,7 +40837,7 @@
 "checked_at": "2026-11-13"
 },
 "diparma.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -40718,7 +40851,7 @@
 "deals": []
 },
 "trattoriamercatto.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "20b42c82a8e4e3562e64791b8cc11a5f3d46acbb9435502611dd24dfa8193510",
 "pv": 7,
 "deals": [],
@@ -40978,7 +41111,7 @@
 },
 "umefashionsushi.com": {
 "ok_at": "2026-11-21",
-"hash": "56a18a015bc00c8738bc3f394553ecc345cbc692f3d6374c80f5e2ceee874873",
+"hash": "49c91fdc5ef448162a64f77d598a1b1fb0af63a8f5a43d1f4aa1d10b5bb06773",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -41034,13 +41167,13 @@
 },
 "urbanfarecatering.com": {
 "ok_at": "2026-11-21",
-"hash": "e300174a6b3d6711e82f50dee9ee12a4a79d13dff9c23c73859e5d0c2e1f6064",
+"hash": "017f9cb9d2bba0e2f7e249f51ef7d0ea8df09449a04f758b3bf2f8005cef42bb",
 "pv": 7,
-"checked_at": "2026-11-18",
+"checked_at": "2026-11-21",
 "deals": [
 {
-"title": "November homemade meal savings",
-"description": "Save up to 20% on My Mother's Homemade frozen favourites during November.",
+"title": "Buy More, Save More November",
+"description": "Stock up on My Mother's Homemade favourites and save up to 20% throughout November.",
 "price": "20% off",
 "price_unit": null,
 "days": [
@@ -41505,14 +41638,14 @@
 },
 "wokroastchinesebbq.com": {
 "ok_at": "2026-11-21",
-"hash": "dd0a66fbf3bc6f2687ed76845a322f6d232d7613e7f72b52c5787d695fe7ded7",
+"hash": "e5d71cacd05d73feb11e948e77c80e8c9c4c31ae26a86c323172a83ec1ec7c07",
 "pv": 7,
 "checked_at": "2026-11-21",
 "deals": []
 },
 "wokandfortune.com": {
 "ok_at": "2026-11-21",
-"hash": "c73c3d73f3bd1b779d6a89b649ac93d59e408edea6867707b84e6bb2c7827c28",
+"hash": "4cf38496fbdfff3558df9b786ef4765a6ee7d420c9b287af11cecff3deca8ae7",
 "pv": 7,
 "deals": [],
 "checked_at": "2026-11-21"
@@ -41919,7 +42052,7 @@
 "checked_at": "2026-11-13"
 },
 "zbar416.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "553ba5a3a2fe863c5f173ca600199981263cec1ab793903e9231e138a664b47b",
 "pv": 7,
 "deals": [],
@@ -42010,7 +42143,7 @@
 "checked_at": "2026-11-13"
 },
 "ruthspizzaplus.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -42404,7 +42537,7 @@
 "checked_at": "2026-11-16"
 },
 "workingdogsaloon.com": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 "pv": 7,
 "deals": [],
@@ -42595,7 +42728,7 @@
 "deals": []
 },
 "thriveorganic.ca": {
-"ok_at": "2026-11-20",
+"ok_at": "2026-11-21",
 "hash": "a7ef2b275f9c55850c8526efaf899d4b18a7599915afb101d10e2dbb27a9ec03",
 "pv": 7,
 "checked_at": "2026-11-18",
