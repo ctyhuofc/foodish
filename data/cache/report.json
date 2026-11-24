@@ -1,32 +1,31 @@
 {
- "date": "2026-11-23",
+ "date": "2026-11-24",
  "city": "edmonton",
- "ai_calls": 29,
+ "ai_calls": 35,
  "ai_stopped": null,
  "status_counts": {
-  "ok": 716,
-  "HTTP 403": 24,
-  "robots.txt unavailable": 36,
-  "can't connect (site down or domain gone)": 72,
-  "blocked by robots.txt": 13,
+  "ok": 713,
+  "HTTP 403": 27,
+  "robots.txt unavailable": 24,
+  "can't connect (site down or domain gone)": 87,
+  "blocked by robots.txt": 12,
   "HTTP 404": 15,
-  "SSL error": 9,
+  "SSL error": 8,
   "HTTP 307": 1,
   "too many redirects": 1,
   "HTTP 503": 1,
   "HTTP 429": 1,
-  "not a web page (unknown type)": 1,
   "HTTP 409": 1,
   "HTTP 525": 1,
   "HTTP 500": 1
  },
  "outcome_counts": {
-  "unchanged": 677,
-  "extracted": 29,
-  "no_deals": 10,
-  "unreachable": 162,
+  "unchanged": 672,
+  "extracted": 35,
+  "no_deals": 6,
+  "unreachable": 166,
   "gone": 2,
-  "blocked": 13,
+  "blocked": 12,
   "deferred_budget": 0,
   "ai_error": 0,
   "deferred_ai_stopped": 0,
@@ -41,17 +40,17 @@
    "home_chars": 6168,
    "pages": 2,
    "deal_chars": 277,
-   "result": "0 deals",
-   "outcome": "extracted"
+   "outcome": "unchanged"
   },
   "starbucks.ca": {
    "url": "https://www.starbucks.ca",
    "locations": 67,
    "status": "ok",
-   "home_chars": 2110,
+   "home_chars": 1789,
    "pages": 2,
-   "deal_chars": 484,
-   "outcome": "unchanged"
+   "deal_chars": 0,
+   "result": "no deal words found",
+   "outcome": "no_deals"
   },
   "restaurants.subway.com": {
    "url": "https://restaurants.subway.com/canada/ab/edmonton/11843-st-albert-trail",
@@ -100,7 +99,7 @@
    "locations": 28,
    "js_page": true,
    "status": "ok",
-   "home_chars": 1965,
+   "home_chars": 1702,
    "pages": 4,
    "deal_chars": 204,
    "outcome": "unchanged"
@@ -126,11 +125,10 @@
    "url": "https://www.wendys.com/en-ca",
    "locations": 22,
    "status": "ok",
-   "home_chars": 3219,
+   "home_chars": 3243,
    "pages": 1,
    "deal_chars": 513,
-   "result": "0 deals",
-   "outcome": "extracted"
+   "outcome": "unchanged"
   },
   "boosterjuice.com": {
    "url": "https://boosterjuice.com",
@@ -182,17 +180,18 @@
    "home_chars": 3963,
    "pages": 1,
    "deal_chars": 0,
-   "result": "no deal words found",
-   "outcome": "no_deals"
+   "outcome": "unchanged"
   },
   "pizza.dominos.ca": {
    "url": "https://pizza.dominos.ca/sherwood-park-alberta-10221",
    "locations": 15,
+   "js_page": true,
    "status": "ok",
-   "home_chars": 9303,
-   "pages": 4,
-   "deal_chars": 6940,
-   "outcome": "unchanged"
+   "home_chars": 9928,
+   "pages": 1,
+   "deal_chars": 418,
+   "result": "1 deals",
+   "outcome": "extracted"
   },
   "quiznos.ca": {
    "url": "https://www.quiznos.ca",
@@ -220,8 +219,7 @@
    "home_chars": 4695,
    "pages": 3,
    "deal_chars": 922,
-   "result": "0 deals",
-   "outcome": "extracted"
+   "outcome": "unchanged"
   },
   "marybrowns.com": {
    "url": "https://marybrowns.com",
@@ -257,8 +255,7 @@
    "home_chars": 946,
    "pages": 1,
    "deal_chars": 281,
-   "result": "no deal words found",
-   "outcome": "no_deals"
+   "outcome": "unchanged"
   },
   "sandmanhotels.com": {
    "url": "https://www.sandmanhotels.com/signature-edmonton-south/dining/dennys-restaurant",
@@ -292,11 +289,11 @@
    "locations": 9,
    "js_page": true,
    "status": "ok",
-   "home_chars": 4332,
+   "home_chars": 5541,
    "pages": 2,
-   "deal_chars": 0,
-   "result": "no deal words found",
-   "outcome": "no_deals"
+   "deal_chars": 235,
+   "result": "1 deals",
+   "outcome": "extracted"
   },
   "earls.ca": {
    "url": "https://www.earls.ca/locations/search/details/54/edmonton/restaurant/earls-edmonton-crossroads",
@@ -312,7 +309,7 @@
    "url": "https://www.mrsub.ca",
    "locations": 9,
    "status": "ok",
-   "home_chars": 2990,
+   "home_chars": 3003,
    "pages": 4,
    "deal_chars": 1614,
    "outcome": "unchanged"
@@ -342,8 +339,7 @@
    "home_chars": 5659,
    "pages": 1,
    "deal_chars": 1381,
-   "result": "0 deals",
-   "outcome": "extracted"
+   "outcome": "unchanged"
   },
   "brownssocialhouse.com": {
    "url": "https://www.brownssocialhouse.com",
@@ -358,8 +354,8 @@
    "url": "https://www.chezcora.com/sherwood-park",
    "locations": 7,
    "status": "ok",
-   "home_chars": 6815,
-   "pages": 5,
+   "home_chars": 6556,
+   "pages": 1,
    "deal_chars": 0,
    "outcome": "unchanged"
   },
@@ -423,8 +419,7 @@
    "home_chars": 2252,
    "pages": 3,
    "deal_chars": 3713,
-   "result": "2 deals",
-   "outcome": "extracted"
+   "outcome": "unchanged"
   },
   "restaurants.fiveguys.ca": {
    "url": "https://restaurants.fiveguys.ca/5015-101-ave-nw",
@@ -560,7 +555,7 @@
    "status": "ok",
    "home_chars": 4492,
    "pages": 5,
-   "deal_chars": 4605,
+   "deal_chars": 4613,
    "unconfirmed": true,
    "outcome": "unchanged"
   },
@@ -576,11 +571,11 @@
    "locations": 5,
    "js_page": true,
    "status": "ok",
-   "home_chars": 14,
-   "pages": 1,
-   "deal_chars": 0,
-   "result": "no deal words found",
-   "outcome": "no_deals"
+   "home_chars": 4958,
+   "pages": 2,
+   "deal_chars": 327,
+   "result": "0 deals",
+   "outcome": "extracted"
   },
   "ihop.ca": {
    "url": "http://www.ihop.ca",
@@ -772,8 +767,8 @@
   "pfchangs.ca": {
    "url": "https://pfchangs.ca",
    "locations": 4,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
    "outcome": "unreachable"
   },
   "papamurphys.findlocation.com": {
@@ -908,9 +903,12 @@
   "hanjan.ca": {
    "url": "http://hanjan.ca",
    "locations": 3,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403",
-   "outcome": "unreachable"
+   "status": "ok",
+   "home_chars": 7047,
+   "pages": 1,
+   "deal_chars": 1768,
+   "result": "1 deals",
+   "outcome": "extracted"
   },
   "jerusalemedmonton.com": {
    "url": "https://jerusalemedmonton.com",
@@ -1034,12 +1032,12 @@
   "tiffinfreshkitchen.com": {
    "url": "https://www.tiffinfreshkitchen.com",
    "locations": 3,
-   "fallback": "timeout",
    "status": "ok",
    "home_chars": 1669,
    "pages": 1,
-   "deal_chars": 181,
-   "outcome": "unchanged"
+   "deal_chars": 180,
+   "result": "0 deals",
+   "outcome": "extracted"
   },
   "waybackburgers.ca": {
    "url": "https://waybackburgers.ca/locations/ca/ab/edmonton-jasper",
@@ -1060,8 +1058,8 @@
   "amorepasta.ca": {
    "url": "http://www.amorepasta.ca",
    "locations": 2,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
    "outcome": "unreachable"
   },
   "barceloscanada.ca": {
@@ -1114,9 +1112,7 @@
    "home_chars": 2239,
    "pages": 1,
    "deal_chars": 726,
-   "result": "1 deals",
-   "dropped": 1,
-   "outcome": "extracted"
+   "outcome": "unchanged"
   },
   "caffesorrentino.com": {
    "url": "http://www.caffesorrentino.com",
@@ -1144,11 +1140,9 @@
   "chatime.ca": {
    "url": "https://chatime.ca",
    "locations": 2,
-   "status": "ok",
-   "home_chars": 436,
-   "pages": 1,
-   "deal_chars": 0,
-   "outcome": "unchanged"
+   "fallback": "HTTP 403",
+   "status": "HTTP 403",
+   "outcome": "unreachable"
   },
   "chickenhouse.online": {
    "url": "https://chickenhouse.online/whyte-ave",
@@ -1163,7 +1157,7 @@
    "url": "https://chop.ca/alberta/edmonton-steak-restaurant/downtown-sutton-place",
    "locations": 2,
    "status": "ok",
-   "home_chars": 3333,
+   "home_chars": 3321,
    "pages": 2,
    "deal_chars": 818,
    "outcome": "unchanged"
@@ -1232,8 +1226,8 @@
   "fargos.ca": {
    "url": "https://fargos.ca",
    "locations": 2,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
    "outcome": "unreachable"
   },
   "firezonepizza.ca": {
@@ -1342,10 +1336,11 @@
   "joeysfishshack.com": {
    "url": "https://joeysfishshack.com",
    "locations": 2,
+   "fallback": "timeout",
    "status": "ok",
    "home_chars": 1729,
    "pages": 2,
-   "deal_chars": 1151,
+   "deal_chars": 1152,
    "unconfirmed": true,
    "outcome": "unchanged"
   },
@@ -1353,7 +1348,7 @@
    "url": "https://www.jugojuice.com",
    "locations": 2,
    "status": "ok",
-   "home_chars": 3018,
+   "home_chars": 3152,
    "pages": 1,
    "deal_chars": 0,
    "outcome": "unchanged"
@@ -1498,19 +1493,16 @@
   "olivegarden.com": {
    "url": "https://www.olivegarden.com/locations/ab/edmonton/edmonton-stony-plain-rd/4342",
    "locations": 2,
-   "js_page": true,
-   "status": "ok",
-   "home_chars": 3096,
-   "pages": 2,
-   "deal_chars": 1294,
-   "outcome": "unchanged"
+   "fallback": "HTTP 403",
+   "status": "HTTP 403",
+   "outcome": "unreachable"
   },
   "orangejulius.com": {
    "url": "https://www.orangejulius.com/en-ca",
    "locations": 2,
-   "fallback": "blocked by robots.txt",
-   "status": "blocked by robots.txt",
-   "outcome": "blocked"
+   "fallback": "HTTP 403",
+   "status": "HTTP 403",
+   "outcome": "unreachable"
   },
   "pactcoffee.ca": {
    "url": "http://www.pactcoffee.ca",
@@ -1551,8 +1543,8 @@
   "pampasteakhouse.com": {
    "url": "https://pampasteakhouse.com/location/west",
    "locations": 2,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
    "outcome": "unreachable"
   },
   "paninisitalian.com": {
@@ -1615,8 +1607,8 @@
    "status": "ok",
    "home_chars": 674,
    "pages": 4,
-   "deal_chars": 3479,
-   "result": "6 deals",
+   "deal_chars": 1472,
+   "result": "4 deals",
    "outcome": "extracted"
   },
   "rickysrestaurants.ca": {
@@ -1642,7 +1634,7 @@
    "locations": 2,
    "js_page": true,
    "status": "ok",
-   "home_chars": 266,
+   "home_chars": 262,
    "pages": 1,
    "deal_chars": 0,
    "outcome": "unchanged"
@@ -1681,8 +1673,7 @@
    "home_chars": 664,
    "pages": 1,
    "deal_chars": 129,
-   "result": "no deal words found",
-   "outcome": "no_deals"
+   "outcome": "unchanged"
   },
   "shumkafoods.ca": {
    "url": "http://shumkafoods.ca",
@@ -1731,7 +1722,7 @@
    "url": "https://www.stlouiswings.com",
    "locations": 2,
    "status": "ok",
-   "home_chars": 3125,
+   "home_chars": 3158,
    "pages": 5,
    "deal_chars": 1621,
    "outcome": "unchanged"
@@ -1785,27 +1776,26 @@
   "tonyromas.net": {
    "url": "https://tonyromas.net",
    "locations": 2,
-   "fallback": "SSL error",
-   "status": "SSL error",
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
    "outcome": "unreachable"
   },
   "doncherryssportsgrill.com": {
    "url": "http://doncherryssportsgrill.com/en/index.php",
    "locations": 2,
-   "status": "ok",
-   "home_chars": 13187,
-   "pages": 1,
-   "deal_chars": 101,
-   "outcome": "unchanged"
+   "fallback": "HTTP 403",
+   "status": "HTTP 403",
+   "outcome": "unreachable"
   },
   "vonssteakhouse.com": {
    "url": "http://www.vonssteakhouse.com",
    "locations": 2,
    "status": "ok",
-   "home_chars": 5037,
+   "home_chars": 5199,
    "pages": 5,
-   "deal_chars": 4833,
-   "outcome": "unchanged"
+   "deal_chars": 4995,
+   "result": "4 deals",
+   "outcome": "extracted"
   },
   "wildwingrestaurants.com": {
    "url": "https://wildwingrestaurants.com",
@@ -1833,12 +1823,10 @@
   "7kitchensyeg.smartonlineorder.com": {
    "url": "https://7kitchensyeg.smartonlineorder.com",
    "locations": 1,
-   "js_page": true,
    "status": "ok",
-   "home_chars": 8550,
-   "pages": 2,
-   "deal_chars": 7866,
-   "unconfirmed": true,
+   "home_chars": 359,
+   "pages": 1,
+   "deal_chars": 0,
    "outcome": "unchanged"
   },
   "87pizzadonair.ca": {
@@ -1846,8 +1834,8 @@
    "locations": 1,
    "status": "ok",
    "home_chars": 12500,
-   "pages": 1,
-   "deal_chars": 9976,
+   "pages": 2,
+   "deal_chars": 19952,
    "result": "6 deals",
    "outcome": "extracted"
   },
@@ -1874,9 +1862,9 @@
    "url": "https://www.aaachineserestaurant.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 6561,
+   "home_chars": 6572,
    "pages": 5,
-   "deal_chars": 8550,
+   "deal_chars": 8535,
    "result": "3 deals",
    "outcome": "extracted"
   },
@@ -1904,7 +1892,7 @@
    "status": "ok",
    "home_chars": 13279,
    "pages": 2,
-   "deal_chars": 4055,
+   "deal_chars": 4010,
    "result": "0 deals",
    "outcome": "extracted"
   },
@@ -1998,10 +1986,10 @@
    "locations": 1,
    "js_page": true,
    "status": "ok",
-   "home_chars": 1021,
+   "home_chars": 1124,
    "pages": 3,
-   "deal_chars": 803,
-   "result": "3 deals",
+   "deal_chars": 994,
+   "result": "2 deals",
    "outcome": "extracted"
   },
   "avilaarepa.ca": {
@@ -2292,8 +2280,8 @@
   "blackpearlseafood.ca": {
    "url": "http://www.blackpearlseafood.ca",
    "locations": 1,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
    "outcome": "unreachable"
   },
   "blakbar.com": {
@@ -2381,8 +2369,8 @@
   "bluesonwhyte.com": {
    "url": "https://www.bluesonwhyte.com",
    "locations": 1,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
    "outcome": "unreachable"
   },
   "boardwalkfries.com": {
@@ -2399,9 +2387,9 @@
    "locations": 1,
    "js_page": true,
    "status": "ok",
-   "home_chars": 0,
+   "home_chars": 424,
    "pages": 1,
-   "deal_chars": 0,
+   "deal_chars": 283,
    "result": "no deal words found",
    "outcome": "no_deals"
   },
@@ -2409,7 +2397,7 @@
    "url": "http://artmuzak.ca",
    "locations": 1,
    "status": "ok",
-   "home_chars": 1107,
+   "home_chars": 1094,
    "pages": 1,
    "deal_chars": 0,
    "outcome": "unchanged"
@@ -2746,7 +2734,8 @@
    "home_chars": 3797,
    "pages": 4,
    "deal_chars": 3188,
-   "outcome": "unchanged"
+   "result": "6 deals",
+   "outcome": "extracted"
   },
   "casselwoodpub.com": {
    "url": "http://casselwoodpub.com",
@@ -2760,11 +2749,9 @@
   "castlebakeedmonton.com": {
    "url": "http://www.castlebakeedmonton.com",
    "locations": 1,
-   "status": "ok",
-   "home_chars": 497,
-   "pages": 1,
-   "deal_chars": 0,
-   "outcome": "unchanged"
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
+   "outcome": "unreachable"
   },
   "catcafeonwhyte.com": {
    "url": "https://www.catcafeonwhyte.com",
@@ -2789,10 +2776,11 @@
    "locations": 1,
    "js_page": true,
    "status": "ok",
-   "home_chars": 3205,
+   "home_chars": 3201,
    "pages": 1,
-   "deal_chars": 1921,
-   "outcome": "unchanged"
+   "deal_chars": 1843,
+   "result": "0 deals",
+   "outcome": "extracted"
   },
   "wem.ca": {
    "url": "https://www.wem.ca/directory/stores/cedars-shawarma-kabab",
@@ -2936,8 +2924,8 @@
   "chianticafe.ca": {
    "url": "http://www.chianticafe.ca/chianti-old-strathcona---home.html",
    "locations": 1,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
    "outcome": "unreachable"
   },
   "chinesehotpotbuffet.com": {
@@ -3043,9 +3031,9 @@
    "locations": 1,
    "js_page": true,
    "status": "ok",
-   "home_chars": 0,
+   "home_chars": 870,
    "pages": 1,
-   "deal_chars": 0,
+   "deal_chars": 233,
    "result": "no deal words found",
    "outcome": "no_deals"
   },
@@ -3057,8 +3045,7 @@
    "home_chars": 0,
    "pages": 1,
    "deal_chars": 0,
-   "result": "no deal words found",
-   "outcome": "no_deals"
+   "outcome": "unchanged"
   },
   "coliseumsteak.com": {
    "url": "https://coliseumsteak.com",
@@ -3094,8 +3081,7 @@
    "home_chars": 5042,
    "pages": 1,
    "deal_chars": 1496,
-   "result": "0 deals",
-   "outcome": "extracted"
+   "outcome": "unchanged"
   },
   "cookcountysaloon.com": {
    "url": "https://www.cookcountysaloon.com",
@@ -3192,9 +3178,9 @@
    "url": "https://109stnw.cosmicpizza.ca",
    "locations": 1,
    "status": "ok",
-   "home_chars": 16366,
+   "home_chars": 16348,
    "pages": 1,
-   "deal_chars": 16085,
+   "deal_chars": 16076,
    "outcome": "unchanged"
   },
   "danielswaysw.cosmicpizza.ca": {
@@ -3210,9 +3196,9 @@
    "url": "http://www.costco.ca/warehouse-locations/sherwood-park-ab-544.html",
    "locations": 1,
    "status": "ok",
-   "home_chars": 5345,
+   "home_chars": 5385,
    "pages": 5,
-   "deal_chars": 3048,
+   "deal_chars": 3049,
    "unconfirmed": true,
    "outcome": "unchanged"
   },
@@ -3230,7 +3216,8 @@
    "home_chars": 4820,
    "pages": 4,
    "deal_chars": 6173,
-   "outcome": "unchanged"
+   "result": "6 deals",
+   "outcome": "extracted"
   },
   "cravingsanddelight.ca": {
    "url": "https://www.cravingsanddelight.ca",
@@ -3261,10 +3248,11 @@
    "url": "https://crustkingpizza.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 5291,
+   "home_chars": 5294,
    "pages": 3,
-   "deal_chars": 8039,
-   "outcome": "unchanged"
+   "deal_chars": 8042,
+   "result": "3 deals",
+   "outcome": "extracted"
   },
   "crepeworks.com": {
    "url": "https://www.crepeworks.com",
@@ -3414,11 +3402,9 @@
   "su.ualberta.ca": {
    "url": "https://www.su.ualberta.ca/businesses/deweys",
    "locations": 1,
-   "status": "ok",
-   "home_chars": 2509,
-   "pages": 4,
-   "deal_chars": 2432,
-   "outcome": "unchanged"
+   "fallback": "robots.txt unavailable",
+   "status": "robots.txt unavailable",
+   "outcome": "unreachable"
   },
   "diceyreillys.ca": {
    "url": "http://www.diceyreillys.ca",
@@ -3511,7 +3497,7 @@
    "url": "http://donairexpressedmonton.gastrobars.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 2723,
+   "home_chars": 2718,
    "pages": 1,
    "deal_chars": 0,
    "outcome": "unchanged"
@@ -3537,8 +3523,7 @@
    "home_chars": 4663,
    "pages": 5,
    "deal_chars": 20954,
-   "result": "0 deals",
-   "outcome": "extracted"
+   "outcome": "unchanged"
   },
   "donnaseatery.com": {
    "url": "http://www.donnaseatery.com",
@@ -3588,9 +3573,9 @@
    "url": "https://dreamdonairandpizza.ca",
    "locations": 1,
    "status": "ok",
-   "home_chars": 1721,
+   "home_chars": 1815,
    "pages": 2,
-   "deal_chars": 557,
+   "deal_chars": 592,
    "result": "0 deals",
    "outcome": "extracted"
   },
@@ -3623,10 +3608,11 @@
    "url": "https://earlofsandwichusa.com/locations/mayfair",
    "locations": 1,
    "status": "ok",
-   "home_chars": 3121,
+   "home_chars": 3135,
    "pages": 1,
    "deal_chars": 233,
-   "outcome": "unchanged"
+   "result": "no deal words found",
+   "outcome": "no_deals"
   },
   "earthsrefillerycoop.ca": {
    "url": "https://earthsrefillerycoop.ca",
@@ -3635,8 +3621,7 @@
    "home_chars": 1581,
    "pages": 5,
    "deal_chars": 7765,
-   "result": "0 deals",
-   "outcome": "extracted"
+   "outcome": "unchanged"
   },
   "eastsidemarios.com": {
    "url": "https://www.eastsidemarios.com",
@@ -3718,8 +3703,7 @@
    "home_chars": 11528,
    "pages": 2,
    "deal_chars": 8709,
-   "result": "1 deals",
-   "outcome": "extracted"
+   "outcome": "unchanged"
   },
   "elmeromerotacotruck.com": {
    "url": "https://elmeromerotacotruck.com",
@@ -3747,7 +3731,8 @@
    "home_chars": 2760,
    "pages": 5,
    "deal_chars": 2258,
-   "outcome": "unchanged"
+   "result": "1 deals",
+   "outcome": "extracted"
   },
   "mgtreats.ca": {
    "url": "https://mgtreats.ca",
@@ -3884,7 +3869,7 @@
    "locations": 1,
    "js_page": true,
    "status": "ok",
-   "home_chars": 281,
+   "home_chars": 277,
    "pages": 2,
    "deal_chars": 561,
    "outcome": "unchanged"
@@ -3959,8 +3944,8 @@
   "gogikoreanbbq.ca": {
    "url": "https://gogikoreanbbq.ca",
    "locations": 1,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
    "outcome": "unreachable"
   },
   "golden88restaurant.placeweb.site": {
@@ -4070,9 +4055,9 @@
    "url": "http://hakoneedmonton.gastrobars.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 7946,
+   "home_chars": 7938,
    "pages": 1,
-   "deal_chars": 3292,
+   "deal_chars": 3291,
    "result": "0 deals",
    "outcome": "extracted"
   },
@@ -4153,9 +4138,9 @@
    "url": "https://hidozosushiedmonton.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 1591,
+   "home_chars": 1666,
    "pages": 2,
-   "deal_chars": 242,
+   "deal_chars": 288,
    "result": "0 deals",
    "outcome": "extracted"
   },
@@ -4186,7 +4171,8 @@
    "home_chars": 7902,
    "pages": 5,
    "deal_chars": 203403,
-   "outcome": "unchanged"
+   "result": "0 deals",
+   "outcome": "extracted"
   },
   "homestyledonair.com": {
    "url": "http://www.homestyledonair.com",
@@ -4198,8 +4184,8 @@
   "htpizza.ca": {
    "url": "http://www.htpizza.ca",
    "locations": 1,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
    "outcome": "unreachable"
   },
   "hong-kong-bakery.ca": {
@@ -4278,8 +4264,7 @@
    "home_chars": 1353,
    "pages": 2,
    "deal_chars": 714,
-   "result": "0 deals",
-   "outcome": "extracted"
+   "outcome": "unchanged"
   },
   "indiagarden.ca": {
    "url": "https://indiagarden.ca",
@@ -4708,10 +4693,11 @@
    "url": "https://www.koutouki.ca",
    "locations": 1,
    "status": "ok",
-   "home_chars": 1869,
+   "home_chars": 1843,
    "pages": 2,
-   "deal_chars": 1198,
-   "outcome": "unchanged"
+   "deal_chars": 1186,
+   "result": "no deal words found",
+   "outcome": "no_deals"
   },
   "krewcafe.com": {
    "url": "https://krewcafe.com",
@@ -4750,8 +4736,8 @@
   "urbanspoon.com": {
    "url": "http://www.urbanspoon.com/r/131/1413995/restaurant/Kyoto-Japanese-Cuisine-Edmonton&dq=&cid=12321884988557680786&ved=0CGYQ5gg&sa=X&ei=VR9TTbvGCJmsjQOao6yPBQ&s=ANYYN7lGajmKOf3vh4DFiGaLRPYaT_0vcQ",
    "locations": 1,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
+   "fallback": "HTTP 403",
+   "status": "HTTP 403",
    "outcome": "unreachable"
   },
   "kyoto-sushijapanese.com": {
@@ -4953,7 +4939,7 @@
    "locations": 1,
    "js_page": true,
    "status": "ok",
-   "home_chars": 82,
+   "home_chars": 811,
    "pages": 1,
    "deal_chars": 0,
    "outcome": "unchanged"
@@ -5007,8 +4993,7 @@
    "home_chars": 4576,
    "pages": 1,
    "deal_chars": 0,
-   "result": "no deal words found",
-   "outcome": "no_deals"
+   "outcome": "unchanged"
   },
   "maltandmortar.com": {
    "url": "http://maltandmortar.com",
@@ -5045,7 +5030,7 @@
    "locations": 1,
    "js_page": true,
    "status": "ok",
-   "home_chars": 4332,
+   "home_chars": 4334,
    "pages": 2,
    "deal_chars": 263,
    "outcome": "unchanged"
@@ -5055,9 +5040,9 @@
    "locations": 1,
    "js_page": true,
    "status": "ok",
-   "home_chars": 5493,
+   "home_chars": 5566,
    "pages": 1,
-   "deal_chars": 828,
+   "deal_chars": 864,
    "result": "1 deals",
    "outcome": "extracted"
   },
@@ -5098,9 +5083,12 @@
   "menchies.com": {
    "url": "http://menchies.com/location/garneau",
    "locations": 1,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
-   "outcome": "unreachable"
+   "fallback": "HTTP 520",
+   "status": "ok",
+   "home_chars": 2917,
+   "pages": 1,
+   "deal_chars": 1723,
+   "outcome": "unchanged"
   },
   "menjiroramen.com": {
    "url": "https://www.menjiroramen.com",
@@ -5116,7 +5104,8 @@
    "home_chars": 4108,
    "pages": 5,
    "deal_chars": 1792,
-   "outcome": "unchanged"
+   "result": "0 deals",
+   "outcome": "extracted"
   },
   "metrobilliards.com": {
    "url": "https://metrobilliards.com",
@@ -5124,8 +5113,9 @@
    "status": "ok",
    "home_chars": 4806,
    "pages": 3,
-   "deal_chars": 2791,
-   "outcome": "unchanged"
+   "deal_chars": 2771,
+   "result": "1 deals",
+   "outcome": "extracted"
   },
   "mezbaanindianbistro.com": {
    "url": "https://mezbaanindianbistro.com",
@@ -5139,8 +5129,8 @@
   "midwaybar.ca": {
    "url": "https://midwaybar.ca",
    "locations": 1,
-   "fallback": "not a web page (unknown type)",
-   "status": "not a web page (unknown type)",
+   "fallback": "robots.txt unavailable",
+   "status": "robots.txt unavailable",
    "outcome": "unreachable"
   },
   "milestonesrestaurants.com": {
@@ -5150,8 +5140,7 @@
    "home_chars": 7656,
    "pages": 5,
    "deal_chars": 4318,
-   "result": "3 deals",
-   "outcome": "extracted"
+   "outcome": "unchanged"
   },
   "millcreekpizza.com": {
    "url": "http://millcreekpizza.com",
@@ -5219,8 +5208,8 @@
   "mogouyannoodles.com": {
    "url": "http://mogouyannoodles.com",
    "locations": 1,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
    "outcome": "unreachable"
   },
   "mommatong.com": {
@@ -5314,9 +5303,10 @@
    "locations": 1,
    "js_page": true,
    "status": "ok",
-   "home_chars": 85,
+   "home_chars": 1814,
    "pages": 1,
-   "deal_chars": 0,
+   "deal_chars": 1044,
+   "unconfirmed": true,
    "outcome": "unchanged"
   },
   "nagoyaexpress.ca": {
@@ -5325,7 +5315,7 @@
    "status": "ok",
    "home_chars": 6489,
    "pages": 4,
-   "deal_chars": 1764,
+   "deal_chars": 1776,
    "result": "0 deals",
    "outcome": "extracted"
   },
@@ -5376,9 +5366,9 @@
    "url": "http://www.nhatrangrestaurant.ca",
    "locations": 1,
    "status": "ok",
-   "home_chars": 1980,
+   "home_chars": 2058,
    "pages": 2,
-   "deal_chars": 1061,
+   "deal_chars": 1121,
    "unconfirmed": true,
    "outcome": "unchanged"
   },
@@ -5395,7 +5385,7 @@
    "url": "https://www.nitzaspizzastalbert.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 4649,
+   "home_chars": 4586,
    "pages": 1,
    "deal_chars": 836,
    "outcome": "unchanged"
@@ -5461,8 +5451,7 @@
    "home_chars": 2498,
    "pages": 1,
    "deal_chars": 165,
-   "result": "no deal words found",
-   "outcome": "no_deals"
+   "outcome": "unchanged"
   },
   "noodleholic.ca": {
    "url": "https://noodleholic.ca",
@@ -5697,7 +5686,7 @@
    "url": "https://phophat.ca",
    "locations": 1,
    "status": "ok",
-   "home_chars": 1795,
+   "home_chars": 1889,
    "pages": 1,
    "deal_chars": 328,
    "result": "0 deals",
@@ -5714,9 +5703,9 @@
    "url": "http://www.phosonghuongvietnamese.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 2259,
+   "home_chars": 2211,
    "pages": 3,
-   "deal_chars": 2286,
+   "deal_chars": 2238,
    "result": "0 deals",
    "outcome": "extracted"
   },
@@ -5885,8 +5874,8 @@
   "pub1905.ca": {
    "url": "https://pub1905.ca",
    "locations": 1,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
    "outcome": "unreachable"
   },
   "puffizza.ca": {
@@ -5918,10 +5907,11 @@
    "url": "https://kingswaymall.com/store/quik-wok",
    "locations": 1,
    "status": "ok",
-   "home_chars": 1214,
+   "home_chars": 1288,
    "pages": 3,
-   "deal_chars": 431,
-   "outcome": "unchanged"
+   "deal_chars": 907,
+   "result": "no deal words found",
+   "outcome": "no_deals"
   },
   "raemihyang.ca": {
    "url": "http://www.raemihyang.ca",
@@ -5939,7 +5929,8 @@
    "home_chars": 6311,
    "pages": 5,
    "deal_chars": 23177,
-   "outcome": "unchanged"
+   "result": "5 deals",
+   "outcome": "extracted"
   },
   "ramenmisoya.ca": {
    "url": "https://ramenmisoya.ca",
@@ -6034,8 +6025,7 @@
    "home_chars": 1962,
    "pages": 1,
    "deal_chars": 959,
-   "result": "0 deals",
-   "outcome": "extracted"
+   "outcome": "unchanged"
   },
   "robsdonair1.placeweb.site": {
    "url": "http://robsdonair1.placeweb.site",
@@ -6063,7 +6053,8 @@
    "home_chars": 3570,
    "pages": 3,
    "deal_chars": 3122,
-   "outcome": "unchanged"
+   "result": "6 deals",
+   "outcome": "extracted"
   },
   "romansteakandpizza.ca": {
    "url": "http://www.romansteakandpizza.ca",
@@ -6078,19 +6069,17 @@
   "roomatthetop.ca": {
    "url": "http://www.roomatthetop.ca",
    "locations": 1,
-   "status": "ok",
-   "home_chars": 4287,
-   "pages": 1,
-   "deal_chars": 883,
-   "outcome": "unchanged"
+   "fallback": "robots.txt unavailable",
+   "status": "robots.txt unavailable",
+   "outcome": "unreachable"
   },
   "rootofbeirut.com": {
    "url": "http://rootofbeirut.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 8856,
+   "home_chars": 8854,
    "pages": 1,
-   "deal_chars": 7923,
+   "deal_chars": 7921,
    "unconfirmed": true,
    "outcome": "unchanged"
   },
@@ -6210,8 +6199,7 @@
    "home_chars": 3529,
    "pages": 1,
    "deal_chars": 2709,
-   "result": "0 deals",
-   "outcome": "extracted"
+   "outcome": "unchanged"
   },
   "sanremobistro.ca": {
    "url": "http://www.sanremobistro.ca",
@@ -6349,9 +6337,11 @@
   "smiliesplace.com": {
    "url": "http://www.smiliesplace.com",
    "locations": 1,
-   "fallback": "can't connect (site down or domain gone)",
-   "status": "can't connect (site down or domain gone)",
-   "outcome": "unreachable"
+   "status": "ok",
+   "home_chars": 2593,
+   "pages": 1,
+   "deal_chars": 1118,
+   "outcome": "unchanged"
   },
   "smiliesvillage.ca": {
    "url": "http://www.smiliesvillage.ca",
@@ -6443,7 +6433,7 @@
    "url": "https://locations.stlouiswings.com/ab-edmonton-8204",
    "locations": 1,
    "status": "ok",
-   "home_chars": 4090,
+   "home_chars": 4072,
    "pages": 5,
    "deal_chars": 7171,
    "outcome": "unchanged"
@@ -6539,7 +6529,7 @@
    "url": "https://locations.sunsetgrill.ca/restaurant/st-albert-albert",
    "locations": 1,
    "status": "ok",
-   "home_chars": 14095,
+   "home_chars": 14290,
    "pages": 1,
    "deal_chars": 3031,
    "outcome": "unchanged"
@@ -6606,11 +6596,9 @@
   "sweetpeacafeandplayhouse.com": {
    "url": "https://sweetpeacafeandplayhouse.com",
    "locations": 1,
-   "status": "ok",
-   "home_chars": 1703,
-   "pages": 1,
-   "deal_chars": 0,
-   "outcome": "unchanged"
+   "fallback": "robots.txt unavailable",
+   "status": "robots.txt unavailable",
+   "outcome": "unreachable"
   },
   "swirlyeg.com": {
    "url": "http://www.swirlyeg.com",
@@ -6635,9 +6623,9 @@
    "locations": 1,
    "js_page": true,
    "status": "ok",
-   "home_chars": 435,
+   "home_chars": 431,
    "pages": 1,
-   "deal_chars": 205,
+   "deal_chars": 201,
    "unconfirmed": true,
    "outcome": "unchanged"
   },
@@ -6828,9 +6816,12 @@
   "teriyakicorner.com": {
    "url": "https://www.teriyakicorner.com",
    "locations": 1,
-   "fallback": "HTTP 403",
-   "status": "HTTP 403",
-   "outcome": "unreachable"
+   "status": "ok",
+   "home_chars": 5386,
+   "pages": 1,
+   "deal_chars": 958,
+   "result": "0 deals",
+   "outcome": "extracted"
   },
   "tesorofoods.ca": {
    "url": "https://tesorofoods.ca",
@@ -6965,7 +6956,7 @@
    "url": "https://blackbullkitchen.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 5604,
+   "home_chars": 5706,
    "pages": 1,
    "deal_chars": 682,
    "outcome": "unchanged"
@@ -7050,8 +7041,7 @@
    "home_chars": 3507,
    "pages": 5,
    "deal_chars": 3796,
-   "result": "0 deals",
-   "outcome": "extracted"
+   "outcome": "unchanged"
   },
   "thecommon.ca": {
    "url": "https://www.thecommon.ca",
@@ -7285,8 +7275,8 @@
   "thewineroom.ca": {
    "url": "https://thewineroom.ca/contact-us",
    "locations": 1,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
    "outcome": "unreachable"
   },
   "qmenu.us": {
@@ -7358,8 +7348,9 @@
    "status": "ok",
    "home_chars": 3969,
    "pages": 5,
-   "deal_chars": 28558,
-   "outcome": "unchanged"
+   "deal_chars": 28916,
+   "result": "6 deals",
+   "outcome": "extracted"
   },
   "todaysrestaurant.ca": {
    "url": "http://www.todaysrestaurant.ca",
@@ -7431,8 +7422,8 @@
   "toyosushi.net": {
    "url": "https://toyosushi.net",
    "locations": 1,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
    "outcome": "unreachable"
   },
   "transcendcoffee.ca": {
@@ -7475,10 +7466,11 @@
    "url": "http://www.tropikagroup.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 4740,
+   "home_chars": 4577,
    "pages": 5,
-   "deal_chars": 42583,
-   "outcome": "unchanged"
+   "deal_chars": 42978,
+   "result": "1 deals",
+   "outcome": "extracted"
   },
   "turkishcoffeehouse.ca": {
    "url": "https://www.turkishcoffeehouse.ca",
@@ -7587,7 +7579,7 @@
    "locations": 1,
    "js_page": true,
    "status": "ok",
-   "home_chars": 3872,
+   "home_chars": 3991,
    "pages": 2,
    "deal_chars": 2982,
    "outcome": "unchanged"
@@ -7612,10 +7604,11 @@
    "url": "http://viphalay.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 3550,
+   "home_chars": 3512,
    "pages": 2,
-   "deal_chars": 1339,
-   "outcome": "unchanged"
+   "deal_chars": 1301,
+   "result": "2 deals",
+   "outcome": "extracted"
   },
   "villamadina.com": {
    "url": "http://villamadina.com/en/locations",
@@ -7638,9 +7631,10 @@
    "locations": 1,
    "js_page": true,
    "status": "ok",
-   "home_chars": 0,
-   "pages": 1,
-   "deal_chars": 0,
+   "home_chars": 3368,
+   "pages": 2,
+   "deal_chars": 2314,
+   "unconfirmed": true,
    "outcome": "unchanged"
   },
   "washokubistro.com": {
@@ -7666,7 +7660,8 @@
    "home_chars": 2686,
    "pages": 1,
    "deal_chars": 1367,
-   "outcome": "unchanged"
+   "result": "1 deals",
+   "outcome": "extracted"
   },
   "wenzemarket.ca": {
    "url": "https://wenzemarket.ca",
@@ -7687,8 +7682,8 @@
   "whiterabbiticecream.com": {
    "url": "https://whiterabbiticecream.com",
    "locations": 1,
-   "fallback": "robots.txt unavailable",
-   "status": "robots.txt unavailable",
+   "fallback": "can't connect (site down or domain gone)",
+   "status": "can't connect (site down or domain gone)",
    "outcome": "unreachable"
   },
   "winstonsfnc.com": {
@@ -7704,7 +7699,7 @@
    "url": "https://www.wokhousestalbert.com",
    "locations": 1,
    "status": "ok",
-   "home_chars": 8829,
+   "home_chars": 8833,
    "pages": 1,
    "deal_chars": 6306,
    "outcome": "unchanged"
